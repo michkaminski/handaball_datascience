@@ -28,15 +28,21 @@ Aktualizacja: 2026-09-12.
 - Skonfigurowano Ruff, mypy (strict) i pytest w `pyproject.toml`. Wykonano i potwierdzono: `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy` (bez błędów, 8 plików źródłowych) oraz `uv run pytest` (6 testów, wszystkie przechodzą).
 - Zweryfikowano lokalne uruchomienie: `create_app()` rejestruje trasy `/administracja/` i `/static/...`, żądanie GET zwraca 200; start nie łączy się z bazą `zprp`.
 
+- Ukończono etap 2 [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md): wspólny układ administracji na podstawie prototypu v6. Utworzono `baza.html`, `elementy/nawigacja.html`, `elementy/komunikaty.html`, `administracja/start.html` oraz `statyczne/css/administracja.css` (adaptacja `index.html`/`assets/style.css` prototypu, bez sidebara i bez fikcyjnych danych meczowych — `start.html` pokazuje jawny stan "brak danych" zamiast przykładowych wierszy z prototypu).
+- `FabrykaAplikacji` jawnie konfiguruje `template_folder`/`static_folder`/`static_url_path` (`szablony`/`statyczne`), zgodnie z ARCHITECTURE i DIRECTORY_STRUCTURE. `WidokStartowy` renderuje `administracja/start.html` zamiast zwracać czysty tekst.
+- Zaktualizowano MD czterech zaimplementowanych szablonów (baza, nawigacja, komunikaty, start) zgodnie z rzeczywistym kontraktem, blokami i selektorami.
+- Sprawdzono wizualnie w przeglądarce (Playwright, Chromium headless) na ~1400px i ~380px: układ zgodny z v6, responsywność działa, brak przewijania poziomego. `uv run pytest` (7/7), `ruff check`, `ruff format --check` i `mypy` przechodzą bez błędów.
+- `js/administracja.js` świadomie nie utworzono — obecny układ (bez sidebara, bez filtrów) nie używa jeszcze żadnego zachowania z prototypowego `app.js`; doda się go razem z pierwszą potrzebną interakcją.
+
 ## Jeszcze niewykonane
 
-- Wspólny układ administracji na podstawie prototypu v6 (etap 2): szablony Jinja2, CSS i JS.
 - Odczyt przez SQLAlchemy, lista i szczegóły meczu (etapy 3–5).
 - Dostęp administratora i pozostałe widoki odczytu (etapy 6–7).
+- Sidebar administracji (odłożony do etapu z realnymi sekcjami, np. etap 7) i pozostałe szablony (paginacja, mecze/lista, mecze/szczegoly, logowanie, bledy) — mają MD, brak HTML.
 - Eksport i publiczny serwis.
 
 ## Następny krok
 
-Etap 2 z [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md): obejrzeć index.html i matches.html prototypu administracji v6, a następnie zaadaptować wspólny układ Jinja2 (`baza.html`) i zasoby CSS/JS zgodnie z istniejącymi opisami w `interfejs/szablony/`. Szczegółowe uprawnienia administracji i interpretacja wyników pozostają do ustalenia przed ich implementacją.
+Etap 3 z [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md): modele SQLAlchemy potrzebne liście meczów, kontrakt repozytorium (`RepozytoriumOdczytuMeczow`), implementacja SQLAlchemy z sesją READ ONLY. Wymaga połączenia z bazą `zprp` — konfiguracja przez zmienne środowiska, bez zapisu i bez tworzenia tabel.
 
 Nie używać `python ../run.py` jako komendy uruchomienia nowej aplikacji: dotyczy starszego serwisu i jego procesu importu.

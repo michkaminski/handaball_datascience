@@ -1,6 +1,6 @@
 # Projekt struktury katalogów
 
-Status: etap 1 ukończony. Obiektowy szkielet Flaska (FabrykaAplikacji, Ustawienia, RejestratorWidokow, Blueprint administracji z WidokStartowy) oraz konfiguracja uv/Ruff/mypy/pytest istnieją i są zweryfikowane. Szablony HTML i pozostałe warstwy (etapy 2 i dalej) jeszcze nie istnieją. Struktura odpowiada [planowi realizacji](IMPLEMENTATION_PLAN.md) i [diagramom UML](UML.md).
+Status: etapy 1 i 2 ukończone. Obiektowy szkielet Flaska (FabrykaAplikacji, Ustawienia, RejestratorWidokow, Blueprint administracji z WidokStartowy) oraz wspólny układ Jinja2 (baza.html, elementy/nawigacja.html, elementy/komunikaty.html, administracja/start.html) i CSS (statyczne/css/administracja.css) na podstawie prototypu v6 istnieją i są zweryfikowane. Pozostałe warstwy (etapy 3 i dalej: dane, lista i szczegóły meczu, dostęp) jeszcze nie istnieją. Struktura odpowiada [planowi realizacji](IMPLEMENTATION_PLAN.md) i [diagramom UML](UML.md).
 
 ## Układ projektu
 
@@ -69,19 +69,19 @@ handball_datascience/
 |           |   `-- formularze/
 |           |       |-- __init__.py
 |           |       `-- filtry_meczow.py           [4]
-|           |-- szablony/                          [E; HTML od etapu 2]
+|           |-- szablony/                          [E]
 |           |   |-- baza.md [E; opis szablonu]
-|           |   |-- baza.html
+|           |   |-- baza.html                      [E]
 |           |   |-- elementy/
 |           |   |   |-- nawigacja.md [E; opis szablonu]
-|           |   |   |-- nawigacja.html
+|           |   |   |-- nawigacja.html              [E]
 |           |   |   |-- komunikaty.md [E; opis szablonu]
-|           |   |   |-- komunikaty.html
+|           |   |   |-- komunikaty.html             [E]
 |           |   |   |-- paginacja.md [E; opis szablonu]
 |           |   |   `-- paginacja.html             [4]
 |           |   |-- administracja/
 |           |   |   |-- start.md [E; opis szablonu]
-|           |   |   |-- start.html
+|           |   |   |-- start.html                 [E]
 |           |   |   `-- mecze/
 |           |   |       |-- lista.md [E; opis szablonu]
 |           |   |       |-- lista.html             [4]
@@ -94,9 +94,9 @@ handball_datascience/
 |           |       |-- 404.html
 |           |       |-- 503.md [E; opis szablonu]
 |           |       `-- 503.html
-|           `-- statyczne/                         [2]
-|               |-- css/administracja.css
-|               |-- js/administracja.js
+|           `-- statyczne/                         [E]
+|               |-- css/administracja.css          [E]
+|               |-- js/administracja.js            [nie utworzono; brak potrzebnego zachowania na razie]
 |               `-- obrazy/                        [gdy potrzebne]
 `-- testy/                                         [E]
     |-- conftest.py
@@ -161,4 +161,4 @@ Nie planujemy teraz katalogu migracji, nowego importera ani CRUD dla wszystkich 
 
 ## Minimum do utworzenia jako pierwsze
 
-Etap 1 tworzy wyłącznie pliki oznaczone 1, wymagane pakiety nadrzędne i testy startu; ukończono go i oznaczono [E] w drzewie powyżej. Etap 2 dodaje wspólny wygląd na podstawie prototypu. Połączenie bazy oraz pozostałe warstwy dochodzą wraz z etapami 3–5. Pozwala to uruchomić i sprawdzić każdy przyrost bez pustej struktury całego przyszłego serwisu.
+Etap 1 tworzy wyłącznie pliki oznaczone 1, wymagane pakiety nadrzędne i testy startu; ukończono go i oznaczono [E] w drzewie powyżej. Etap 2 dodaje wspólny wygląd na podstawie prototypu; ukończono go i oznaczono [E] powyżej, poza js/administracja.js — nie utworzono, bo obecny wygląd (bez sidebara i bez filtrów) nie potrzebuje jeszcze żadnego zachowania JS. Połączenie bazy oraz pozostałe warstwy dochodzą wraz z etapami 3–5. Pozwala to uruchomić i sprawdzić każdy przyrost bez pustej struktury całego przyszłego serwisu.

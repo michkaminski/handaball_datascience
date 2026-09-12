@@ -17,7 +17,12 @@ class FabrykaAplikacji:
 
     def utworz(self) -> Flask:
         self._ustawienia.waliduj()
-        aplikacja = Flask("pilka_reczna")
+        aplikacja = Flask(
+            "pilka_reczna",
+            template_folder="interfejs/szablony",
+            static_folder="interfejs/statyczne",
+            static_url_path="/statyczne",
+        )
         aplikacja.config["SECRET_KEY"] = self._ustawienia.tajny_klucz
         aplikacja.config["DEBUG"] = self._ustawienia.tryb_debugowania
         self._rejestrator_widokow.zarejestruj(aplikacja)

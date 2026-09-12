@@ -17,20 +17,20 @@ MD opisuje aktualny kontrakt i miejsca zmian, a nie dziennik każdej korekty tek
 
 ## Obecne opisy
 
-Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogów, łącznie z planowanym logowaniem. Powstały wyłącznie MD i ich katalogi; nie utworzono HTML ani kodu aplikacji.
+Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogów, łącznie z planowanym logowaniem. Po etapie 2 cztery z nich mają też rzeczywisty HTML (baza, nawigacja, komunikaty, start); pozostałe siedem to nadal wyłącznie MD i katalogi.
 
-| Planowany szablon | Dokument |
-| --- | --- |
-| `baza.html` | [baza.md](../src/pilka_reczna/interfejs/szablony/baza.md) |
-| `elementy/nawigacja.html` | [elementy/nawigacja.md](../src/pilka_reczna/interfejs/szablony/elementy/nawigacja.md) |
-| `elementy/komunikaty.html` | [elementy/komunikaty.md](../src/pilka_reczna/interfejs/szablony/elementy/komunikaty.md) |
-| `elementy/paginacja.html` | [elementy/paginacja.md](../src/pilka_reczna/interfejs/szablony/elementy/paginacja.md) |
-| `administracja/start.html` | [administracja/start.md](../src/pilka_reczna/interfejs/szablony/administracja/start.md) |
-| `administracja/mecze/lista.html` | [administracja/mecze/lista.md](../src/pilka_reczna/interfejs/szablony/administracja/mecze/lista.md) |
-| `administracja/mecze/szczegoly.html` | [administracja/mecze/szczegoly.md](../src/pilka_reczna/interfejs/szablony/administracja/mecze/szczegoly.md) |
-| `administracja/logowanie.html` | [administracja/logowanie.md](../src/pilka_reczna/interfejs/szablony/administracja/logowanie.md) |
-| `bledy/400.html` | [bledy/400.md](../src/pilka_reczna/interfejs/szablony/bledy/400.md) |
-| `bledy/404.html` | [bledy/404.md](../src/pilka_reczna/interfejs/szablony/bledy/404.md) |
-| `bledy/503.html` | [bledy/503.md](../src/pilka_reczna/interfejs/szablony/bledy/503.md) |
+| Planowany szablon | Dokument | HTML |
+| --- | --- | --- |
+| `baza.html` | [baza.md](../src/pilka_reczna/interfejs/szablony/baza.md) | istnieje |
+| `elementy/nawigacja.html` | [elementy/nawigacja.md](../src/pilka_reczna/interfejs/szablony/elementy/nawigacja.md) | istnieje |
+| `elementy/komunikaty.html` | [elementy/komunikaty.md](../src/pilka_reczna/interfejs/szablony/elementy/komunikaty.md) | istnieje |
+| `elementy/paginacja.html` | [elementy/paginacja.md](../src/pilka_reczna/interfejs/szablony/elementy/paginacja.md) | planowany (etap 4) |
+| `administracja/start.html` | [administracja/start.md](../src/pilka_reczna/interfejs/szablony/administracja/start.md) | istnieje |
+| `administracja/mecze/lista.html` | [administracja/mecze/lista.md](../src/pilka_reczna/interfejs/szablony/administracja/mecze/lista.md) | planowany (etap 4) |
+| `administracja/mecze/szczegoly.html` | [administracja/mecze/szczegoly.md](../src/pilka_reczna/interfejs/szablony/administracja/mecze/szczegoly.md) | planowany (etap 5) |
+| `administracja/logowanie.html` | [administracja/logowanie.md](../src/pilka_reczna/interfejs/szablony/administracja/logowanie.md) | planowany (etap 6) |
+| `bledy/400.html` | [bledy/400.md](../src/pilka_reczna/interfejs/szablony/bledy/400.md) | planowany (etap 4) |
+| `bledy/404.html` | [bledy/404.md](../src/pilka_reczna/interfejs/szablony/bledy/404.md) | planowany (etap 4) |
+| `bledy/503.html` | [bledy/503.md](../src/pilka_reczna/interfejs/szablony/bledy/503.md) | planowany (etap 4) |
 
 Przyszłe szablony zespołów, zawodników i diagnostyki otrzymają własne MD przy ich konkretnym zaprojektowaniu lub utworzeniu. MD nie są szablonami do renderowania ani zasobami publicznymi; nie wystawiaj ich przez routing i nie umieszczaj w publicznym eksporcie.

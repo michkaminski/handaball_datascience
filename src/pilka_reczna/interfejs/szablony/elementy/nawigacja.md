@@ -1,24 +1,26 @@
 # Nawigacja administracji
 
-Status: projekt szablonu. Plik `nawigacja.html` nie został jeszcze utworzony. Ten MD będzie znajdował się obok niego i będzie aktualizowany wraz ze zmianą szablonu.
+Status: etap 2 ukończony. Szablon `elementy/nawigacja.html` istnieje.
 
 Docelowy szablon względem katalogu szablony: `elementy/nawigacja.html`.
 
 ## Przeznaczenie
 
-Menu sekcji i oznaczenie bieżącego ekranu, zgodne z prototypem v6.
+Menu sekcji i oznaczenie bieżącego ekranu, zgodne z prototypem v6 (`.nav`/`.nav-inner` z index.html).
 
 ## Dane wejściowe
 
-Aktywna sekcja, dostępne adresy i uprawnienia przekazane przez warstwę HTTP; bez zapytań do bazy.
+Zmienna kontekstu `pozycje_nawigacji`: lista słowników `{"etykieta": str, "adres": str, "aktywna": bool}`, budowana przez widok (np. `WidokStartowy`) i przekazywana do `render_template`. Szablon tylko renderuje, nie decyduje o uprawnieniach ani dostępności pozycji.
 
 ## Powiązania
 
-Dołączany przez baza.html. Nowa pozycja wymaga istniejącego widoku i poprawnego adresu.
+Dołączany przez `baza.html` przez `{% include %}`. Nowa pozycja wymaga istniejącego widoku, poprawnego adresu (najlepiej `url_for(...)` z widoku) i dopisania jej do listy `pozycje_nawigacji` w tym widoku.
 
 ## Gdzie wprowadzać zmiany
 
-Tutaj zmieniaj etykiety, kolejność i aktywne pozycje menu. Ukrycie odnośnika nie zastępuje kontroli uprawnień w backendzie.
+Tutaj zmieniaj znacznik HTML pozycji menu (klasa `active`, struktura `<a>`). Etykiety, kolejność i zestaw pozycji zmieniaj w widokach, które budują `pozycje_nawigacji` — nie hardkoduj ich w tym szablonie. Ukrycie odnośnika nie zastępuje kontroli uprawnień w backendzie.
+
+Obecnie lista zawiera tylko pozycję "Start" (jedyny zaimplementowany widok). Prototyp v6 ma też górne menu Dane/Import/Kontrola danych/Logi — te pozycje dodać dopiero razem z odpowiadającymi im widokami (patrz IMPLEMENTATION_PLAN.md), nie jako martwe odnośniki.
 
 ## Sprawdzenie zmiany
 
@@ -26,4 +28,4 @@ Sprawdź adresy, aktywną sekcję, obsługę klawiatury i zachowanie na wąskim 
 
 ## Stan implementacji
 
-Nie ma jeszcze bloków Jinja2, selektorów CSS ani powiązań JS do potwierdzenia. Przy implementacji zastąp ten zapis rzeczywistymi nazwami bloków, selektorów i plików testów; nie wpisuj planowanych kontroli jako wykonanych.
+Wykonano: sprawdzenie w przeglądarce (Playwright, Chromium headless) na ~1400px i ~380px — pozycja "Start" widoczna i oznaczona jako aktywna (klasa `active`), pasek nie zawija się nieprawidłowo. `uv run pytest` sprawdza obecność `class="nav"` w odpowiedzi. Nie sprawdzono: zachowania z więcej niż jedną pozycją, nawigacji klawiaturą (Tab/Enter) — do zweryfikowania przy dodaniu kolejnych widoków.

@@ -1,24 +1,24 @@
 # Komunikaty dla użytkownika
 
-Status: projekt szablonu. Plik `komunikaty.html` nie został jeszcze utworzony. Ten MD będzie znajdował się obok niego i będzie aktualizowany wraz ze zmianą szablonu.
+Status: etap 2 ukończony. Szablon `elementy/komunikaty.html` istnieje.
 
 Docelowy szablon względem katalogu szablony: `elementy/komunikaty.html`.
 
 ## Przeznaczenie
 
-Prezentacja komunikatów powodzenia, ostrzeżeń i błędów przekazanych przez aplikację.
+Prezentacja komunikatów powodzenia, ostrzeżeń i błędów przekazanych przez aplikację (mechanizm Flask `flash()`).
 
 ## Dane wejściowe
 
-Lista komunikatów z kategorią i bezpieczną treścią; dokładny kontrakt ustali implementacja.
+`get_flashed_messages(with_categories=true)` — lista par `(kategoria, treść)` z sesji Flask. Kategoria trafia bezpośrednio do klasy CSS `notice-{{ kategoria }}` (np. `notice-error`, `notice-warning`, `notice-success`); Jinja2 automatycznie escapuje treść (autoescape włączony domyślnie we Flasku), więc nie renderuj tej treści przez `| safe`.
 
 ## Powiązania
 
-Dołączany przez baza.html; wygląd współdzielony przez wszystkie strony.
+Dołączany przez `baza.html` przez `{% include %}`, wewnątrz `<main class="content">`; wygląd współdzielony przez wszystkie strony. Style `.komunikaty`, `.notice`, `.notice-error`, `.notice-warning`, `.notice-success` są w statyczne/css/administracja.css.
 
 ## Gdzie wprowadzać zmiany
 
-Tutaj zmieniaj układ i oznaczenia komunikatów. Decyzja o ich wyświetleniu należy do widoku/serwisu; nie umieszczaj tu wyjątków sterownika ani sekretów.
+Tutaj zmieniaj układ i oznaczenia komunikatów. Decyzja o ich wyświetleniu (wywołanie `flash(tresc, kategoria)`) należy do widoku/serwisu; nie umieszczaj tu wyjątków sterownika ani sekretów.
 
 ## Sprawdzenie zmiany
 
@@ -26,4 +26,4 @@ Sprawdź brak komunikatów, wiele komunikatów, długi tekst i bezpieczne render
 
 ## Stan implementacji
 
-Nie ma jeszcze bloków Jinja2, selektorów CSS ani powiązań JS do potwierdzenia. Przy implementacji zastąp ten zapis rzeczywistymi nazwami bloków, selektorów i plików testów; nie wpisuj planowanych kontroli jako wykonanych.
+Wykonano: sprawdzenie w przeglądarce przy braku komunikatów (żaden widok jeszcze nie wywołuje `flash()`) — blok poprawnie się nie renderuje (`{% if komunikaty %}`). Nie sprawdzono jeszcze: wielu komunikatów naraz, długiego tekstu, wielu kategorii jednocześnie ani faktycznego bezpiecznego renderowania złośliwej treści — do zweryfikowania, gdy pierwszy widok zacznie używać `flash()`.
