@@ -2,6 +2,10 @@
 
 Status: projekt, nie dokumentacja istniejącego kodu. Diagramy zapisano w Mermaid, dzięki czemu pozostają edytowalną częścią MD. Pierwszy zakres to odczyt listy meczów i później szczegóły. [Projekt katalogów](DIRECTORY_STRUCTURE.md) przypisuje klasy do plików. [Relacje bazy](database/RELATIONSHIPS.md) opisują osobno istniejący model danych.
 
+## Konwencja nazw a diagramy
+
+Diagramy i tabela modułów używają nazw wdrożonych 2026-09-14 zgodnie z [CODING_STANDARDS](CODING_STANDARDS.md#język-i-nazewnictwo). Modele i metody pozostają polskie; klasy techniczne mają angielskie role, np. `MeczService`, `MeczReadRepository` i `MeczListView`. Elementy szczegółów meczu pozostają planowane.
+
 ## 1. Diagram klas pierwszego zakresu
 
 Strzałka z pustym trójkątem oznacza dziedziczenie, przerywana z trójkątem realizację kontraktu, a zwykła przerywana zależność. Protocol jest kontraktem strukturalnym: implementacja nie musi po nim dziedziczyć. Metody pokazują projekt odpowiedzialności; szczegóły typów parametrów dopracujemy w implementacji.
@@ -12,34 +16,34 @@ classDiagram
         <<framework>>
         +as_view()
     }
-    class WidokListyMeczow {
-        -SerwisMeczow serwis
+    class MeczListView {
+        -MeczService serwis
         +get()
     }
-    class WidokSzczegolowMeczu {
-        -SerwisMeczow serwis
+    class MeczDetailView {
+        -MeczService serwis
         +get(id_mecz)
     }
-    class FormularzFiltrowMeczow {
+    class MeczFilterForm {
         +waliduj()
         +do_filtrow() FiltryMeczow
     }
-    class SerwisMeczow {
-        -RepozytoriumOdczytuMeczow repozytorium
+    class MeczService {
+        -MeczReadRepository repozytorium
         +pobierz_liste(filtry) StronaMeczow
         +pobierz_szczegoly(id_mecz) SzczegolyMeczu
     }
-    class RepozytoriumOdczytuMeczow {
+    class MeczReadRepository {
         <<interface>>
         +pobierz_liste(filtry) StronaMeczow
         +pobierz_szczegoly(id_mecz) SzczegolyMeczu
     }
-    class RepozytoriumMeczowSQLAlchemy {
+    class MeczSQLAlchemyRepository {
         -Session sesja
         +pobierz_liste(filtry) StronaMeczow
         +pobierz_szczegoly(id_mecz) SzczegolyMeczu
     }
-    class RepozytoriumMeczowPamieciowe {
+    class MeczInMemoryRepository {
         <<test>>
         +pobierz_liste(filtry) StronaMeczow
         +pobierz_szczegoly(id_mecz) SzczegolyMeczu
@@ -85,23 +89,23 @@ classDiagram
         +id_zespol_gosp
         +id_zespol_gosc
     }
-    MethodView <|-- WidokListyMeczow
-    MethodView <|-- WidokSzczegolowMeczu
-    WidokListyMeczow --> SerwisMeczow
-    WidokSzczegolowMeczu --> SerwisMeczow
-    WidokListyMeczow ..> FormularzFiltrowMeczow
-    FormularzFiltrowMeczow ..> FiltryMeczow
-    SerwisMeczow --> RepozytoriumOdczytuMeczow
-    RepozytoriumMeczowSQLAlchemy ..|> RepozytoriumOdczytuMeczow
-    RepozytoriumMeczowPamieciowe ..|> RepozytoriumOdczytuMeczow
-    RepozytoriumMeczowSQLAlchemy ..> Mecz
-    SerwisMeczow ..> FiltryMeczow
-    SerwisMeczow ..> StronaMeczow
-    SerwisMeczow ..> SzczegolyMeczu
+    MethodView <|-- MeczListView
+    MethodView <|-- MeczDetailView
+    MeczListView --> MeczService
+    MeczDetailView --> MeczService
+    MeczListView ..> MeczFilterForm
+    MeczFilterForm ..> FiltryMeczow
+    MeczService --> MeczReadRepository
+    MeczSQLAlchemyRepository ..|> MeczReadRepository
+    MeczInMemoryRepository ..|> MeczReadRepository
+    MeczSQLAlchemyRepository ..> Mecz
+    MeczService ..> FiltryMeczow
+    MeczService ..> StronaMeczow
+    MeczService ..> SzczegolyMeczu
     StronaMeczow *-- PozycjaListyMeczow
 ```
 
-Metody szczegółów i WidokSzczegolowMeczu dochodzą w etapie 5. Jeśli różni odbiorcy potrzebują odrębnych kontraktów listy i szczegółów, rozdzielimy Protocol zgodnie z ISP; nie dodajemy operacji zapisu do kontraktu odczytu.
+Metody szczegółów i MeczDetailView dochodzą w etapie 5. Jeśli różni odbiorcy potrzebują odrębnych kontraktów listy i szczegółów, rozdzielimy Protocol zgodnie z ISP; nie dodajemy operacji zapisu do kontraktu odczytu.
 
 Filtry mają jawne reguły: identyfikatory są opcjonalne według funkcji, strona i rozmiar dodatnie, rozmiar ograniczony, sortowanie z listy dozwolonej. Kolejność wyników musi być stabilna, z id jako rozstrzygnięciem remisów sortowania. Brak meczu oznacza NieZnalezionoMeczu, brak wyników listy pustą StronaMeczow, a awaria zapytania BladOdczytuDanych. Implementacja pamięciowa zachowuje tę samą semantykę.
 
@@ -115,41 +119,41 @@ classDiagram
         <<dataclass>>
         +waliduj()
     }
-    class FabrykaAplikacji {
+    class AplikacjaFactory {
         +utworz() Flask
     }
-    class RejestratorWidokow {
+    class WidokiRegistrar {
         +zarejestruj(aplikacja)
     }
-    class FabrykaZaleznosciZadania {
-        +utworz_serwis_meczow() SerwisMeczow
+    class ZaleznosciZadaniaFactory {
+        +utworz_serwis_meczow() MeczService
     }
-    class KonfiguratorPolaczenia {
+    class PolaczenieConfigurator {
         +skonfiguruj_odczyt(aplikacja)
     }
     class SQLAlchemy {
         <<extension>>
         +init_app(aplikacja)
     }
-    class SerwisMeczow
-    class RepozytoriumMeczowSQLAlchemy
-    class WidokListyMeczow
-    FabrykaAplikacji --> Ustawienia
-    FabrykaAplikacji ..> SQLAlchemy
-    FabrykaAplikacji ..> KonfiguratorPolaczenia
-    FabrykaAplikacji ..> RejestratorWidokow
-    RejestratorWidokow --> FabrykaZaleznosciZadania
-    WidokListyMeczow ..> FabrykaZaleznosciZadania : konstrukcja per zadanie
-    FabrykaZaleznosciZadania ..> SQLAlchemy : sesja biezacego kontekstu
-    FabrykaZaleznosciZadania ..> RepozytoriumMeczowSQLAlchemy : tworzy
-    FabrykaZaleznosciZadania ..> SerwisMeczow : wstrzykuje repozytorium
+    class MeczService
+    class MeczSQLAlchemyRepository
+    class MeczListView
+    AplikacjaFactory --> Ustawienia
+    AplikacjaFactory ..> SQLAlchemy
+    AplikacjaFactory ..> PolaczenieConfigurator
+    AplikacjaFactory ..> WidokiRegistrar
+    WidokiRegistrar --> ZaleznosciZadaniaFactory
+    MeczListView ..> ZaleznosciZadaniaFactory : konstrukcja per zadanie
+    ZaleznosciZadaniaFactory ..> SQLAlchemy : sesja biezacego kontekstu
+    ZaleznosciZadaniaFactory ..> MeczSQLAlchemyRepository : tworzy
+    ZaleznosciZadaniaFactory ..> MeczService : wstrzykuje repozytorium
 ```
 
-create_app() deleguje do FabrykaAplikacji.utworz(). Fabryka ładuje Ustawienia, konfiguruje szablony i zasoby, inicjalizuje rozszerzenia i rejestruje Blueprints. Nie wykonuje importu, tworzenia tabel ani zapisu. Konfiguracja połączenia nie oznacza pobierania wszystkich danych przy starcie.
+create_app() deleguje do AplikacjaFactory.utworz(). Fabryka ładuje Ustawienia, konfiguruje szablony i zasoby, inicjalizuje rozszerzenia i rejestruje Blueprints. Nie wykonuje importu, tworzenia tabel ani zapisu. Konfiguracja połączenia nie oznacza pobierania wszystkich danych przy starcie.
 
-RejestratorWidokow przekazuje bezstanową FabrykaZaleznosciZadania jako argument as_view(). Flask tworzy instancję MethodView dla każdego żądania. Jej konstruktor prosi fabrykę o serwis. Fabryka pobiera sesję bieżącego kontekstu, przekazuje ją do nowej instancji repozytorium i przekazuje repozytorium do nowego serwisu. Widok zachowuje gotowy serwis. Logika nie pobiera zależności z current_app ani db.session.
+WidokiRegistrar przekazuje bezstanową ZaleznosciZadaniaFactory jako argument as_view(). Flask tworzy instancję MethodView dla każdego żądania. Jej konstruktor prosi fabrykę o serwis. Fabryka pobiera sesję bieżącego kontekstu, przekazuje ją do nowej instancji repozytorium i przekazuje repozytorium do nowego serwisu. Widok zachowuje gotowy serwis. Logika nie pobiera zależności z current_app ani db.session.
 
-FabrykaZaleznosciZadania jest miejscem składania obiektów, nie globalnym magazynem serwisów. Może istnieć przez czas życia aplikacji, ale nie przechowuje sesji ani obiektów żądania. Instancje repozytorium, serwisu i widoku są związane z jednym żądaniem. W testach można podać fabrykę zwracającą serwis z repozytorium pamięciowym.
+ZaleznosciZadaniaFactory jest miejscem składania obiektów, nie globalnym magazynem serwisów. Może istnieć przez czas życia aplikacji, ale nie przechowuje sesji ani obiektów żądania. Instancje repozytorium, serwisu i widoku są związane z jednym żądaniem. W testach można podać fabrykę zwracającą serwis z repozytorium pamięciowym.
 
 ## 3. Sekwencja wyświetlenia listy meczów
 
@@ -159,10 +163,10 @@ Projektowana trasa: GET /administracja/mecze, z parametrami id_sezon, id_rozgryw
 sequenceDiagram
     actor U as Uzytkownik
     participant F as Flask
-    participant Z as FabrykaZaleznosciZadania
-    participant W as WidokListyMeczow
-    participant S as SerwisMeczow
-    participant R as RepozytoriumMeczowSQLAlchemy
+    participant Z as ZaleznosciZadaniaFactory
+    participant W as MeczListView
+    participant S as MeczService
+    participant R as MeczSQLAlchemyRepository
     participant K as Sesja SQLAlchemy
     participant B as PostgreSQL
     participant J as Jinja2
@@ -172,9 +176,9 @@ sequenceDiagram
     W->>Z: utworz_serwis_meczow()
     Z->>R: Nowe repozytorium z sesja biezacego kontekstu
     Z->>S: Nowy serwis z repozytorium
-    Z-->>W: SerwisMeczow
+    Z-->>W: MeczService
     F->>W: get()
-    W->>W: FormularzFiltrowMeczow i walidacja
+    W->>W: MeczFilterForm i walidacja
     alt Bledne parametry
         W-->>F: Odpowiedz 400 z informacja o bledzie
     else Poprawne parametry
@@ -216,20 +220,20 @@ Ekrany zespołów, zawodników i diagnostyki będą używały tego samego kierun
 
 ## 5. Powiązanie z plikami i SOLID
 
-| Obiekt | Planowany moduł w src/pilka_reczna/ | Odpowiedzialność |
+| Obiekt | Planowany moduł w src/handball/ | Odpowiedzialność |
 | --- | --- | --- |
-| FabrykaAplikacji | fabryka.py | Konfiguracja i złożenie aplikacji. |
-| Ustawienia | ustawienia.py | Walidowana konfiguracja. |
-| FabrykaZaleznosciZadania | fabryka_zaleznosci.py | Złożenie repozytorium i serwisu dla żądania. |
-| KonfiguratorPolaczenia | infrastruktura/baza/polaczenie.py | Konfiguracja odczytu i integracji cyklu życia połączeń. |
-| RejestratorWidokow | interfejs/rejestracja.py | Rejestracja adresów i klas widoków. |
-| WidokListyMeczow, WidokSzczegolowMeczu | interfejs/administracja/widoki/mecze.py | Adaptacja HTTP. |
-| FormularzFiltrowMeczow | interfejs/administracja/formularze/filtry_meczow.py | Walidacja parametrów i utworzenie FiltryMeczow. |
-| SerwisMeczow | serwisy/mecze.py | Przypadki użycia niezależne od frameworka. |
-| RepozytoriumOdczytuMeczow | kontrakty/mecze.py | Kontrakt odczytu bez metod zapisu. |
-| RepozytoriumMeczowSQLAlchemy | infrastruktura/repozytoria/mecze.py | Zapytania i budowanie typowanego wyniku. |
-| FiltryMeczow, StronaMeczow, PozycjaListyMeczow, SzczegolyMeczu | domena/mecze.py | Typowane dane wejścia i wyjścia. |
-| NieZnalezionoMeczu, BladOdczytuDanych | domena/bledy.py | Błędy niezależne od HTTP i sterownika. |
-| Mecz | infrastruktura/baza/modele/mecze.py | Mapowanie public.mecze. |
+| AplikacjaFactory | app_factory.py | Konfiguracja i złożenie aplikacji. |
+| Ustawienia | settings.py | Walidowana konfiguracja. |
+| ZaleznosciZadaniaFactory | request_dependencies.py | Złożenie repozytorium i serwisu dla żądania. |
+| PolaczenieConfigurator | infrastructure/database/connection.py | Konfiguracja odczytu i integracji cyklu życia połączeń. |
+| WidokiRegistrar | interface/registration.py | Rejestracja adresów i klas widoków. |
+| MeczListView, MeczDetailView | interface/admin/views/match_views.py | Adaptacja HTTP. |
+| MeczFilterForm | interface/admin/forms/match_filters.py | Walidacja parametrów i utworzenie FiltryMeczow. |
+| MeczService | services/match_service.py | Przypadki użycia niezależne od frameworka. |
+| MeczReadRepository | contracts/match_repository.py | Kontrakt odczytu bez metod zapisu. |
+| MeczSQLAlchemyRepository | infrastructure/repositories/match_repository.py | Zapytania i budowanie typowanego wyniku. |
+| FiltryMeczow, StronaMeczow, PozycjaListyMeczow, SzczegolyMeczu | domain/matches.py | Typowane dane wejścia i wyjścia. |
+| NieZnalezionoMeczu, BladOdczytuDanych | domain/errors.py | Błędy niezależne od HTTP i sterownika. |
+| Mecz | infrastructure/database/models/matches.py | Mapowanie public.mecze. |
 
-SRP oddziela HTTP, przypadek użycia i zapytania. DIP realizuje zależność serwisu od Protocol. ISP ogranicza kontrakt do odczytu. LSP wymaga tej samej semantyki błędów i wyników w obu repozytoriach. OCP pozwala dodać inną implementację repozytorium bez zmiany SerwisMeczow. Szczegółowe wymagania pozostają w [CODING_STANDARDS](CODING_STANDARDS.md).
+SRP oddziela HTTP, przypadek użycia i zapytania. DIP realizuje zależność serwisu od Protocol. ISP ogranicza kontrakt do odczytu. LSP wymaga tej samej semantyki błędów i wyników w obu repozytoriach. OCP pozwala dodać inną implementację repozytorium bez zmiany MeczService. Szczegółowe wymagania pozostają w [CODING_STANDARDS](CODING_STANDARDS.md).

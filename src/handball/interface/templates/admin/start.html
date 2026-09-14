@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block tytul %}Start — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Mecze</div>
+<h1>Ostatnie mecze i zarządzanie danymi</h1>
+<p>Najważniejsza część panelu: lista meczów z szybkim filtrowaniem.</p>
+</section>
+<section class="panel">
+<h2>Filtry</h2>
+<div class="panel-body filters">
+<label>Sezon<select><option>Wszystkie</option></select></label>
+<label>Rozgrywki<select><option>Wszystkie</option></select></label>
+<label>Kolejka<select><option>Wszystkie</option></select></label>
+<label>Drużyna<select><option>Wszystkie</option></select></label>
+<label>Status<select><option>Wszystkie</option></select></label>
+<label>Szukaj<input placeholder="mecz, drużyna, hala..."></label>
+</div>
+</section>
+<section class="panel">
+<div class="panel-body">
+<div class="toolbar">
+<div class="left"><a class="btn secondary" href="{{ url_for('administracja.lista_meczow') }}">Pełna lista meczów</a></div>
+<div class="right"><span class="note">Podgląd na stronie startowej dochodzi w kolejnym etapie</span></div>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>ID</th><th>Data</th><th>Godz.</th><th>Rozgrywki</th><th>Kol.</th><th>Gospodarz</th><th>Wynik</th><th>Gość</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td colspan="9" class="note">Podgląd ostatnich meczów na stronie startowej nie został jeszcze wdrożony — pełna lista jest już dostępna pod przyciskiem powyżej.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+{% endblock %}

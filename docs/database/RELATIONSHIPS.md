@@ -50,7 +50,7 @@ Relacja zespoly–mecze przedstawia skrótowo dwa niezależne, opcjonalne FK: go
 
 ## Różnice względem db/schema_postgres.sql
 
-Porównano stan bieżący z [archiwalnym plikiem schema_postgres.sql](schema_postgres_archiwalny.sql) (kopia wcześniejszego projektu bazy z katalogu nadrzędnego, stan 2026-09-10). Ten plik nie jest aktualną definicją całej bazy i nie powinien być wykonywany w celu jej odtworzenia. Poniższa lista jest dokumentacją różnic, nie propozycją migracji.
+Porównano stan bieżący z [archiwalnym plikiem schema_postgres.sql](schema_postgres_archive.sql) (kopia wcześniejszego projektu bazy z katalogu nadrzędnego, stan 2026-09-10). Ten plik nie jest aktualną definicją całej bazy i nie powinien być wykonywany w celu jej odtworzenia. Poniższa lista jest dokumentacją różnic, nie propozycją migracji.
 
 - W pliku SQL jest 27 tabel bez jawnego schematu; public ma obecnie 30 tabel.
 - Nowe względem pliku tabele public: pliki_zrodlowe, rekordy_zrodla, sklady_wersje, sklady_wersje_zawodnicy.

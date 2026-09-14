@@ -11,7 +11,7 @@ Ustal zachowanie użytkownika i kryterium ukończenia konkretnej funkcji. Dla fu
 
 Pracuj jako specjalista Flask, SQLAlchemy i obiektowego Pythona. Widoki implementuj jako MethodView, przypadki użycia jako klasy serwisów, a dostęp do bazy jako repozytoria SQLAlchemy z wąskimi kontraktami. Zależności przekazuj przez konstruktor; stosuj typowane obiekty wejścia i wyniku oraz kryteria SOLID z CODING_STANDARDS.
 
-Zachowaj istniejący schemat. Definiowanie modeli nie upoważnia do create_all(), migracji ani zapisów; operacje na bazie wymagają wyraźnej prośby użytkownika. Oddziel zapytania i interpretację danych od szablonów. Dodawaj tylko strukturę potrzebną funkcji. Obsłuż pusty wynik, brak rekordu i niedostępną bazę jako różne stany. W listach zadbaj o paginację, stabilne sortowanie oraz zachowanie filtrów.
+Zachowaj istniejący schemat. Definiowanie modeli nie upoważnia do create_all(), migracji ani zapisów; operacje na bazie wymagają wyraźnej prośby użytkownika. Oddziel zapytania i interpretację danych od szablonów. Dodawaj tylko strukturę potrzebną funkcji. Obsłuż pusty wynik, brak rekordu i niedostępną bazę jako różne stany. W listach zadbaj o paginację, stabilne sortowanie oraz zachowanie filtrów. Sortowanie na liście z filtrami realizuj przez klikalny nagłówek kolumny (rosnąco/malejąco), nie przez osobne pole w panelu filtrów — patrz [CODING_STANDARDS](../../../docs/CODING_STANDARDS.md), sekcja "Listy z filtrami".
 
 Dla operacji administracyjnej określ, kto może ją wykonać i które dane zmienia. Sprawdź uwierzytelnienie, uprawnienia, walidację i ochronę formularza przed wdrożeniem zapisu. Nie zakładaj, że administracja oznacza edycję wszystkich tabel źródłowych.
 

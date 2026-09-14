@@ -12,7 +12,7 @@ Pracuj w tym katalogu. Materiały w katalogu nadrzędnym służą jako odniesien
 - Wymagania produktu: [docs/PROJECT.md](docs/PROJECT.md). Granice techniczne i decyzje: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Przed tworzeniem struktury lub klas przeczytaj [docs/DIRECTORY_STRUCTURE.md](docs/DIRECTORY_STRUCTURE.md) i właściwy diagram w [docs/UML.md](docs/UML.md). Są projektem do wdrażania etapami, nie opisem gotowego kodu.
 - Przy implementacji i review przeczytaj [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md) oraz odpowiednią część [docs/TECH_STACK.md](docs/TECH_STACK.md).
-- Każdy szablon musi mieć własny MD obok HTML, np. lista.html i lista.md. Dotyczy to też układów, fragmentów i makr. Przed zmianą przeczytaj MD szablonu i aktualizuj go razem ze zmianą jego kontraktu lub powiązań. Zasady i indeks: [docs/TEMPLATES.md](docs/TEMPLATES.md).
+- Każdy szablon musi mieć własny MD obok HTML, np. list.html i list.md. Dotyczy to też układów, fragmentów i makr. Przed zmianą przeczytaj MD szablonu i aktualizuj go razem ze zmianą jego kontraktu lub powiązań. Zasady i indeks: [docs/TEMPLATES.md](docs/TEMPLATES.md).
 - Przy pracy nad administracją przeczytaj [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). Wygląd ma opierać się na `C:\Michal\_ZPRP_PROD\Prototyp\Prototyp_administracja_v6`; przed adaptacją obejrzyj właściwe ekrany prototypu.
 - Przy danych meczowych przeczytaj [docs/DATA.md](docs/DATA.md). Przy wyborze roli przeczytaj [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 - Sprawdź istniejący kod przed projektowaniem nowej struktury. Nie przedstawiaj planowanych funkcji jako gotowych.
@@ -27,7 +27,7 @@ Modele ORM odwzorowują istniejącą bazę. Wybór SQLAlchemy nie upoważnia do 
 
 ## Zasady pracy
 
-- Odpowiadaj po polsku. Wyjątkowo w tym projekcie własne nazwy klas, atrybutów, metod, zmiennych i modułów pisz po polsku, bez znaków diakrytycznych. Zachowuj istniejące nazwy tabel i kolumn. Nazwy API bibliotek i wymagane punkty integracji pozostają oryginalne, np. MethodView, mapped_column, get() i create_app(). Szczegóły: CODING_STANDARDS.
+- Odpowiadaj po polsku. Pliki, katalogi, moduły i pakiety nazywaj po angielsku. Pojęcia domenowe w kodzie, metody, atrybuty i zmienne pozostają polskie, bez znaków diakrytycznych. W klasach stosuj angielską rolę techniczną po nazwie domenowej, np. MeczService, MeczRepository i MeczListView. Zachowuj rzeczywiste nazwy tabel i kolumn oraz oryginalne API bibliotek, np. MethodView, mapped_column, get() i create_app(). Szczegóły i zasady przejścia istniejącego kodu: [CODING_STANDARDS](docs/CODING_STANDARDS.md#język-i-nazewnictwo).
 - Nie dodawaj komentarzy do nowego kodu ani testów. Zachowuj istniejące komentarze. Wyjaśnienia architektury umieszczaj w dokumentacji.
 - Realizuj bieżące zadanie do końca. Rutynowe, odwracalne decyzje podejmuj samodzielnie; pytaj, gdy brak informacji zmienia wymagania lub uniemożliwia poprawne wykonanie.
 - **Nie wykonuj samodzielnie żadnych zmian w bazie. Dopiero wyraźna prośba użytkownika o konkretną zmianę upoważnia do jej wykonania.** Dotyczy to danych, schematu, indeksów, sekwencji, uprawnień, konfiguracji, importów, migracji i funkcji zapisujących dane. Prośba o analizę, naprawę aplikacji lub budowę widoku nie oznacza zgody na zmianę bazy. Nie obchodź tej zasady przez uruchamianie skryptów, aplikacji, testów ani funkcji SQL.

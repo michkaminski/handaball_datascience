@@ -1,6 +1,6 @@
 # Dokumentacja każdego szablonu
 
-Każdy plik szablonu ma własny plik MD obok siebie, z tą samą nazwą bazową: `lista.html` i `lista.md`. Zasada obejmuje strony, układy bazowe, fragmenty dołączane przez include oraz osobne pliki makr. Dla innych rozszerzeń zachowuj jednoznaczną parę, bez dwóch szablonów konkurujących o ten sam MD.
+Każdy plik szablonu ma własny plik MD obok siebie, z tą samą nazwą bazową: `list.html` i `list.md`. Nowe nazwy plików i katalogów są angielskie zgodnie z [CODING_STANDARDS](CODING_STANDARDS.md#język-i-nazewnictwo). Szablony i odpowiadające im MD przeniesiono razem do angielskich ścieżek; indeks poniżej wskazuje aktualne pliki. Zasada obejmuje strony, układy bazowe, fragmenty dołączane przez include oraz osobne pliki makr. Dla innych rozszerzeń zachowuj jednoznaczną parę, bez dwóch szablonów konkurujących o ten sam MD.
 
 Przed zmianą szablonu przeczytaj jego MD. Aktualizuj dokument w tej samej zmianie, gdy zmieniają się przeznaczenie, dane wejściowe, bloki, powiązania, selektory lub sposób użycia. Przy przenoszeniu/zmianie nazwy przenieś również MD i popraw odnośniki; przy usunięciu szablonu usuń lub odpowiednio przenieś jego dokumentację.
 
@@ -17,20 +17,41 @@ MD opisuje aktualny kontrakt i miejsca zmian, a nie dziennik każdej korekty tek
 
 ## Obecne opisy
 
-Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogów, łącznie z planowanym logowaniem. Po etapie 2 cztery z nich mają też rzeczywisty HTML (baza, nawigacja, komunikaty, start); pozostałe siedem to nadal wyłącznie MD i katalogi.
+Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogów, łącznie z planowanym logowaniem. Po etapie 4 sześć z nich ma też rzeczywisty HTML (baza, nawigacja, komunikaty, paginacja, start, matches/list); pozostałe cztery to nadal wyłącznie MD i katalogi.
 
 | Planowany szablon | Dokument | HTML |
 | --- | --- | --- |
-| `baza.html` | [baza.md](../src/pilka_reczna/interfejs/szablony/baza.md) | istnieje |
-| `elementy/nawigacja.html` | [elementy/nawigacja.md](../src/pilka_reczna/interfejs/szablony/elementy/nawigacja.md) | istnieje |
-| `elementy/komunikaty.html` | [elementy/komunikaty.md](../src/pilka_reczna/interfejs/szablony/elementy/komunikaty.md) | istnieje |
-| `elementy/paginacja.html` | [elementy/paginacja.md](../src/pilka_reczna/interfejs/szablony/elementy/paginacja.md) | planowany (etap 4) |
-| `administracja/start.html` | [administracja/start.md](../src/pilka_reczna/interfejs/szablony/administracja/start.md) | istnieje |
-| `administracja/mecze/lista.html` | [administracja/mecze/lista.md](../src/pilka_reczna/interfejs/szablony/administracja/mecze/lista.md) | planowany (etap 4) |
-| `administracja/mecze/szczegoly.html` | [administracja/mecze/szczegoly.md](../src/pilka_reczna/interfejs/szablony/administracja/mecze/szczegoly.md) | planowany (etap 5) |
-| `administracja/logowanie.html` | [administracja/logowanie.md](../src/pilka_reczna/interfejs/szablony/administracja/logowanie.md) | planowany (etap 6) |
-| `bledy/400.html` | [bledy/400.md](../src/pilka_reczna/interfejs/szablony/bledy/400.md) | planowany (etap 4) |
-| `bledy/404.html` | [bledy/404.md](../src/pilka_reczna/interfejs/szablony/bledy/404.md) | planowany (etap 4) |
-| `bledy/503.html` | [bledy/503.md](../src/pilka_reczna/interfejs/szablony/bledy/503.md) | planowany (etap 4) |
+| `base.html` | [base.md](../src/handball/interface/templates/base.md) | istnieje |
+| `partials/navigation.html` | [partials/navigation.md](../src/handball/interface/templates/partials/navigation.md) | istnieje |
+| `partials/messages.html` | [partials/messages.md](../src/handball/interface/templates/partials/messages.md) | istnieje |
+| `partials/pagination.html` | [partials/pagination.md](../src/handball/interface/templates/partials/pagination.md) | istnieje |
+| `admin/start.html` | [admin/start.md](../src/handball/interface/templates/admin/start.md) | istnieje |
+| `admin/matches/list.html` | [admin/matches/list.md](../src/handball/interface/templates/admin/matches/list.md) | istnieje |
+| `admin/matches/detail.html` | [admin/matches/detail.md](../src/handball/interface/templates/admin/matches/detail.md) | planowany (etap 5) |
+| `admin/login.html` | [admin/login.md](../src/handball/interface/templates/admin/login.md) | planowany (etap 6) |
+| `errors/400.html` | [errors/400.md](../src/handball/interface/templates/errors/400.md) | planowany (błędy mapowane na HTTP przez interface/errors.py, ale własny wygląd stron błędów jeszcze nie istnieje — używane są domyślne strony Flaska) |
+| `errors/404.html` | [errors/404.md](../src/handball/interface/templates/errors/404.md) | planowany (jw.) |
+| `errors/503.html` | [errors/503.md](../src/handball/interface/templates/errors/503.md) | planowany (jw.) |
 
-Przyszłe szablony zespołów, zawodników i diagnostyki otrzymają własne MD przy ich konkretnym zaprojektowaniu lub utworzeniu. MD nie są szablonami do renderowania ani zasobami publicznymi; nie wystawiaj ich przez routing i nie umieszczaj w publicznym eksporcie.
+## Wczesne notatki planistyczne dla pozostałych pozycji sidebara
+
+Na wyraźne polecenie użytkownika sidebar (patrz base.md) pokazuje pełne menu prototypu v6, łącznie z pozycjami bez jeszcze istniejącego widoku. Dla każdej z nich powstała wstępna notatka MD — krótsza niż dokumenty szablonów powyżej, bez ustalonego kontraktu danych, bo żaden kod jeszcze nie istnieje. Nie są to zobowiązania co do kształtu przyszłego HTML, tylko punkt startu przy planowaniu.
+
+| Pozycja menu | Prototyp v6 | Notatka |
+| --- | --- | --- |
+| Sezony | seasons.html (placeholder) | [admin/seasons/list.md](../src/handball/interface/templates/admin/seasons/list.md) |
+| Rozgrywki | competitions.html (placeholder) | [admin/competitions/list.md](../src/handball/interface/templates/admin/competitions/list.md) |
+| Drużyny | teams.html (placeholder) | [admin/teams/list.md](../src/handball/interface/templates/admin/teams/list.md) |
+| Zawodnicy | players.html (rzeczywista treść) | [admin/players/list.md](../src/handball/interface/templates/admin/players/list.md) |
+| Składy | squads.html (placeholder) | [admin/rosters/list.md](../src/handball/interface/templates/admin/rosters/list.md) |
+| Tabele | standings.html (placeholder) | [admin/standings/list.md](../src/handball/interface/templates/admin/standings/list.md) |
+| Strzelcy | scorers.html (placeholder) | [admin/scorers/list.md](../src/handball/interface/templates/admin/scorers/list.md) |
+| Hale | halls.html (placeholder) | [admin/venues/list.md](../src/handball/interface/templates/admin/venues/list.md) |
+| Sędziowie | referees.html (placeholder) | [admin/referees/list.md](../src/handball/interface/templates/admin/referees/list.md) |
+| Import danych, Historia importów, Eksport danych | imports.html (placeholder, 1 strona dla 3 linków) | [admin/import/panel.md](../src/handball/interface/templates/admin/import/panel.md) |
+| Anomalie danych, Walidacja danych | quality.html (rzeczywista treść, 1 strona dla 2 linków) | [admin/quality/panel.md](../src/handball/interface/templates/admin/quality/panel.md) |
+| Logi aplikacji | logs.html (placeholder) | [admin/logs/list.md](../src/handball/interface/templates/admin/logs/list.md) |
+
+Prototyp v6 sam w sobie jest placeholderem ("Przykładowa strona administracyjna") dla większości tych ekranów — tylko `players.html` i `quality.html` mają rzeczywistą treść (filtry, kolumny, przykładowe dane) do adaptacji. Nazwy plików/katalogów w tabeli są robocze; potwierdź je przy faktycznym projektowaniu.
+
+Przyszłe szablony zespołów, zawodników i diagnostyki otrzymają pełne MD (z ustalonym kontraktem) przy ich konkretnym zaprojektowaniu lub utworzeniu — powyższe notatki to punkt startu, nie gotowy kontrakt. MD nie są szablonami do renderowania ani zasobami publicznymi; nie wystawiaj ich przez routing i nie umieszczaj w publicznym eksporcie.

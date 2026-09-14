@@ -10,7 +10,7 @@ Katalog jest dostępny. Sprawdzono listę plików i README; nie przeprowadzono j
 
 Według README prototypu v6 najważniejsza jest tabela meczów, nagłówki i filtry są zwarte, statystyki mają formę małych pigułek, a baner i górne menu mają szerokość reszty strony. Przy implementacji trzeba obejrzeć właściwe ekrany i zachować ich układ, proporcje, typografię, kolory, tabele, filtry i nawigację. Nie projektować administracji od nowa bez polecenia użytkownika.
 
-Prototyp jest wzorcem wizualnym. Dane przykładowe i przyciski edycji nie definiują uprawnień ani nie oznaczają zgody na zapis w bazie. Kod backendu podlega standardom obiektowym, SOLID i polskiemu nazewnictwu tego projektu. Docelowa nazwa aplikacji pozostaje Handball DataScience.
+Prototyp jest wzorcem wizualnym. Dane przykładowe i przyciski edycji nie definiują uprawnień ani nie oznaczają zgody na zapis w bazie. Kod backendu podlega standardom obiektowym, SOLID i [konwencji nazewnictwa](CODING_STANDARDS.md#język-i-nazewnictwo): angielskie pliki i katalogi, polska domena oraz angielskie role klas. Nazwy plików i klas w etapach uwzględniają migrację z 2026-09-14. Docelowa nazwa aplikacji pozostaje Handball DataScience.
 
 Pliki źródłowego prototypu traktuj jako materiał do odczytu. Adaptowane szablony i zasoby umieszczaj w handball_datascience. Jeśli prototyp będzie niedostępny w innym środowisku, zgłoś brak źródła przed odtwarzaniem wyglądu z domysłów.
 
@@ -20,10 +20,10 @@ Wszystkie poniższe etapy są planowane. Kryteria określają moment ukończenia
 
 | Etap | Zakres | Kryterium ukończenia |
 | --- | --- | --- |
-| 1. Obiektowy szkielet Flaska | uv, pyproject.toml, uv.lock, FabrykaAplikacji, Ustawienia, Blueprints, Ruff, mypy i pytest | Aplikacja startuje lokalnie, konfiguracja jest walidowana, podstawowe kontrole przechodzą; start nie zmienia bazy. |
+| 1. Obiektowy szkielet Flaska | uv, pyproject.toml, uv.lock, AplikacjaFactory, Ustawienia, Blueprints, Ruff, mypy i pytest | Aplikacja startuje lokalnie, konfiguracja jest walidowana, podstawowe kontrole przechodzą; start nie zmienia bazy. |
 | 2. Układ administracji | Obejrzenie index.html i matches.html prototypu, adaptacja wspólnego szablonu Jinja2 i zasobów CSS/JS | Układ odpowiada v6, nawigacja i podstawowe stany działają, wygląd sprawdzono w przeglądarce także na wąskim ekranie. |
 | 3. Odczyt przez SQLAlchemy | Modele potrzebne liście meczów, kontrakt repozytorium, implementacja SQLAlchemy, sesja READ ONLY | Pobranie danych działa z istniejącym schematem, a cykl życia sesji i ochrona przed zapisem są zweryfikowane bez modyfikowania bazy. |
-| 4. Lista meczów | SerwisMeczow, widok MethodView, filtry sezonu/rozgrywek/etapu/kolejki, paginacja i sortowanie | Lista używa rzeczywistych danych, zachowuje filtry i rozróżnia brak danych, pusty wynik i błąd połączenia. |
+| 4. Lista meczów | MeczService, widok MethodView, filtry sezonu/rozgrywek/etapu/kolejki, paginacja i sortowanie | Lista używa rzeczywistych danych, zachowuje filtry i rozróżnia brak danych, pusty wynik i błąd połączenia. |
 | 5. Szczegóły meczu | Adaptacja match_detail.html, zespoły, wynik, skład i dostępne statystyki | Potwierdzono interpretację wariantów wyniku i zamiana; niepełne dane są widoczne, a agregacje nie mnożą wpisów przez JOIN. |
 | 6. Dostęp administratora | Ustalenie źródła kont i ról, Flask-Login, kontrola dostępu | Chronione widoki wymagają właściwych uprawnień; sposób logowania jest przetestowany. Przygotować przed udostępnieniem panelu innym użytkownikom. |
 | 7. Pozostałe widoki odczytu | Kolejno uzgodnione ekrany drużyn, zawodników, tabel oraz jakości/importów/logów, według prototypu | Każdy ekran ma potwierdzone mapowanie danych, testy zachowania i zgodny wygląd. |

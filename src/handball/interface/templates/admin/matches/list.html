@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block tytul %}Mecze — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Dane › Mecze</div>
+<h1>Mecze</h1>
+<p>Zwarta lista meczów. Tabela jest głównym elementem strony.</p>
+</section>
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body filters" method="get">
+<label>Sezon{{ formularz.id_sezon() }}</label>
+<label>Rozgrywki{{ formularz.rozgrywki() }}</label>
+<label>Hala{{ formularz.id_hala() }}</label>
+<label>Drużyna{{ formularz.druzyna(placeholder="nazwa drużyny...") }}</label>
+<label>Data{{ formularz.data_meczu() }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+</form>
+</section>
+<section class="panel">
+<div class="panel-body">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>
+<a href="{{ url_for(request.endpoint, **dict(request.args, sortowanie=('data' if filtry.sortowanie == '-data' else '-data'), strona=1)) }}">
+Data {{ "▼" if filtry.sortowanie == "-data" else "▲" }}
+</a>
+</th>
+<th>Godz.</th>
+<th>Sezon</th>
+<th>Rozgrywki</th>
+<th>Gospodarz</th>
+<th>Wynik</th>
+<th>Gość</th>
+<th>Hala</th>
+</tr>
+</thead>
+<tbody>
+{% for pozycja in strona.pozycje %}
+<tr>
+<td>{{ pozycja.id_mecz }}</td>
+<td>{{ pozycja.termin.strftime("%d.%m.%Y") if pozycja.termin else "—" }}</td>
+<td>{{ pozycja.termin.strftime("%H:%M") if pozycja.termin else "—" }}</td>
+<td>{{ pozycja.sezon or "—" }}</td>
+<td>{{ pozycja.rozgrywki or "—" }}</td>
+<td>{{ pozycja.gospodarz or "—" }}</td>
+<td><span class="score">{{ pozycja.wynik }}</span></td>
+<td>{{ pozycja.gosc or "—" }}</td>
+<td>{{ pozycja.hala or "—" }}</td>
+</tr>
+{% else %}
+<tr><td colspan="9" class="note">Brak meczów spełniających wybrane filtry.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% include "partials/pagination.html" %}
+</div>
+</section>
+{% endblock %}

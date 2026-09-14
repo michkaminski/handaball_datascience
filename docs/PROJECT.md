@@ -10,7 +10,7 @@
 - Flask obsługuje stronę oraz administrację.
 - Wygląd administracji opieramy na `C:\Michal\_ZPRP_PROD\Prototyp\Prototyp_administracja_v6`. Szczegóły wzorca i kolejność prac: [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md).
 - Cały nowy kod aplikacyjny powstaje obiektowo, zgodnie z SOLID, na poziomie doświadczonego specjalisty Flask i obiektowego Pythona.
-- Własne nazwy w nowym kodzie tego projektu będą po polsku, bez znaków diakrytycznych, spójnie z polskimi nazwami tabel i kolumn. API bibliotek zachowuje oryginalne nazwy.
+- Pliki, katalogi, moduły i pakiety nazywamy po angielsku. Pojęcia domenowe, metody i zmienne pozostają polskie bez znaków diakrytycznych, a klasy otrzymują angielską rolę po nazwie domenowej, np. MeczService i MeczRepository. API bibliotek i rzeczywiste nazwy bazy pozostają oryginalne. Szczegóły: [CODING_STANDARDS](CODING_STANDARDS.md#język-i-nazewnictwo).
 - Przyjęto SQLAlchemy 2.0 jako ORM. Pełny wybór technologii: [TECH_STACK](TECH_STACK.md).
 - Docelowa publikacja zewnętrzna wykorzysta pliki HTML, JSON i JavaScript.
 - Aktualna praca dotyczy przygotowania projektu do pracy z AI; implementacja Flaska jest kolejnym etapem.

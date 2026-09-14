@@ -1,0 +1,799 @@
+<title>Flask od kuchni</title>
+<style>
+  :root {
+    --paper: #eef2f7;
+    --panel: #ffffff;
+    --panel-2: #e8edf3;
+    --ink: #12202f;
+    --muted: #56697c;
+    --line: #d5dee7;
+    --accent: #cf5a24;
+    --accent-ink: #7a3413;
+    --accent-soft: #f7e3d2;
+    --good: #2f7e5e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0b141e;
+      --panel: #121d29;
+      --panel-2: #17222f;
+      --ink: #e8edf3;
+      --muted: #93a6b8;
+      --line: #263341;
+      --accent: #f0894c;
+      --accent-ink: #ffd7b8;
+      --accent-soft: #3a2216;
+      --good: #63c79a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0b141e;
+    --panel: #121d29;
+    --panel-2: #17222f;
+    --ink: #e8edf3;
+    --muted: #93a6b8;
+    --line: #263341;
+    --accent: #f0894c;
+    --accent-ink: #ffd7b8;
+    --accent-soft: #3a2216;
+    --good: #63c79a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Public Sans", system-ui, sans-serif;
+    line-height: 1.55;
+    padding: clamp(20px, 4vw, 56px) 0;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(36px, 6vw, 64px);
+  }
+
+  h1, h2, h3 {
+    font-family: "Fraunces", Georgia, serif;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  p { margin: 0; }
+  p + p { margin-top: 0.7em; }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  /* ---------- hero ---------- */
+  .hero { display: flex; flex-direction: column; gap: 14px; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  h1 { font-size: clamp(2rem, 5vw, 2.7rem); font-weight: 600; }
+  .lede { font-size: 1.08rem; color: var(--muted); max-width: 62ch; }
+
+  .flow {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 4px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.86rem;
+  }
+  .flow .step {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 13px;
+    white-space: nowrap;
+  }
+  .flow .arrow { color: var(--accent); font-weight: 600; padding: 0 2px; }
+
+  /* ---------- sections ---------- */
+  section { display: flex; flex-direction: column; gap: 16px; }
+  section > h2 { font-size: 1.5rem; font-weight: 600; }
+  .section-lede { color: var(--muted); max-width: 66ch; }
+
+  /* ---------- layer cards ---------- */
+  .layers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+  }
+  .layer {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .layer .role {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  .layer h3 { font-size: 1.15rem; font-weight: 600; }
+  .layer .klasa {
+    display: inline-block;
+    width: fit-content;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.82rem;
+    color: var(--ink);
+  }
+  .layer p { font-size: 0.94rem; color: var(--muted); }
+
+  /* ---------- diagram figure ---------- */
+  figure {
+    margin: 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    overflow-x: auto;
+  }
+  figure pre.mermaid { margin: 0; }
+  figcaption {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+    font-size: 0.92rem;
+    color: var(--muted);
+  }
+
+  /* ---------- numbered steps ---------- */
+  ol.steps {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  ol.steps li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 12px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before {
+    content: counter(step);
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 500;
+    color: var(--accent);
+    font-size: 0.95rem;
+  }
+  ol.steps .who {
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    border-radius: 5px;
+    padding: 0 5px;
+    font-size: 0.86rem;
+  }
+
+  /* ---------- glossary ---------- */
+  .glossary {
+    display: grid;
+    grid-template-columns: minmax(140px, 200px) 1fr;
+    gap: 10px 18px;
+  }
+  .glossary dt {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .glossary dd {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  @media (max-width: 560px) {
+    .glossary { grid-template-columns: 1fr; }
+    .glossary dd { margin-bottom: 4px; }
+  }
+
+  footer {
+    color: var(--muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+
+  .note {
+    background: var(--panel-2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 0.94rem;
+    color: var(--muted);
+  }
+  .note b { color: var(--ink); }
+
+  /* ---------- code trail ---------- */
+  .code-trail {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .code-trail::before {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--line);
+  }
+  .code-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .code-step .step-no {
+    position: relative;
+    z-index: 1;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 2px solid var(--accent);
+    color: var(--accent-ink);
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .code-step.jump .step-no {
+    border-style: dashed;
+    background: var(--accent-soft);
+  }
+  .code-body {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .code-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+  }
+  .file-chip {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 2px 7px;
+    color: var(--muted);
+  }
+  .func-chip {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--accent-soft);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 2px 7px;
+    color: var(--accent-ink);
+    font-weight: 500;
+  }
+  .code-why { font-size: 0.9rem; color: var(--muted); }
+  pre.code {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--ink);
+    margin: 2px 0 0;
+  }
+  pre.code .call {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">Handball DataScience — pod maską</div>
+    <h1>Flask od kuchni</h1>
+    <p class="lede">Kiedy otwierasz stronę meczów, przeglądarka wysyła jedno krótkie zapytanie. Zanim wróci jako tabela wyników, przechodzi przez cztery pary rąk — każda robi jedną rzecz i podaje dalej.</p>
+    <div class="flow">
+      <span class="step">Przeglądarka</span><span class="arrow">→</span>
+      <span class="step">Widok</span><span class="arrow">→</span>
+      <span class="step">Serwis</span><span class="arrow">→</span>
+      <span class="step">Repozytorium</span><span class="arrow">→</span>
+      <span class="step">Baza danych</span>
+    </div>
+  </div>
+
+  <section>
+    <h2>Cztery warstwy</h2>
+    <p class="section-lede">Nikt nie robi wszystkiego naraz. Każda warstwa rozmawia tylko z sąsiadem — jak w kuchni restauracji.</p>
+    <div class="layers">
+      <div class="layer">
+        <span class="role">Widok — kelner</span>
+        <h3>Przyjmuje zamówienie</h3>
+        <span class="klasa">MeczListView</span>
+        <p>Odbiera adres z przeglądarki i sprawdza, czy parametry mają sens (sezon, drużyna, data). Nie wie nic o bazie danych.</p>
+      </div>
+      <div class="layer">
+        <span class="role">Serwis — szef kuchni</span>
+        <h3>Wie, co zrobić</h3>
+        <span class="klasa">MeczService</span>
+        <p>Zna przepis na "listę meczów", ale sam nigdy nie wchodzi do spiżarni ani nie pisze zapytań SQL.</p>
+      </div>
+      <div class="layer">
+        <span class="role">Repozytorium — magazynier</span>
+        <h3>Jedyny wpuszczony do bazy</h3>
+        <span class="klasa">MeczSQLAlchemyRepository</span>
+        <p>Buduje zapytanie SQL i przynosi dokładnie te dane, o które poproszono. Nic więcej, nic mniej.</p>
+      </div>
+      <div class="layer">
+        <span class="role">Baza danych — spiżarnia</span>
+        <h3>Prawdziwe dane</h3>
+        <span class="klasa">PostgreSQL "zprp"</span>
+        <p>37 734 mecze, sezony od 2007/2008, drużyny i rozgrywki. Tylko do odczytu — nic stąd nie znika ani się nie zmienia.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Jak to działa — te same warstwy, prawdziwe nazwy</h2>
+    <p class="section-lede">Te same cztery warstwy co wyżej, ale z rzeczywistymi klasami z kodu i tym, co faktycznie płynie między nimi.</p>
+    <figure>
+<pre class="mermaid">
+flowchart LR
+    Przegladarka(["Przeglądarka"])
+
+    subgraph SH["Warstwa HTTP"]
+        Widok["MeczListView"]
+        Formularz["MeczFilterForm"]
+    end
+
+    subgraph SL["Warstwa logiki"]
+        Fabryka["ZaleznosciZadaniaFactory"]
+        SerwisM["MeczService"]
+        SerwisS["SlownikiMeczowService"]
+    end
+
+    subgraph SD["Warstwa danych"]
+        RepoM["MeczSQLAlchemyRepository"]
+        RepoS["Repozytoria słowników ×3"]
+    end
+
+    PG[("PostgreSQL zprp")]
+    Szablon["Szablon list.html"]
+
+    Przegladarka -->|"GET /administracja/mecze"| Widok
+    Widok --> Formularz
+    Formularz -->|"FiltryMeczow"| Widok
+    Widok --> Fabryka
+    Fabryka --> SerwisM
+    Fabryka --> SerwisS
+    SerwisM --> RepoM
+    SerwisS --> RepoS
+    RepoM --> PG
+    RepoS --> PG
+    PG -->|"wiersze"| RepoM
+    RepoM -->|"StronaMeczow"| SerwisM
+    SerwisM -->|"StronaMeczow"| Widok
+    Widok --> Szablon
+    Szablon -->|"HTML"| Przegladarka
+</pre>
+      <figcaption>"Repozytoria słowników ×3" to skrót na trzy prawie identyczne klasy: repozytoria sezonów, rozgrywek i hal — każde tego samego kształtu co repozytorium meczów, tylko dla innej tabeli.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Kto od kogo zależy</h2>
+    <p class="section-lede">Strzałka pokazuje, kto o co pyta. Grot wskazuje tego, kto odpowiada.</p>
+    <figure>
+<pre class="mermaid">
+classDiagram
+    class MeczListView {
+        +get()
+    }
+    class MeczFilterForm {
+        +do_filtrow() FiltryMeczow
+    }
+    class ZaleznosciZadaniaFactory {
+        +utworz_serwis_meczow() MeczService
+        +utworz_serwis_slownikow() SlownikiMeczowService
+    }
+    class MeczService {
+        +pobierz_liste(filtry) StronaMeczow
+    }
+    class SlownikiMeczowService {
+        +pobierz_opcje(id_sezon) OpcjeFiltrowMeczow
+    }
+    class FiltryMeczow {
+        <<dane wejściowe>>
+    }
+    class StronaMeczow {
+        <<dane wyjściowe>>
+    }
+    class MeczReadRepository {
+        <<interfejs>>
+        +pobierz_liste(filtry)
+    }
+    class MeczSQLAlchemyRepository {
+        +pobierz_liste(filtry) StronaMeczow
+    }
+    class RepozytoriumOdczytuSlownikow {
+        <<interfejs, ×3>>
+        +pobierz_wszystkie()
+    }
+    class RepozytoriumSlownikowSQLAlchemy {
+        <<×3 analogiczne>>
+        +pobierz_wszystkie()
+    }
+    class ModeleORM {
+        <<modele ORM>>
+        Mecz, Sezon, Rozgrywki
+        ZespolSezon, Hala
+    }
+    class PostgreSQL {
+        <<baza danych zprp>>
+    }
+
+    MeczListView --> MeczFilterForm : waliduje wejście
+    MeczFilterForm ..> FiltryMeczow : tworzy
+    MeczListView --> ZaleznosciZadaniaFactory : prosi o serwisy
+    ZaleznosciZadaniaFactory ..> MeczService : tworzy
+    ZaleznosciZadaniaFactory ..> SlownikiMeczowService : tworzy
+    MeczService --> MeczReadRepository : zna tylko obietnicę
+    MeczSQLAlchemyRepository ..|> MeczReadRepository : spełnia
+    MeczSQLAlchemyRepository ..> StronaMeczow : zwraca
+    SlownikiMeczowService --> RepozytoriumOdczytuSlownikow : zna tylko obietnicę
+    RepozytoriumSlownikowSQLAlchemy ..|> RepozytoriumOdczytuSlownikow : spełnia
+    MeczSQLAlchemyRepository --> ModeleORM : buduje zapytania
+    RepozytoriumSlownikowSQLAlchemy --> ModeleORM : buduje zapytania
+    ModeleORM --> PostgreSQL : mapuje tabele
+</pre>
+      <figcaption>Serwis zna tylko <b>obietnicę</b> repozytorium (interfejs <code>MeczReadRepository</code>), nie jego konkretną wersję SQL-ową — dzięki temu w testach można podstawić fałszywe repozytorium bez ruszania serwisu. Ten sam wzorzec powtarza się dla sezonów, rozgrywek i hal (stąd "×3" — to trzy osobne, prawie identyczne pary interface/implementacja, nie jedna klasa).</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Przykład: ładowanie listy meczów</h2>
+    <p class="section-lede">Klikasz "Mecze", wybierasz sezon 2026/2027. Oto co dzieje się zanim zobaczysz tabelę.</p>
+    <ol class="steps">
+      <li><span>Przeglądarka wysyła adres <code>/administracja/mecze?id_sezon=195</code>.</span></li>
+      <li><span>Flask kieruje go do <span class="who">MeczListView</span>.</span></li>
+      <li><span><span class="who">MeczFilterForm</span> sprawdza parametry — tu wyłapuje np. źle wpisaną datę.</span></li>
+      <li><span>Widok prosi <span class="who">ZaleznosciZadaniaFactory</span> o gotowy serwis.</span></li>
+      <li><span><span class="who">MeczService</span> przekazuje filtry do repozytorium.</span></li>
+      <li><span><span class="who">MeczSQLAlchemyRepository</span> pyta bazę <code>zprp</code> — tylko do odczytu.</span></li>
+      <li><span>Wynik wraca jako gotowy obiekt <code>StronaMeczow</code>, bez surowego SQL-a w widoku.</span></li>
+      <li><span>Szablon Jinja2 (<code>list.html</code>) zamienia dane w tabelę HTML, którą widzisz na ekranie.</span></li>
+    </ol>
+    <figure>
+<pre class="mermaid">
+sequenceDiagram
+    actor U as Użytkownik
+    participant P as Przeglądarka
+    participant W as MeczListView
+    participant F as MeczFilterForm
+    participant Z as ZaleznosciZadaniaFactory
+    participant S as MeczService
+    participant R as MeczSQLAlchemyRepository
+    participant B as PostgreSQL zprp
+    participant J as Szablon Jinja2
+
+    U->>P: klika "Mecze", sezon 2026/2027
+    P->>W: GET /administracja/mecze?id_sezon=195
+    W->>F: sprawdź parametry z adresu
+    F-->>W: filtry poprawne
+    W->>Z: daj gotowy serwis meczów
+    Z-->>W: MeczService
+    W->>S: pobierz_liste(filtry)
+    S->>R: pobierz_liste(filtry)
+    R->>B: SELECT ... WHERE id_sezon = 195
+    B-->>R: wiersze meczów
+    R-->>S: StronaMeczow
+    S-->>W: StronaMeczow
+    W->>J: renderuj list.html
+    J-->>W: gotowy HTML
+    W-->>P: odpowiedź 200
+    P-->>U: widzi tabelę meczów
+</pre>
+      <figcaption>Każda strzałka w lewo to <b>pytanie</b>, każda w prawo (przerywana) to <b>odpowiedź</b>. Baza danych odzywa się dokładnie raz — resztę pracy wykonują warstwy pośrednie.</figcaption>
+    </figure>
+    <div class="note"><b>Dlaczego tyle warstw?</b> Gdyby widok pytał bazę bezpośrednio, każda zmiana w bazie wymagałaby grzebania w kodzie strony. Podział na warstwy pozwala zmieniać jedną rzecz, nie dotykając reszty.</div>
+  </section>
+
+  <section>
+    <h2>Ten sam przykład, linijka po linijce w kodzie</h2>
+    <p class="section-lede">Wyżej był obrazek. Tu jest dokładnie to samo, ale plik po pliku: co się wywołuje, dokąd to prowadzi i po co. Podświetlona linijka to wywołanie, które przenosi nas do kolejnego kroku.</p>
+
+    <div class="code-trail">
+
+      <div class="code-step">
+        <span class="step-no">1</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">interface/admin/__init__.py</span>
+            <span class="func-chip">utworz_blueprint_administracji()</span>
+          </div>
+          <p class="code-why">Po co: mówi Flaskowi, że adres <code>/administracja/mecze</code> ma obsłużyć klasa <code>MeczListView</code>. To dzieje się raz, przy starcie aplikacji.</p>
+          <pre class="code">blueprint.add_url_rule(
+    "/mecze",
+    <span class="call">view_func=MeczListView.as_view("lista_meczow", fabryka_zaleznosci)</span>,
+)</pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">2</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">interface/admin/views/match_views.py</span>
+            <span class="func-chip">MeczListView.get()</span>
+          </div>
+          <p class="code-why">Po co: to pierwsza linijka, która faktycznie się wykonuje po kliknięciu. Czyta sezon z adresu i prosi o listy do rozwijanych filtrów.</p>
+          <pre class="code">def get(self) -> str:
+    id_sezon_wybrany = request.args.get("id_sezon", type=int)
+    serwis_slownikow = <span class="call">self._fabryka_zaleznosci.utworz_serwis_slownikow()</span>
+    opcje = <span class="call">serwis_slownikow.pobierz_opcje(id_sezon_wybrany)</span></pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">3</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">request_dependencies.py</span>
+            <span class="func-chip">ZaleznosciZadaniaFactory.utworz_serwis_slownikow()</span>
+          </div>
+          <p class="code-why">Po co: składa jeden serwis z trzech repozytoriów (sezony, rozgrywki, hale). Widok nie musi wiedzieć, że są trzy.</p>
+          <pre class="code">def utworz_serwis_slownikow(self) -> SlownikiMeczowService:
+    <span class="call">return SlownikiMeczowService(
+        self._fabryka_repozytorium_sezonow(),
+        self._fabryka_repozytorium_rozgrywek(),
+        self._fabryka_repozytorium_hal(),
+    )</span></pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">4</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">services/match_dictionary_service.py</span>
+            <span class="func-chip">SlownikiMeczowService.pobierz_opcje()</span>
+          </div>
+          <p class="code-why">Po co: pyta bazę o nazwy sezonów, rozgrywek i hal do rozwijanych list filtrów — jeszcze przed wczytaniem samych meczów.</p>
+          <pre class="code">def pobierz_opcje(self, id_sezon: int | None) -> OpcjeFiltrowMeczow:
+    return OpcjeFiltrowMeczow(
+        sezony=self._repozytorium_sezonow.pobierz_wszystkie(),
+        rozgrywki=self._repozytorium_rozgrywek.pobierz_nazwy(id_sezon),
+        hale=self._repozytorium_hal.pobierz_wszystkie(),
+    )</pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">5</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">interface/admin/views/match_views.py</span>
+            <span class="func-chip">MeczListView.get() — dalszy ciąg</span>
+          </div>
+          <p class="code-why">Po co: wypełnia rozwijane listy nazwami z kroku 4, sprawdza czy przesłane parametry są poprawne i zamienia je na obiekt filtrów.</p>
+          <pre class="code">formularz = MeczFilterForm(request.args)
+formularz.id_sezon.choices = [("", "Wszystkie")] + [
+    (str(o.wartosc), o.etykieta) for o in opcje.sezony
+]
+# analogicznie: formularz.rozgrywki.choices, formularz.id_hala.choices
+
+if not formularz.validate():
+    abort(400, description=str(formularz.errors))
+
+filtry = <span class="call">formularz.do_filtrow()</span></pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">6</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">interface/admin/forms/match_filters.py</span>
+            <span class="func-chip">MeczFilterForm.do_filtrow()</span>
+          </div>
+          <p class="code-why">Po co: zamienia surowe teksty z adresu (np. "2026-01") na gotowy, typowany obiekt <code>FiltryMeczow</code> — tu np. data trafia przez <code>zakres_z_czesciowej_daty()</code>.</p>
+          <pre class="code">def do_filtrow(self) -> FiltryMeczow:
+    data_od = data_do = None
+    if self.data_meczu.data:
+        data_od, data_do = zakres_z_czesciowej_daty(self.data_meczu.data)
+
+    return FiltryMeczow(
+        id_sezon=int(self.id_sezon.data) if self.id_sezon.data else None,
+        rozgrywki=self.rozgrywki.data or None,
+        szukaj_druzyny=self.druzyna.data or None,
+        data_od=data_od,
+        data_do=data_do,
+        sortowanie=self.sortowanie.data or "data",
+        # i pozostałe pola: id_hala, strona, rozmiar_strony
+    )</pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">7</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">interface/admin/views/match_views.py</span>
+            <span class="func-chip">MeczListView.get() — dalszy ciąg</span>
+          </div>
+          <p class="code-why">Po co: mając gotowe filtry, widok prosi o właściwy serwis meczów i przekazuje mu filtry.</p>
+          <pre class="code">serwis = <span class="call">self._fabryka_zaleznosci.utworz_serwis_meczow()</span>
+strona = <span class="call">serwis.pobierz_liste(filtry)</span></pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">8</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">request_dependencies.py</span>
+            <span class="func-chip">ZaleznosciZadaniaFactory.utworz_serwis_meczow()</span>
+          </div>
+          <p class="code-why">Po co: łączy serwis z konkretnym repozytorium SQL-owym. To jedyne miejsce, które o tym łączeniu wie.</p>
+          <pre class="code">def utworz_serwis_meczow(self) -> MeczService:
+    <span class="call">return MeczService(self._fabryka_repozytorium_meczow())</span></pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">9</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">services/match_service.py</span>
+            <span class="func-chip">MeczService.pobierz_liste()</span>
+          </div>
+          <p class="code-why">Po co: to cały serwis — na razie tylko przekazuje filtry dalej. Miejsce gotowe na przyszłą logikę (np. reguły biznesowe), której jeszcze nie potrzeba.</p>
+          <pre class="code">def pobierz_liste(self, filtry: FiltryMeczow) -> StronaMeczow:
+    <span class="call">return self._repozytorium.pobierz_liste(filtry)</span></pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">10</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">infrastructure/repositories/match_repository.py</span>
+            <span class="func-chip">MeczSQLAlchemyRepository._pobierz_liste()</span>
+          </div>
+          <p class="code-why">Po co: jedyne miejsce z prawdziwym SQL-em. Dokłada warunek do zapytania tylko dla filtrów, które faktycznie ustawiono.</p>
+          <pre class="code">zapytanie = (
+    select(Mecz, Sezon.nazwa, Rozgrywki.nazwa, gospodarz.nazwa, gosc.nazwa, Hala.nazwa)
+    .join(Sezon, Sezon.id == Mecz.id_sezon)
+    .join(Rozgrywki, Rozgrywki.id == Mecz.id_rozgrywki)
+    # ...oraz złączenia z drużynami i halą
+)
+
+if filtry.id_sezon is not None:
+    zapytanie = zapytanie.where(Mecz.id_sezon == filtry.id_sezon)
+if filtry.rozgrywki:
+    zapytanie = zapytanie.where(Rozgrywki.nazwa == filtry.rozgrywki)
+# ...oraz filtr hali, drużyny, zakresu dat, sortowanie, paginacja
+
+wiersze = <span class="call">self._sesja.execute(zapytanie).all()</span>
+return StronaMeczow(pozycje=[...], liczba_wszystkich=..., strona=filtry.strona, rozmiar_strony=filtry.rozmiar_strony)</pre>
+        </div>
+      </div>
+
+      <div class="code-step">
+        <span class="step-no">11</span>
+        <div class="code-body">
+          <div class="code-head">
+            <span class="file-chip">interface/admin/views/match_views.py</span>
+            <span class="func-chip">MeczListView.get() — koniec</span>
+          </div>
+          <p class="code-why">Po co: przekazuje gotowe dane do szablonu HTML. Widok kończy swoją pracę — resztę robi Jinja2.</p>
+          <pre class="code"><span class="call">return render_template(
+    "admin/matches/list.html",
+    sekcja_aktywna="mecze",
+    strona=strona,
+    filtry=filtry,
+    opcje=opcje,
+    formularz=formularz,
+)</span></pre>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>Co z czego powstaje</h2>
+    <p class="section-lede">Kod i wywołania widziałeś wyżej. Tu jest to samo z innej strony: same dane, przemiana po przemianie — co jest wynikiem czego i co dokąd trafia.</p>
+    <figure>
+<pre class="mermaid">
+flowchart TD
+    A["Adres w przeglądarce\n?id_sezon=195"]
+    B["MeczFilterForm\nsurowe pola z adresu"]
+    C["FiltryMeczow\nid_sezon=195, sortowanie='data', strona=1"]
+    D["Zapytanie SQL\nSELECT ... WHERE id_sezon = 195"]
+    E["Wiersze z Postgres\n1817 pasujących wierszy"]
+    F["lista PozycjaListyMeczow\n20 obiektów: id_mecz, termin, gospodarz..."]
+    G["StronaMeczow\npozycje + liczba_wszystkich = 1817"]
+    H["HTML z list.html\ntabela + „Wyniki 1–20 z 1817”"]
+
+    A -->|"MeczListView czyta"| B
+    B -->|"do_filtrow()"| C
+    C -->|"repozytorium buduje"| D
+    D -->|"baza wykonuje"| E
+    E -->|"mapuje wiersz na obiekt"| F
+    F -->|"pakuje z licznikiem wyników"| G
+    G -->|"Jinja2 renderuje"| H
+</pre>
+      <figcaption>Każda strzałka to jedna przemiana danych — z surowego tekstu w adresie do gotowej tabeli HTML. Liczby (195, 1817, 20) to prawdziwe wartości z bazy <code>zprp</code> dla sezonu 2026/2027, nie przykładowe.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Kilka słów, które warto znać</h2>
+    <dl class="glossary">
+      <dt>MethodView</dt>
+      <dd>Klasa Flaska, która zamienia adres URL na wywołanie metody Pythona, np. <code>get()</code>.</dd>
+      <dt>ORM</dt>
+      <dd>Tłumaczy wiersze tabeli SQL na zwykłe obiekty Pythona — tu: SQLAlchemy zamienia wiersz tabeli <code>mecze</code> na obiekt <code>Mecz</code>.</dd>
+      <dt>Repozytorium</dt>
+      <dd>Jedyne miejsce w kodzie, które "rozmawia" z bazą danych.</dd>
+      <dt>Serwis</dt>
+      <dd>Miejsce na logikę — co zrobić z danymi — niezależne od Flaska i od bazy.</dd>
+      <dt>Blueprint</dt>
+      <dd>Sposób grupowania powiązanych adresów URL we Flasku (tu: wszystko pod <code>/administracja</code>).</dd>
+      <dt>Jinja2</dt>
+      <dd>Silnik szablonów, który wypełnia gotowy HTML danymi z serwisu.</dd>
+    </dl>
+  </section>
+
+  <footer>Na podstawie rzeczywistego kodu Handball DataScience (etap 4: lista meczów z filtrami).</footer>
+
+</div>

@@ -3,7 +3,7 @@
 ## Materiały odniesienia
 
 - [Rzeczywista baza — przegląd](database/README.md), [schemat public](database/PUBLIC_SCHEMA.md), [schemat logs](database/LOGS_SCHEMA.md) i [relacje oraz różnice](database/RELATIONSHIPS.md): inspekcja `localhost:5432/zprp` z 2026-09-12. Pierwszy punkt odniesienia dla nowej aplikacji.
-- [Archiwalny schemat PostgreSQL](database/schema_postgres_archiwalny.sql) (kopia wcześniejszego projektu bazy z katalogu nadrzędnego, stan 2026-09-10): encje i relacje zaprojektowane dla archiwum ZPRP.
+- [Archiwalny schemat PostgreSQL](database/schema_postgres_archive.sql) (kopia wcześniejszego projektu bazy z katalogu nadrzędnego, stan 2026-09-10): encje i relacje zaprojektowane dla archiwum ZPRP.
 - README starszego serwisu poza katalogiem tego projektu (`_ZPRP_API/README.md` w katalogu nadrzędnym): opis źródeł i zaobserwowanej normalizacji.
 - Normalizacja starszego serwisu poza katalogiem tego projektu (`_ZPRP_API/handball/normalize.py` w katalogu nadrzędnym): przykład istniejącej interpretacji danych, wymagający weryfikacji przed ponownym użyciem.
 - Testy starszego serwisu poza katalogiem tego projektu (`_ZPRP_API/tests/test_import.py` w katalogu nadrzędnym): przypadki regresyjne istniejącego importu.

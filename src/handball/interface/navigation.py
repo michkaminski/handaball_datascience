@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from flask import Flask
+
+
+@dataclass(frozen=True)
+class PozycjaMenu:
+    klucz: str
+    etykieta: str
+    punkt_koncowy: str | None
+    ikona: str | None = None
+
+
+GORNY_PASEK: list[PozycjaMenu] = [
+    PozycjaMenu("start", "Start", "administracja.start"),
+    PozycjaMenu("mecze", "Dane", "administracja.lista_meczow"),
+    PozycjaMenu("import", "Import", None),
+    PozycjaMenu("kontrola", "Kontrola danych", None),
+    PozycjaMenu("logi", "Logi", None),
+]
+
+SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
+    (
+        "Dane",
+        [
+            PozycjaMenu("sezony", "Sezony", None, "◫"),
+            PozycjaMenu("rozgrywki", "Rozgrywki", None, "⌘"),
+            PozycjaMenu("druzyny", "Drużyny", None, "▣"),
+            PozycjaMenu("zawodnicy", "Zawodnicy", None, "◎"),
+            PozycjaMenu("sklady", "Składy", None, "☰"),
+            PozycjaMenu("mecze", "Mecze", "administracja.lista_meczow", "◈"),
+            PozycjaMenu("tabele", "Tabele", None, "▤"),
+            PozycjaMenu("strzelcy", "Strzelcy", None, "★"),
+            PozycjaMenu("hale", "Hale", None, "⌂"),
+            PozycjaMenu("sedziowie", "Sędziowie", None, "⚑"),
+        ],
+    ),
+    (
+        "Import / eksport",
+        [
+            PozycjaMenu("import_danych", "Import danych", None, "⇪"),
+            PozycjaMenu("historia_importow", "Historia importów", None, "⇄"),
+            PozycjaMenu("eksport_danych", "Eksport danych", None, "⇩"),
+        ],
+    ),
+    (
+        "Narzędzia",
+        [
+            PozycjaMenu("anomalie", "Anomalie danych", None, "!"),
+            PozycjaMenu("walidacja", "Walidacja danych", None, "✓"),
+            PozycjaMenu("logi_aplikacji", "Logi aplikacji", None, "≡"),
+        ],
+    ),
+]
+
+
+def zarejestruj_kontekst_nawigacji(aplikacja: Flask) -> None:
+    @aplikacja.context_processor
+    def wstrzyknij_menu() -> dict[str, object]:
+        return {"gorny_pasek": GORNY_PASEK, "sidebar": SIDEBAR}
