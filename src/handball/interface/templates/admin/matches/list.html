@@ -10,7 +10,7 @@
 </section>
 <section class="panel">
 <h2>Filtry</h2>
-<form class="panel-body filters" method="get">
+<form class="panel-body filters" method="get" data-match-filters>
 <label>Sezon{{ formularz.id_sezon() }}</label>
 <label>Rozgrywki{{ formularz.rozgrywki() }}</label>
 <label>Runda{{ formularz.runda() }}</label>
@@ -19,6 +19,7 @@
 <label>Drużyna{{ formularz.druzyna(placeholder="nazwa drużyny...") }}</label>
 <label>Data{{ formularz.data_meczu() }}</label>
 <div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.lista_meczow', id_sezon='') }}">Wyczyść filtry</a></div>
 </form>
 </section>
 <section class="panel">
@@ -50,7 +51,7 @@ Data {{ "▼" if filtry.sortowanie == "-data" else "▲" }}
 </thead>
 <tbody>
 {% for pozycja in strona.pozycje %}
-<tr data-href="{{ url_for('administracja.szczegoly_meczu', id_mecz=pozycja.id_mecz) }}" title="Kliknij dwukrotnie, aby zobaczyć szczegóły meczu">
+<tr data-href="{{ url_for('administracja.szczegoly_meczu', id_mecz=pozycja.id_mecz) }}" title="Kliknij dwukrotnie, aby zobaczyć szczegóły meczu w oknie modalnym">
 <td>{{ pozycja.id_mecz }}</td>
 <td>{{ pozycja.termin.strftime("%d.%m.%Y") if pozycja.termin else "—" }}</td>
 <td>{{ pozycja.termin.strftime("%H:%M") if pozycja.termin else "—" }}</td>
@@ -89,6 +90,17 @@ Data {{ "▼" if filtry.sortowanie == "-data" else "▲" }}
 <button class="btn" type="submit">Zastosuj</button>
 </div>
 </form>
+</dialog>
+<dialog id="match-detail-dialog" class="match-detail-dialog" aria-labelledby="match-detail-title">
+<div class="modal-head">
+<h2 id="match-detail-title">Szczegóły meczu</h2>
+<button class="close" type="button" data-detail-close aria-label="Zamknij szczegóły meczu" autofocus>×</button>
+</div>
+<div class="modal-body" data-detail-content aria-live="polite"></div>
+<div class="modal-foot">
+<a class="btn secondary" data-detail-tab target="_blank" rel="noopener">Otwórz w nowej karcie</a>
+<button class="btn secondary" type="button" data-detail-close>Zamknij</button>
+</div>
 </dialog>
 <script src="{{ url_for('static', filename='js/matches.js') }}" defer></script>
 {% endblock %}

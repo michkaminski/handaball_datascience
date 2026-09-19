@@ -2,7 +2,7 @@
 
 Serwis do przeglądania danych meczów polskich seniorskich lig piłki ręcznej, ze szczególnym uwzględnieniem Superligi M i K oraz Lig Centralnych.
 
-Obecny etap: działająca aplikacja Flask z administracją i listą meczów. Szczegóły meczu są następnym etapem. Pakiet `handball` oraz nazwy plików, katalogów i klas technicznych stosują uzgodnioną konwencję.
+Obecny etap: działająca aplikacja Flask z administracją i listą meczów. Działają szczegóły meczu, modal, zakładki i panel importu; odczyt domenowy jest oddzielony od presenterów i modeli widoku. Pakiet `handball` oraz nazwy plików, katalogów i klas technicznych stosują uzgodnioną konwencję.
 
 ## Uruchomienie i sprawdzenia
 

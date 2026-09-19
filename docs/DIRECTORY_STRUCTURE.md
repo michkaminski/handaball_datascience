@@ -1,155 +1,105 @@
-# Projekt struktury katalogów
+# Struktura katalogów
 
-Status: etapy 1–4 ukończone. Obiektowy szkielet Flaska, wspólny układ Jinja2 na bazie prototypu v6 (łącznie z pełnym sidebarem 1:1 z prototypem), warstwa danych do odczytu oraz działająca lista meczów (`MeczService`, `ZaleznosciZadaniaFactory`, `MeczListView`, `MeczFilterForm`) istnieją i są zweryfikowane — łącznie z rzeczywistym uruchomieniem wobec bazy `zprp` (sezon 195, 1817 meczów, paginacja, filtry, stan pusty i błąd 400 sprawdzone ręcznie). Szczegóły meczu, dostęp administratora i pozostałe widoki odczytu (etap 5 i dalej) jeszcze nie istnieją. Struktura odpowiada [planowi realizacji](IMPLEMENTATION_PLAN.md) i [diagramom UML](UML.md).
+Stan rzeczywistego kodu po uporządkowaniu warstw 2026-09-19. Działają lista i szczegóły meczów, podgląd modalny, zakładki, filtry oraz panel importu. Ogólne logowanie administratora i pozostałe ekrany odczytu pozostają kolejnymi etapami. Plan prac: [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md); bieżący stan: [STATUS](STATUS.md).
 
-## Układ projektu
+## Podział odpowiedzialności
 
-Istniejący pakiet Pythona to `src/handball/`, a katalog projektu to `handball_datascience`. Od 2026-09-14 nowe pliki, katalogi, moduły i pakiety nazywamy po angielsku zgodnie z [CODING_STANDARDS](CODING_STANDARDS.md#język-i-nazewnictwo).
+| Miejsce | Odpowiedzialność |
+| --- | --- |
+| `domain/` | Typowane dane i reguły meczowe, bez Flaska, SQLAlchemy, kolorów i etykiet widoku. |
+| `contracts/` | Wąskie kontrakty Protocol repozytoriów, klienta API i magazynu importu. |
+| `services/` | Przypadki użycia listy, szczegółów, słowników i importu; zależności od kontraktów. |
+| `infrastructure/database/models/` | Mapowanie istniejącej bazy przez ORM. |
+| `infrastructure/repositories/` | Zapytania oraz materializacja danych do obiektów niezależnych od sesji; osobny zapis importu. |
+| `infrastructure/zprp_client.py`, `import_store.py` | Adapter HTTP ZPRP i lokalny magazyn przebiegów importu. |
+| `interface/admin/views/` | MethodView: wejście HTTP, walidacja, wywołanie serwisu i presentera, odpowiedź. |
+| `interface/admin/forms/` | Formularze i walidacja parametrów listy. |
+| `interface/presenters/` | Przygotowanie tekstów, kolejności składów, kolorów i wyróżnień dla szablonów. |
+| `interface/view_models/` | Dataclass z gotowymi polami widoku; nie są modelami ORM ani kontraktami repozytorium. |
+| `interface/templates/`, `static/` | Jinja2, opisy MD, CSS i kontrolery JavaScript. |
+| Fabryki w katalogu pakietu | Składanie zależności i integracja aplikacji. |
 
-Poniższy wykaz pokazuje rzeczywiste pliki po migracji z 2026-09-14. Tabele opisują ich odpowiedzialności oraz osobno planowane rozszerzenia. Plik MD bez HTML opisuje planowany szablon.
+## Katalogi i główne pliki
 
 ```text
-src/handball/__init__.py
-src/handball/app_factory.py
-src/handball/contracts/__init__.py
-src/handball/contracts/competition_repository.py
-src/handball/contracts/match_repository.py
-src/handball/contracts/season_repository.py
-src/handball/contracts/venue_repository.py
-src/handball/domain/__init__.py
-src/handball/domain/errors.py
-src/handball/domain/matches.py
-src/handball/domain/options.py
-src/handball/extensions.py
-src/handball/infrastructure/__init__.py
-src/handball/infrastructure/database/__init__.py
-src/handball/infrastructure/database/connection.py
-src/handball/infrastructure/database/models/__init__.py
-src/handball/infrastructure/database/models/base.py
-src/handball/infrastructure/database/models/competitions.py
-src/handball/infrastructure/database/models/matches.py
-src/handball/infrastructure/database/models/teams.py
-src/handball/infrastructure/database/models/venues.py
-src/handball/infrastructure/repositories/__init__.py
-src/handball/infrastructure/repositories/competition_repository.py
-src/handball/infrastructure/repositories/match_repository.py
-src/handball/infrastructure/repositories/season_repository.py
-src/handball/infrastructure/repositories/venue_repository.py
-src/handball/interface/__init__.py
-src/handball/interface/admin/__init__.py
-src/handball/interface/admin/forms/__init__.py
-src/handball/interface/admin/forms/match_filters.py
-src/handball/interface/admin/views/__init__.py
-src/handball/interface/admin/views/match_views.py
-src/handball/interface/admin/views/start.py
-src/handball/interface/errors.py
-src/handball/interface/navigation.py
-src/handball/interface/registration.py
-src/handball/interface/static/css/admin.css
-src/handball/interface/static/js/admin.js
-src/handball/interface/templates/admin/competitions/list.md
-src/handball/interface/templates/admin/import/panel.md
-src/handball/interface/templates/admin/login.md
-src/handball/interface/templates/admin/logs/list.md
-src/handball/interface/templates/admin/matches/detail.md
-src/handball/interface/templates/admin/matches/list.html
-src/handball/interface/templates/admin/matches/list.md
-src/handball/interface/templates/admin/players/list.md
-src/handball/interface/templates/admin/quality/panel.md
-src/handball/interface/templates/admin/referees/list.md
-src/handball/interface/templates/admin/rosters/list.md
-src/handball/interface/templates/admin/scorers/list.md
-src/handball/interface/templates/admin/seasons/list.md
-src/handball/interface/templates/admin/standings/list.md
-src/handball/interface/templates/admin/start.html
-src/handball/interface/templates/admin/start.md
-src/handball/interface/templates/admin/teams/list.md
-src/handball/interface/templates/admin/venues/list.md
-src/handball/interface/templates/base.html
-src/handball/interface/templates/base.md
-src/handball/interface/templates/errors/400.md
-src/handball/interface/templates/errors/404.md
-src/handball/interface/templates/errors/503.md
-src/handball/interface/templates/partials/messages.html
-src/handball/interface/templates/partials/messages.md
-src/handball/interface/templates/partials/navigation.html
-src/handball/interface/templates/partials/navigation.md
-src/handball/interface/templates/partials/pagination.html
-src/handball/interface/templates/partials/pagination.md
-src/handball/request_dependencies.py
-src/handball/services/__init__.py
-src/handball/services/match_dictionary_service.py
-src/handball/services/match_service.py
-src/handball/settings.py
-tests/__init__.py
-tests/conftest.py
-tests/helpers/__init__.py
-tests/helpers/competition_repository.py
-tests/helpers/match_repository.py
-tests/helpers/season_repository.py
-tests/helpers/venue_repository.py
-tests/integration/__init__.py
-tests/integration/test_match_repository.py
-tests/interface/test_matches.py
-tests/interface/test_start.py
-tests/unit/test_app_factory.py
-tests/unit/test_match_filters.py
-tests/unit/test_match_service.py
-tests/unit/test_settings.py
+src/handball/
+├── __init__.py                 create_app deleguje do fabryki
+├── app_factory.py              AplikacjaFactory
+├── request_dependencies.py     ZaleznosciZadaniaFactory: serwisy i presenter meczów
+├── import_factory.py           ImportRegistrar: składanie i rejestracja importu
+├── settings.py                 Ustawienia
+├── extensions.py               integracja Flask-SQLAlchemy
+├── domain/
+│   ├── matches.py              DaneMeczu, SzczegolyMeczu, ZawodnikMeczu, filtry i lista
+│   ├── match_rules.py          MeczPolicy, StatusMeczu
+│   ├── imports.py              przebiegi i rekordy importu
+│   ├── options.py
+│   └── errors.py
+├── contracts/
+│   ├── match_repository.py
+│   ├── season_repository.py
+│   ├── competition_repository.py
+│   ├── venue_repository.py
+│   ├── match_stage_repository.py
+│   ├── import_repository.py
+│   └── import_storage.py
+├── services/
+│   ├── match_service.py
+│   ├── match_dictionary_service.py
+│   ├── import_service.py
+│   └── import_mapping.py
+├── infrastructure/
+│   ├── database/
+│   │   ├── connection.py
+│   │   └── models/             base, matches, competitions, teams, venues
+│   ├── repositories/           implementacje kontraktów odczytu i importu
+│   ├── zprp_client.py
+│   └── import_store.py
+└── interface/
+    ├── registration.py
+    ├── navigation.py
+    ├── errors.py
+    ├── admin/
+    │   ├── forms/match_filters.py
+    │   └── views/              start.py, match_views.py, import_views.py
+    ├── presenters/
+    │   └── match_presenter.py   MeczPresenter, SkladMeczuPresenter, MeczFormat
+    ├── view_models/
+    │   └── matches.py          modele listy, szczegółów i zawodnika
+    ├── templates/              base, partials, admin oraz planowane errors
+    └── static/
+        ├── css/admin.css
+        └── js/                 admin.js, matches.js, import.js
 ```
 
-Wykaz zawiera istniejące pliki; plik MD bez HTML opisuje planowany szablon. Dodajemy kolejne modele potrzebne zapytaniom i ich relacjom, nie mapujemy od razu wszystkich 65 tabel. Pakiety Pythona mają `__init__.py`; katalogi szablonów i zasobów go nie potrzebują.
+Pakiety Pythona zawierają `__init__.py`; w drzewie pominięto powtarzające się pliki inicjalizacji.
 
-Katalogi `seasons/`, `competitions/`, `teams/`, `players/`, `rosters/`, `standings/`, `scorers/`, `venues/`, `referees/`, `import/`, `quality/`, `logs/` pod `templates/admin/` nie były pierwotnie w tym drzewie — dodano je na wyraźne polecenie użytkownika razem z pełnym sidebarem (patrz base.md), żeby każda widoczna, jeszcze niezaimplementowana pozycja menu miała choć wstępną notatkę planistyczną zamiast być całkowicie nieudokumentowana. Zawierają wyłącznie MD (patrz [TEMPLATES](TEMPLATES.md), sekcja "Wczesne notatki planistyczne") — bez HTML, bez modeli, bez widoków. `import/panel.md` i `quality/panel.md` opisują po kilka pozycji menu naraz, bo w prototypie v6 prowadzą do tej samej strony.
+## Kontrakt listy i szczegółów
 
-`interface/navigation.py` nie był pierwotnie przewidziany w tym drzewie — dodano go w etapie 4 na wyraźne polecenie użytkownika, żeby sidebar i górny pasek odzwierciedlały pełne menu prototypu v6 (wszystkie grupy i pozycje, także te bez jeszcze istniejącego widoku — renderowane jako `href="#"`), zamiast tylko pozycji z realnymi widokami.
+Repozytorium przekazuje `DaneMeczu` z wartościami liczbowymi, flagami, datami i `None`, a `ZawodnikMeczu` zachowuje m.in. numer koszulki i bramki jako `int | None`. `SzczegolyMeczu` łączy te dane z nazwami i źródłowymi składami. `PozycjaListyMeczow` zawiera źródłowe nazwy obu stron i dane meczu. Obiekty ORM nie opuszczają repozytorium.
 
-`tests/integration/test_match_repository.py` wymaga zmiennej środowiskowej `BAZA_HASLO` wskazującej na rzeczywiste, tylko-do-odczytu połączenie z bazą `zprp`; bez niej testy są pomijane (`pytest.mark.skipif`), nie fałszywie zielone. Historyczne sprawdzenia wobec `zprp` opisuje STATUS. Przy migracji nazw testów bazy nie uruchamiano.
+`MeczPolicy` określa kolejność stron według `zamiana`, status, obecność dogrywki/serii karnych i maksimum bramek w składzie. Nie formatuje HTML ani etykiet.
 
-## Opis przy każdym szablonie
+`MeczPresenter` korzysta z tych reguł i zwraca `StronaMeczowViewModel` albo `SzczegolyMeczuViewModel`. `SkladMeczuPresenter` tworzy `ZawodnikMeczuViewModel` z tekstami, kolorem pozycji i flagą najlepszego strzelca. `MeczFormat` odpowiada za tekst braków, dat, flag, ułamków i dopisków wyniku. Wszystkie zależności presentera składa `ZaleznosciZadaniaFactory` i przekazuje widokom.
 
-Każdy HTML ma odpowiadający mu MD w tym samym katalogu. Wykaz pokazuje istniejące pliki HTML i MD; opisy bez odpowiadającego HTML dotyczą planowanych ekranów. Dokument login.md z etapu 6 również już istnieje. Pełny indeks oraz zasady aktualizacji: [TEMPLATES](TEMPLATES.md).
+Serwisy i kontrakty nie importują presenterów ani modeli widoku. Nowy odbiorca danych może wykorzystać domenę bez kolorów i formatów interfejsu.
 
-## Odpowiedzialności i zależności
+## Import
 
-| Katalog lub moduł | Co zawiera | Granica odpowiedzialności |
-| --- | --- | --- |
-| domain | Typowane filtry, dane meczowe, wyniki i błędy | Bez importów Flask, SQLAlchemy i kodu infrastruktury. |
-| contracts | Wąskie Protocol repozytoriów | Zależy od obiektów domeny; nie zawiera SQL ani operacji HTTP. |
-| services | Klasy przypadków użycia | Korzystają z kontraktów, nie znają sesji i modeli ORM. |
-| infrastructure | Klasy modeli, konfiguracja połączenia, repozytoria | Implementuje kontrakty, wykonuje zapytania i materializuje dane wyniku. |
-| interface | MethodView, formularze, Jinja2, zasoby i błędy HTTP | Waliduje wejście HTTP, wywołuje serwis, renderuje odpowiedź. |
-| app_factory.py / request_dependencies.py | Kompozycja aplikacji i zależności żądania | Jedyny punkt łączący warstwy; nie zawiera logiki statystyk. |
-| tests | Kontrole zachowania klas, HTTP i repozytoriów | Nie zmieniają bazy zprp; integracja wymaga odizolowanego, udostępnionego środowiska. |
+Istniejąca ścieżka importu pozostaje odrębna: `ImportRegistrar` składa `ImportService`, `ZprpClient`, `ImportFileStore` i `ImportSQLAlchemyRepository`. `services/import_mapping.py` jest obecnie mapowaniem specyficznym dla importu ZPRP; nie przeniesiono go w tej refaktoryzacji. Szczegóły działania i ograniczeń: [IMPORTS](IMPORTS.md). Refaktoryzacja odczytu nie uruchamia importu ani zapisu w bazie.
 
-Pakiet `domain` zawiera obiekty Pythona, a `infrastructure/database/models` klasy mapujące tabele. Nie tworzymy dwóch identycznych modeli każdej tabeli: obiekty wyniku zawierają pola potrzebne widokowi, modele ORM odwzorowują wymagane fragmenty schematu.
+## Szablony i prototyp
 
-## Administracja i prototyp v6
+Wzorzec wizualny pozostaje w `C:\Michal\_ZPRP_PROD\Prototyp\Prototyp_administracja_v6`. Źródłowego prototypu nie modyfikujemy. Istnieją m.in. `admin/start.html`, `admin/matches/list.html`, `admin/matches/detail.html`, `admin/import/panel.html`, `base.html` i fragmenty nawigacji, komunikatów i paginacji. Każdy HTML ma MD obok siebie.
 
-Wzorzec: `C:\Michal\_ZPRP_PROD\Prototyp\Prototyp_administracja_v6`. Katalog prototypu pozostaje źródłem do odczytu. Nowe fragmenty adaptujemy do Jinja2 i angielskich nazw plików. Poniższe ścieżki uwzględniają migrację nazw.
+Pozostałe katalogi szablonów zawierające tylko MD są planami, nie działającymi ekranami. Indeks i reguły opisów: [TEMPLATES](TEMPLATES.md). Nie tworzymy dodatkowych katalogów infrastruktury ani pustych warstw na zapas.
 
-| Źródło prototypu | Planowany odpowiednik w interface/ |
-| --- | --- |
-| index.html | templates/admin/start.html oraz wspólny base.html |
-| matches.html | templates/admin/matches/list.html |
-| match_detail.html | templates/admin/matches/detail.html |
-| assets/style.css | static/css/admin.css |
-| assets/app.js | static/js/admin.js, wyłącznie potrzebne zachowania |
-| match_edit.html, player_edit.html | Poza bieżącym zakresem; obecność prototypu nie daje zgody na zapis. |
+## Testy
 
-Flask jawnie wskazuje `interface/templates` i `interface/static`; zasoby są dołączane do budowanego pakietu. Prefiks HTTP zasobów pozostaje `/statyczne`. Mapowanie źródeł nie oznacza wiernego kopiowania przykładowych danych lub implementacji backendu prototypu.
+- `tests/unit/`: logika i kontrakty, mapowanie repozytorium z atrapą sesji, kontrola kierunku importów.
+- `tests/interface/`: klient Flaska, presentery, formatowanie, składy i import na atrapach zależności.
+- `tests/javascript/`: filtry, modal i zakładki z atrapami DOM.
+- `tests/helpers/`: repozytoria pamięciowe i dane testowe.
+- `tests/integration/`: osobno uruchamiane testy bazowe; nie należą do bezpiecznej regresji bez bazy.
 
-## Rozbudowa po pierwszym widoku meczu
-
-| Etap | Rozszerzenie | Warunek |
-| --- | --- | --- |
-| 6 | interface/admin/views/login.py, forms/login.py, templates/admin/login.html (login.md już istnieje); kontrakt i serwis dostępu | Ustalono źródło kont i role. Nie tworzymy automatycznie tabel użytkowników. |
-| 7 | Moduły teams.py, players.py, standings.py w potrzebnych warstwach i odpowiadające szablony | Wdrażamy kolejno uzgodnione ekrany, bez pustych kopii warstw. |
-| 7 | Modele schematu logs oraz repozytoria i widoki diagnostyki | Wyłącznie odczyt istniejących importów, anomalii i historii. |
-| Później | Klasy eksportu i katalog wynikowych plików publicznych | Osobno ustalony format HTML/JSON/JavaScript i zakres publikacji. |
-
-Nie planujemy teraz katalogu migracji, nowego importera ani CRUD dla wszystkich tabel. `.venv` i cache narzędzi będą lokalnymi plikami generowanymi, wyłączonymi z wersjonowania. `.env.example` pokazuje jedynie nazwy ustawień i niesekretne przykłady; nie oznacza automatycznego ładowania pliku .env.
-
-## Minimum do utworzenia jako pierwsze
-
-Etapy 1–4 są ukończone, a wykaz powyżej pokazuje aktualne pliki po migracji nazw. Szczegóły meczu i dalsze funkcje powstają według [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md), bez pustych warstw na zapas.
+Komendy: [README](../README.md). Refaktoryzację weryfikuje zestaw `pytest --ignore=tests/integration`; integracji z rzeczywistą bazą nie uruchamiano.

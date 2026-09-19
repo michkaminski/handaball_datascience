@@ -3,6 +3,7 @@
 {% block tytul %}Mecz #{{ szczegoly.id_mecz }} — Handball DataScience{% endblock %}
 
 {% block tresc %}
+<div data-match-detail>
 <section class="pagehead">
 <div class="crumb">Start › Dane › Mecze › Szczegóły</div>
 <h1>Szczegóły meczu #{{ szczegoly.id_mecz }}</h1>
@@ -32,11 +33,15 @@
 <span class="meta-chip"><span class="badge {{ 'ok' if szczegoly.status == 'Rozegrany' else ('warn' if szczegoly.status in ('Wycofany', 'Walkower') else 'plan') }}">{{ szczegoly.status }}</span></span>
 </div>
 </section>
-<div class="toolbar">
+<div class="toolbar" data-detail-navigation>
 <div class="left"><a class="btn secondary" href="{{ url_for('administracja.lista_meczow') }}">← Powrót do listy</a></div>
 </div>
-<div class="grid2">
-<section class="panel">
+<div class="match-tabs" role="tablist" aria-label="Szczegóły meczu" data-match-tabs hidden>
+<button type="button" role="tab" id="match-tab-basic" aria-controls="match-panel-basic" aria-selected="true">Dane podstawowe</button>
+<button type="button" role="tab" id="match-tab-stats" aria-controls="match-panel-stats" aria-selected="false" tabindex="-1">Wynik i statystyki</button>
+<button type="button" role="tab" id="match-tab-rosters" aria-controls="match-panel-rosters" aria-selected="false" tabindex="-1">Składy</button>
+</div>
+<section class="panel" id="match-panel-basic" data-match-panel aria-labelledby="match-tab-basic">
 <h2>Dane podstawowe</h2>
 <div class="table-wrap">
 <table>
@@ -49,7 +54,7 @@
 </table>
 </div>
 </section>
-<section class="panel">
+<section class="panel" id="match-panel-stats" data-match-panel aria-labelledby="match-tab-stats">
 <h2>Wynik i statystyki</h2>
 <div class="table-wrap">
 <table>
@@ -62,7 +67,7 @@
 </table>
 </div>
 </section>
-</div>
+<div id="match-panel-rosters" data-match-panel aria-labelledby="match-tab-rosters">
 <div class="grid2">
 <section class="panel">
 <h2>Skład — {{ szczegoly.gospodarz }}</h2>
@@ -71,7 +76,7 @@
 <thead><tr><th>#</th><th>Zawodnik</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
 <tbody>
 {% for zawodnik in szczegoly.sklad_gospodarz %}
-<tr><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
 {% else %}
 <tr><td colspan="11" class="note">Brak danych o składzie.</td></tr>
 {% endfor %}
@@ -86,7 +91,7 @@
 <thead><tr><th>#</th><th>Zawodnik</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
 <tbody>
 {% for zawodnik in szczegoly.sklad_gosc %}
-<tr><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
 {% else %}
 <tr><td colspan="11" class="note">Brak danych o składzie.</td></tr>
 {% endfor %}
@@ -103,11 +108,15 @@
 <thead><tr><th>#</th><th>Osoba</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
 <tbody>
 {% for zawodnik in szczegoly.sklad_inne %}
-<tr><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
 {% endfor %}
 </tbody>
 </table>
 </div>
 </section>
 {% endif %}
+<p class="roster-legend">Składy według pozycji. Czerwone pole bramek: najlepszy strzelec danej drużyny (także ex aequo).</p>
+</div>
+</div>
+<script src="{{ url_for('static', filename='js/matches.js') }}" defer></script>
 {% endblock %}

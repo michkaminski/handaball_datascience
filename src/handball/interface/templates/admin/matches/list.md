@@ -65,6 +65,20 @@ Filtry sezonu, rozgrywek, rundy, kolejki i hali są rozwijanymi listami z nazwam
 
 **Sortowanie jest w nagłówku kolumny "Data", nie w panelu filtrów** — to ustalona konwencja dla wszystkich list z filtrami w tym projekcie, patrz [CODING_STANDARDS](../../../../../../docs/CODING_STANDARDS.md), sekcja "Listy z filtrami". Panel filtrów nie ma już pola "Sortowanie".
 
+## Podgląd szczegółów
+
+Link „Szczegóły” otwiera mecz w nowej karcie (`target="_blank"`). Dwuklik w wiersz lub Enter na aktywnym wierszu otwiera `#match-detail-dialog`. `SzczegolyMeczuController` z `matches.js` pobiera stronę szczegółów i wyświetla jej `[data-match-detail]`, bez ramy i linku powrotu. Kliknięcia w link nie otwierają dodatkowo modalu. Zamknięcie i Escape anulują trwający odczyt, zachowują stan listy i przywracają fokus. Treść modalu ma zakładki „Dane podstawowe”, „Wynik i statystyki” i „Składy”, inicjalizowane przez `ZakladkiMeczuController`. Modal pokazuje ładowanie i błąd pobrania; link nowej karty pozostaje dostępny. Bez obsługi dialogu lub JavaScript działa zwykły link szczegółów.
+
+## Pamięć i czyszczenie filtrów
+
+Klasa `FiltryMeczowController` w [matches.js](../../../static/js/matches.js) obsługuje formularz `[data-match-filters]`. Po poprawnym wyświetleniu listy zapisuje siedem zastosowanych filtrów w `localStorage` pod kluczem `hds.mecze.filtry.v1`. Pamięć dotyczy tej przeglądarki i adresu aplikacji; przetrwa jej zamknięcie. Niezatwierdzone zmiany pól nie są zapisywane.
+
+Wejście na listę bez parametrów przywraca filtry przez przekierowanie JavaScript. Jawne parametry adresu mają pierwszeństwo. Powrót zaczyna się od pierwszej strony i domyślnego sortowania; numer strony, sortowanie i rozmiar strony nie są zapamiętywane. Nieaktualne wartości list wyboru są pomijane. Przed przywróceniem zapis jest usuwany, a udane wyświetlenie zapisuje go ponownie, aby błędny filtr nie powodował powtarzanych przekierowań.
+
+„Wyczyść filtry” prowadzi do listy z pustym `id_sezon`: pokazuje wszystkie mecze, resetuje paginację i sortowanie, usuwa pamięć filtrów, zachowuje ustawienia widoczności kolumn. Bez JavaScript czyszczenie i zwykłe filtrowanie nadal działają; pamięć wymaga JavaScript i dostępnego magazynu przeglądarki.
+
+Testy zachowania pamięci: `node --test tests/javascript/match_filters.test.cjs` (bez dodatkowych zależności ani bazy).
+
 ## Runda, kolejka i modal widoczności
 
 Filtry `runda` i `kolejka` są stale dostępne. Wybierają po dokładnej nazwie, niezależnie od sezonowego ID. Słowniki zawierają unikalne, niepuste nazwy ze wszystkich rund i kolejek; nie zawężają się kaskadowo po zmianie sezonu lub rozgrywek. Wybrane filtry łączą się z pozostałymi warunkami, więc kombinacja bez pasujących meczów daje pustą tabelę. Nieznana wartość spoza słownika zwraca 400. Sortowanie i paginacja zachowują oba parametry.
@@ -77,12 +91,12 @@ Klasa `KolumnyMeczowController` w [matches.js](../../../static/js/matches.js) za
 
 ## Zmiana gospodarza
 
-Repozytorium uwzględnia `Mecz.zamiana`: dla wartości `True` przekazuje gościa źródłowego jako gospodarza prezentowanego, gospodarza jako gościa i odwraca wynik `*_full`. Przykład: Wisła Płock — 46 : 19 — MMTS Kwidzyn staje się MMTS Kwidzyn — 19 : 46 — Wisła Płock. Dla `False` i `NULL` zachowuje kolejność. Brak którejkolwiek części wyniku nadal daje `- : -`. Szablon otrzymuje już gotowe nazwy i wynik; nie wykonuje drugiej zamiany. Zmiana dotyczy prezentacji, bez aktualizacji danych w bazie.
+`MeczPresenter` przez `MeczPolicy` uwzględnia `DaneMeczu.zamiana`: dla wartości `True` przekazuje gościa źródłowego jako gospodarza prezentowanego, gospodarza jako gościa i odwraca wynik `*_full`. Przykład: Wisła Płock — 46 : 19 — MMTS Kwidzyn staje się MMTS Kwidzyn — 19 : 46 — Wisła Płock. Dla `False` i `NULL` zachowuje kolejność. Brak którejkolwiek części wyniku nadal daje `- : -`. Szablon otrzymuje już gotowe nazwy i wynik; nie wykonuje drugiej zamiany. Zmiana dotyczy prezentacji, bez aktualizacji danych w bazie.
 
 ## Dane wejściowe
 
 - `filtry`: `FiltryMeczow` (id_sezon opcjonalny, rozgrywki opcjonalny — nazwa, nie ID, id_hala, runda, kolejka, szukaj_druzyny, data_od/data_do, strona, rozmiar_strony, sortowanie) zbudowany przez `MeczFilterForm` z `request.args`.
-- `strona`: `StronaMeczow` (pozycje, liczba_wszystkich, strona, rozmiar_strony) zwrócony przez `MeczService.pobierz_liste(filtry)`. Każda `PozycjaListyMeczow` niesie też `sezon` i `rozgrywki` (nazwy, dołączone przez INNER JOIN — `Mecz.id_sezon`/`id_rozgrywki` są NOT NULL).
+- `strona`: `StronaMeczowViewModel` (pozycje, liczba_wszystkich, strona, rozmiar_strony) przygotowany przez `MeczPresenter.przygotuj_liste()` z domenowego wyniku `MeczService.pobierz_liste(filtry)`. Każda `PozycjaListyMeczowViewModel` niesie też `sezon` i `rozgrywki` (nazwy, dołączone przez INNER JOIN — `Mecz.id_sezon`/`id_rozgrywki` są NOT NULL).
 - `opcje`: `OpcjeFiltrowMeczow` (sezony: `list[OpcjaWyboru]`; rozgrywki: `list[str]`, unikalne nazwy; hale: `list[OpcjaWyboru]`; rundy i kolejki: `list[str]`) zwrócone przez `SlownikiMeczowService.pobierz_opcje(id_sezon)`, użyte do wypełnienia `<select>` w `formularz`.
 - `formularz`: instancja `MeczFilterForm` z ustawionymi `choices`, renderowana bezpośrednio w Jinja2 (`{{ formularz.id_sezon() }}` itd.) — pola same wiedzą, która opcja jest wybrana. Pole `data_meczu` renderuje się bez placeholdera — na wyraźne polecenie użytkownika nie podpowiadamy formatu w samym polu (format tłumaczy komunikat błędu, jeśli wpis jest niepoprawny).
 - `sekcja_aktywna="mecze"` dla podświetlenia menu.
@@ -93,7 +107,7 @@ Pole "Drużyna" wyszukuje **po tożsamości zespołu**, nie po samym tekście: `
 
 ## Powiązania
 
-`MeczListView` (interface/admin/views/match_views.py) → `ZaleznosciZadaniaFactory.utworz_serwis_meczow()` / `.utworz_serwis_slownikow()` → `MeczService`/`SlownikiMeczowService` → `MeczReadRepository`/`SezonReadRepository`/`RozgrywkiReadRepository`/`HalaReadRepository`/`EtapMeczowReadRepository`. Trasa: `GET /administracja/mecze`, endpoint `administracja.lista_meczow` — **bez przekierowania**, brak `id_sezon` w adresie oznacza wszystkie sezony. Dziedziczy `base.html` i dołącza `partials/pagination.html`. Formularz filtrów to zwykły GET (bez CSRF, bez zmiany stanu) — `MeczFilterForm` (WTForms). Wybór rozgrywek w dropdownie zależy od wybranego sezonu — zmienia się dopiero po ponownym przesłaniu formularza (bez JS, zwykłe przeładowanie strony).
+`MeczListView` (interface/admin/views/match_views.py) → `ZaleznosciZadaniaFactory.utworz_serwis_meczow()` / `.utworz_serwis_slownikow()` → `MeczService`/`SlownikiMeczowService` → `MeczReadRepository`/`SezonReadRepository`/`RozgrywkiReadRepository`/`HalaReadRepository`/`EtapMeczowReadRepository`. Trasa: `GET /administracja/mecze`, endpoint `administracja.lista_meczow` — backend bez przekierowania; brak filtrów oznacza wszystkie mecze, ale JavaScript może przywrócić zapamiętany wybór. Dziedziczy `base.html` i dołącza `partials/pagination.html`. Formularz filtrów to zwykły GET (bez CSRF, bez zmiany stanu) — `MeczFilterForm` (WTForms). Wybór rozgrywek w dropdownie zależy od wybranego sezonu — zmienia się dopiero po ponownym przesłaniu formularza (bez JS, zwykłe przeładowanie strony).
 
 Link sortowania w nagłówku "Data" buduje adres przez `url_for(request.endpoint, **dict(request.args, sortowanie=..., strona=1))` — zachowuje wszystkie bieżące filtry, przełącza tylko kierunek i resetuje stronę na 1 (ten sam wzorzec co paginacja).
 
@@ -135,7 +149,7 @@ Stan: układ istniejącego `list.html`. Numery 1–7 oznaczają miejsca opisane 
 | Narzędzia         |                                                          |
 |                   | (2) FILTRY                                               |
 |                   | [Sezon v] [Rozgrywki v] [Runda v] [Kolejka v] [Hala v]                         |
-|                   | [Drużyna: tekst] [Data: tekst] [Filtruj]                  |
+|                   | [Drużyna: tekst] [Data: tekst] [Filtruj] [Wyczyść filtry]                  |
 |                   |                                                          |
 |                   | (7) [Widoczne kolumny] → modal poniżej
 |                   | (3) TABELA                                               |
@@ -149,6 +163,10 @@ Stan: układ istniejącego `list.html`. Numery 1–7 oznaczają miejsca opisane 
 +-------------------+----------------------------------------------------------+
 [Handball DataScience                                      Flask + PostgreSQL]
 
+(8) Modal po dwukliku: Szczegóły meczu [×]
+    [wynik, dane, statystyki, składy — przewijana treść]
+    [Otwórz w nowej karcie] [Zamknij]
+
 (7) Modal: Widoczne kolumny                               [×]
     Opis: dodatkowe kolumny nie zmieniają dostępności filtrów
     [ ] Runda
@@ -156,7 +174,7 @@ Stan: układ istniejącego `list.html`. Numery 1–7 oznaczają miejsca opisane 
                                     [Anuluj] [Zastosuj]
 ```
 
-Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czytelności. HTML ma jedną tabelę z jedenastoma kolumnami, z których domyślnie widocznych jest dziewięć. Nawiasy przy Rundzie i Kolejce oznaczają opcjonalną widoczność; filtrami steruje siatka CSS. Przycisk „Filtruj” jest ósmym elementem siatki, a nie osobnym szerokim paskiem.
+Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czytelności. HTML ma jedną tabelę z jedenastoma kolumnami, z których domyślnie widocznych jest dziewięć. Nawiasy przy Rundzie i Kolejce oznaczają opcjonalną widoczność; filtrami steruje siatka CSS. Przycisk „Filtruj” jest ósmym elementem siatki, a „Wyczyść filtry” dziewiątym.
 
 **Zachowanie i warianty:**
 
@@ -174,13 +192,16 @@ Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czyteln
 | --- | --- | --- |
 | 1. Ścieżka, tytuł i opis | [list.html](list.html) | `.pagehead`, `.crumb`, `<h1>` i `<p>`; tytuł karty w bloku `tytul`. |
 | 2. Etykiety, kolejność i przycisk filtrów | [list.html](list.html) | Sekcja „Filtry”, `<form method="get">`, `.filters` i `.pole-przycisku`. |
+| 2. Pamięć i czyszczenie | [matches.js](../../../static/js/matches.js), [list.html](list.html) | `FiltryMeczowController`, `[data-match-filters]`, link „Wyczyść filtry”. |
 | 2. Rodzaj pola, walidacja i konwersja | [match_filters.py](../../../admin/forms/match_filters.py) | `MeczFilterForm` i `do_filtrow()`. |
 | 2. Opcje list rozwijanych | [match_views.py](../../../admin/views/match_views.py) | `MeczListView.get()` ustawia `choices`; źródła opcji zbiera `SlownikiMeczowService`. |
 | 3. Kolumny i kierunek sortowania | [list.html](list.html) | `<thead>`, link w nagłówku „Data” i odpowiadające im `<td>` w `<tbody>`. Przy zmianie liczby kolumn popraw również `colspan` pustego wiersza. |
-| 4. Pobierane dane i wynik meczu | [match_repository.py](../../../../infrastructure/repositories/match_repository.py) | `_pobierz_liste()` buduje dane, `_sformatuj_wynik()` napis wyniku; pola wyniku opisuje `PozycjaListyMeczow` w `domain/matches.py`. |
+| 4. Pobierane dane i wynik meczu | [match_repository.py](../../../../infrastructure/repositories/match_repository.py) | `_pobierz_liste()` mapuje źródłowe dane; `MeczPresenter.przygotuj_liste()` przygotowuje nazwy, wynik i dopisek w modelu widoku. |
 | 7. Modal i opcjonalne kolumny | [list.html](list.html), [matches.js](../../../static/js/matches.js) | `#match-columns-dialog`, `[data-columns-open]`, `[data-match-column]`, `KolumnyMeczowController`; styl `.match-columns-dialog` i `.column-choice` w CSS. |
 | 2/4. Nazwy rund i kolejek | [match_stage_repository.py](../../../../infrastructure/repositories/match_stage_repository.py) | Słowniki w `EtapMeczowSQLAlchemyRepository`; filtry i złączenia tabeli w `MeczSQLAlchemyRepository`. |
 | 5. Treść pustego wyniku | [list.html](list.html) | Gałąź `{% else %}` pętli po `strona.pozycje`. |
 | 6. Licznik i przyciski stron | [pagination.html](../../partials/pagination.html) | Wspólny fragment; jego opis jest w `partials/pagination.md`. |
 | Odstępy, szerokości i responsywność | [admin.css](../../../static/css/admin.css) | `.pagehead`, `.filters`, `.pole-przycisku`, `.table-wrap`, `th`, `td`, `.score` oraz zapytania `@media`. |
 | Nagłówek, sidebar i stopka | [base.md](../../base.md) | Wspólny układ opisany osobno; lista meczów wypełnia tylko blok `tresc`. |
+| 8. Podgląd meczu | [list.html](list.html), [matches.js](../../../static/js/matches.js), [detail.md](detail.md) | #match-detail-dialog, SzczegolyMeczuController, [data-match-detail]. |
+| Prezentacja listy | [match_presenter.py](../../../presenters/match_presenter.py), [matches.py](../../../view_models/matches.py) | `MeczPresenter`, `StronaMeczowViewModel`, `PozycjaListyMeczowViewModel`. |

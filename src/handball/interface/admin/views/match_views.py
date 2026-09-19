@@ -12,6 +12,7 @@ from handball.request_dependencies import ZaleznosciZadaniaFactory
 class MeczListView(MethodView):
     def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
         self._fabryka_zaleznosci = fabryka_zaleznosci
+        self._presenter = fabryka_zaleznosci.utworz_presenter_meczow()
 
     def get(self) -> str:
         id_sezon_wybrany = request.args.get("id_sezon", type=int)
@@ -54,7 +55,7 @@ class MeczListView(MethodView):
         return render_template(
             "admin/matches/list.html",
             sekcja_aktywna="mecze",
-            strona=strona,
+            strona=self._presenter.przygotuj_liste(strona),
             filtry=filtry,
             opcje=opcje,
             formularz=formularz,
@@ -64,6 +65,7 @@ class MeczListView(MethodView):
 class MeczSzczegolyView(MethodView):
     def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
         self._fabryka_zaleznosci = fabryka_zaleznosci
+        self._presenter = fabryka_zaleznosci.utworz_presenter_meczow()
 
     def get(self, id_mecz: int) -> str:
         serwis = self._fabryka_zaleznosci.utworz_serwis_meczow()
@@ -75,5 +77,5 @@ class MeczSzczegolyView(MethodView):
         return render_template(
             "admin/matches/detail.html",
             sekcja_aktywna="mecze",
-            szczegoly=szczegoly,
+            szczegoly=self._presenter.przygotuj_szczegoly(szczegoly),
         )

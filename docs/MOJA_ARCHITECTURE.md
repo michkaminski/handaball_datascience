@@ -193,7 +193,6 @@ classDiagram
     class MeczSQLAlchemyRepository {
         +pobierz_liste(filtry) StronaMeczow
         -_pobierz_liste(filtry) StronaMeczow
-        -_sformatuj_wynik(mecz) str
     }
     class MeczInMemoryRepository {
         +pobierz_liste(filtry) StronaMeczow
@@ -346,7 +345,7 @@ Słowniki mają osobne kontrakty: sezony i hale udostępniają `pobierz_wszystki
 - `__init__(sesja)` dostaje sesję z zewnątrz; nie tworzy własnego połączenia.
 - `pobierz_liste(filtry)` uruchamia odczyt i tłumaczy `SQLAlchemyError` na `BladOdczytuDanych`.
 - `_pobierz_liste(filtry)` buduje złączenia, filtry, licznik, sortowanie i paginację, wykonuje zapytania oraz tworzy obiekty wyniku.
-- `_sformatuj_wynik(mecz)` jest metodą statyczną: brak którejkolwiek części wyniku daje `- : -`, a wartości liczbowe tworzą napis, np. `0 : 0`.
+- Po refaktoryzacji 2026-09-19 wynik formatuje `MeczPresenter.przygotuj_liste()` w `interface/presenters/match_presenter.py`. Repozytorium zwraca typowane dane źródłowe; brak którejkolwiek części wyniku nadal daje `- : -`, a liczby np. `0 : 0`. Aktualny podział opisują DIRECTORY_STRUCTURE.md i UML.md.
 
 Gospodarz i gość są dwoma aliasami `ZespolSezon`. Złączenie używa identyfikatora zespołu **i sezonu**, aby pokazać nazwę historyczną. Zespoły i hala są dołączane zewnętrznie, więc ich brak nie musi usuwać meczu z wyniku.
 

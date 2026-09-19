@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from handball.domain.matches import FiltryMeczow
 from handball.infrastructure.database.models.matches import Mecz
 from handball.infrastructure.repositories.match_repository import MeczSQLAlchemyRepository
+from handball.request_dependencies import ZaleznosciZadaniaFactory
 
 
 @pytest.mark.parametrize("zamiana", [True, False, None])
@@ -33,7 +34,10 @@ def test_lista_zamienia_druzyny_wraz_z_wynikiem(
     sesja = Mock(spec=Session)
     sesja.scalar.return_value = 1
     sesja.execute.return_value.all.return_value = [wiersz]
-    pozycja = MeczSQLAlchemyRepository(sesja).pobierz_liste(FiltryMeczow()).pozycje[0]
+    strona = MeczSQLAlchemyRepository(sesja).pobierz_liste(FiltryMeczow())
+    pozycja = (
+        ZaleznosciZadaniaFactory().utworz_presenter_meczow().przygotuj_liste(strona).pozycje[0]
+    )
     assert pozycja.runda == etapy[0]
     assert pozycja.kolejka == etapy[1]
     assert pozycja.gospodarz == ("MMTS Kwidzyn" if zamiana else "Wisła Płock")

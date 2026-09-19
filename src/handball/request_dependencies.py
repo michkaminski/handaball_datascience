@@ -10,6 +10,7 @@ from handball.contracts.match_repository import MeczReadRepository
 from handball.contracts.match_stage_repository import EtapMeczowReadRepository
 from handball.contracts.season_repository import SezonReadRepository
 from handball.contracts.venue_repository import HalaReadRepository
+from handball.domain.match_rules import MeczPolicy
 from handball.extensions import baza_danych
 from handball.infrastructure.repositories.competition_repository import (
     RozgrywkiSQLAlchemyRepository,
@@ -20,6 +21,11 @@ from handball.infrastructure.repositories.match_stage_repository import (
 )
 from handball.infrastructure.repositories.season_repository import SezonSQLAlchemyRepository
 from handball.infrastructure.repositories.venue_repository import HalaSQLAlchemyRepository
+from handball.interface.presenters.match_presenter import (
+    MeczFormat,
+    MeczPresenter,
+    SkladMeczuPresenter,
+)
 from handball.services.match_dictionary_service import SlownikiMeczowService
 from handball.services.match_service import MeczService
 
@@ -60,3 +66,8 @@ class ZaleznosciZadaniaFactory:
             self._fabryka_repozytorium_hal(),
             self._fabryka_repozytorium_etapow(),
         )
+
+    def utworz_presenter_meczow(self) -> MeczPresenter:
+        formatowanie = MeczFormat()
+        reguly = MeczPolicy()
+        return MeczPresenter(reguly, formatowanie, SkladMeczuPresenter(formatowanie, reguly))

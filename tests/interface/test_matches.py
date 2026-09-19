@@ -15,7 +15,7 @@ from tests.helpers.season_repository import SezonInMemoryRepository
 from tests.helpers.venue_repository import HalaInMemoryRepository
 
 from handball.app_factory import AplikacjaFactory
-from handball.domain.matches import PozycjaListyMeczow, SzczegolyMeczu
+from handball.domain.matches import DaneMeczu, PozycjaListyMeczow, SzczegolyMeczu
 from handball.domain.options import OpcjaWyboru
 from handball.interface.registration import WidokiRegistrar
 from handball.request_dependencies import ZaleznosciZadaniaFactory
@@ -27,29 +27,29 @@ POZYCJA_TESTOWA = PozycjaListyMeczow(
     rozgrywki="ORLEN Superliga",
     gospodarz="Industria Kielce",
     gosc="Orlen Wisła Płock",
-    wynik="32 : 28",
+    mecz=DaneMeczu(id=12543, wynik_gosp_full=32, wynik_gosc_full=28),
     hala="Hala Legionów",
     runda="Runda zasadnicza",
     kolejka="Kolejka 1",
 )
 
 SZCZEGOLY_TESTOWE = SzczegolyMeczu(
-    id_mecz=12543,
-    gospodarz="Industria Kielce",
-    gosc="Orlen Wisła Płock",
-    wynik_naglowek="32 : 28",
-    wynik_do_przerwy="do przerwy 16 : 13",
-    dopisek_wyniku="dogrywka",
-    rozgrywki="ORLEN Superliga",
-    kolejka="Kolejka 1",
-    termin="12.09.2026 18:00",
-    hala="Hala Legionów",
-    status="Rozegrany",
-    dane_podstawowe=[("Sezon", "2026/2027")],
-    statystyki=[("Wynik (pełny)", "32", "28")],
-    sklad_gospodarz=[],
-    sklad_gosc=[],
-    sklad_inne=[],
+    mecz=DaneMeczu(
+        id=12543,
+        wynik_gosp_full=32,
+        wynik_gosc_full=28,
+        wynik_gosp_pol=16,
+        wynik_gosc_pol=13,
+        dogrywka_1_full_gosp=32,
+        dogrywka_1_full_gosc=28,
+        data_faktyczna=datetime(2026, 9, 12, 18, 0),
+    ),
+    nazwa_gospodarz="Industria Kielce",
+    nazwa_gosc="Orlen Wisła Płock",
+    nazwa_sezon="2026/2027",
+    nazwa_rozgrywki="ORLEN Superliga",
+    nazwa_kolejka="Kolejka 1",
+    nazwa_hala="Hala Legionów",
 )
 
 SEZONY_TESTOWE = [OpcjaWyboru(195, "2026/2027")]
@@ -213,7 +213,10 @@ def test_lista_meczow_wiersz_ma_adres_do_dwuklikniecia(klient_z_danymi: FlaskCli
 
 
 def test_lista_meczow_pokazuje_dopisek_wyniku() -> None:
-    pozycja = replace(POZYCJA_TESTOWA, dopisek_wyniku="k 6-7")
+    pozycja = replace(
+        POZYCJA_TESTOWA,
+        mecz=replace(POZYCJA_TESTOWA.mecz, dogrywka_karne_gosp=6, dogrywka_karne_gosc=7),
+    )
     klient = _aplikacja_z_repozytorium([pozycja]).test_client()
 
     odpowiedz = klient.get("/administracja/mecze")
@@ -224,9 +227,7 @@ def test_lista_meczow_pokazuje_dopisek_wyniku() -> None:
 
 
 def test_szczegoly_meczu_wyswietla_dane() -> None:
-    klient = _aplikacja_z_repozytorium(
-        [POZYCJA_TESTOWA], {12543: SZCZEGOLY_TESTOWE}
-    ).test_client()
+    klient = _aplikacja_z_repozytorium([POZYCJA_TESTOWA], {12543: SZCZEGOLY_TESTOWE}).test_client()
 
     odpowiedz = klient.get("/administracja/mecze/12543")
     tresc = odpowiedz.get_data(as_text=True)

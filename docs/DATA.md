@@ -44,4 +44,8 @@ Nie naprawiaj danych ani nie uruchamiaj ponownie importu na podstawie tych obser
 
 ## Prezentacja zmiany gospodarza — 2026-09-19
 
-Na polecenie użytkownika lista meczów uwzględnia `mecze.zamiana=True`: odwraca nazwy obu drużyn oraz części wyniku `wynik_gosp_full` / `wynik_gosc_full`. Dla `False` lub `NULL` pozostawia kolejność. Reguła jest stosowana raz, przy budowaniu pozycji listy w repozytorium, bez zmiany danych źródłowych. Nie rozszerza automatycznie tej interpretacji na składy ani przyszłe statystyki.
+Na polecenie użytkownika lista meczów uwzględnia `mecze.zamiana=True`: odwraca nazwy obu drużyn oraz części wyniku `wynik_gosp_full` / `wynik_gosc_full`. Dla `False` lub `NULL` pozostawia kolejność. Po refaktoryzacji 2026-09-19 reguła jest stosowana raz przez `MeczPresenter` z użyciem `MeczPolicy`, bez zmiany danych źródłowych. Nie rozszerza automatycznie tej interpretacji na składy ani przyszłe statystyki.
+
+## Kontrakt odczytu po refaktoryzacji — 2026-09-19
+
+Repozytorium zwraca źródłową kolejność stron, liczby, daty i `None`; `ZawodnikMeczu` nie zawiera pól koloru ani tekstowych ułamków. Presenter stosuje regułę stron dla listy oraz szczegółów (nazwy, wyniki i składy) i przygotowuje modele szablonów. Zachowano istniejące zachowanie; refaktoryzacja nie jest nową weryfikacją semantyki importu ani zgody na zmianę bazy. Maksimum bramek jest wyznaczane osobno w każdym składzie przez regułę domenową; braki pozostają brakami w domenie.

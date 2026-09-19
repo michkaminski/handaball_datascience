@@ -61,3 +61,11 @@ Start aplikacji nie może importować danych, tworzyć tabel ani uruchamiać mig
 Przed udostępnieniem administracji wymagane są uwierzytelnienie, kontrola uprawnień oraz ochrona formularzy zmieniających stan. Pola pochodzące ze źródeł danych wymagają bezpiecznego renderowania. Eksport publiczny powinien mieć jawny zestaw pól, zamiast kopiować całe rekordy bazy.
 
 Istotną rozstrzygniętą decyzję zapisuj tutaj z datą, powodem i skutkami. Osobny ADR dodawaj dopiero, gdy uzasadnienie jest zbyt obszerne dla tego dokumentu.
+
+## Oddzielenie prezentacji od danych — 2026-09-19
+
+Repozytorium odczytu meczów zwraca typowane obiekty domeny z wartościami liczbowymi, datami i brakami danych. Nie formatuje tekstów wyniku, etykiet tabel ani kolorów. `domain/match_rules.py` zawiera `MeczPolicy`: zmianę stron, status, obecność dogrywki i serii karnych oraz maksimum bramek w składzie.
+
+`interface/presenters/match_presenter.py` przygotowuje listę i szczegóły do renderowania, używając reguł domenowych. `interface/view_models/matches.py` zawiera odrębne dataclass z tekstami i wyróżnieniami. `kolor_pozycji` i `najlepszy_strzelec` nie są już polami danych zawodnika w domenie. Presentery otrzymują zależności przez konstruktor; składa je `ZaleznosciZadaniaFactory`.
+
+Nie zmieniono zapytań, tras, normalizacji importu ani zasad prezentacji meczów. Repozytorium zwraca teraz strony źródłowe; regułę `zamiana` stosuje presenter przez `MeczPolicy` dokładnie raz. Typowane dane pozwalają innym odbiorcom korzystać z liczb i dat bez parsowania tekstów ekranu. Import pozostaje osobną ścieżką. Aktualne diagramy: [UML](UML.md).

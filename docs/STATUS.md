@@ -1,8 +1,18 @@
 # Stan projektu
 
-Aktualizacja: 2026-09-14.
+Aktualizacja: 2026-09-19.
 
 Poniższe opisy etapów zachowują wyniki wcześniejszych weryfikacji. Wynik migracji nazw z 2026-09-14 podano osobno; nie ponawiano historycznych kontroli na bazie użytkownika.
+
+## Warstwy danych i prezentacji — 2026-09-19
+
+Wydzielono `interface/presenters/` oraz `interface/view_models/`. Repozytorium meczów zwraca liczby, flagi, daty i braki danych w typowanych obiektach domeny. Reguły stron, statusu i maksimum bramek są w `domain/match_rules.py`; etykiety, teksty wyniku, kolory i modele szablonów powstają w presenterach składanych przez fabrykę zależności. Usunięto poprzedni moduł `interface/match_presenter.py`. Zapytania i ścieżka importu pozostają bez zmian.
+
+Weryfikacja: 130 testów Pythona bez integracji z bazą oraz 11 testów JavaScript przechodzi; mypy i Ruff dla kodu oraz testów jednostkowych/widoków bez błędów. Testy obejmują też typy i niezależność danych od ORM, brakujące wartości, zmianę stron i kierunek zależności warstw. Nie uruchamiano rzeczywistej bazy ani importu. Zaktualizowano [strukturę](DIRECTORY_STRUCTURE.md), [UML](UML.md) i [decyzję](ARCHITECTURE.md).
+
+## Podgląd meczu i prezentacja składów — 2026-09-19
+
+Istniejący widok szczegółów można otworzyć z listy w nowej karcie linkiem „Szczegóły” albo w modalu dwuklikiem lub klawiszem Enter na wierszu. Składy są grupowane według źródłowej pozycji i numeru koszulki, z pastelowymi kolorami pozycji i czerwonym wyróżnieniem komórek bramek liderów każdej drużyny osobno (również ex aequo). Szczegóły mają zakładki „Dane podstawowe”, „Wynik i statystyki” i „Składy”; legenda wyróżnień znajduje się pod tabelami składów. Aktualny kontrakt: [detail.md](../src/handball/interface/templates/admin/matches/detail.md). Sprawdzenie tej zmiany: 22 testy widoków i prezentacji, 11 testów JavaScript (modal, zakładki i pamięć filtrów), mypy oraz Ruff dla zmienionego Pythona przechodzą. Nie wykonano kontroli wizualnej w przeglądarce ani odczytu rzeczywistej bazy. Poniższe historyczne opisy etapów mogą poprzedzać istniejącą implementację szczegółów.
 
 ## Import i prezentacja meczów — 2026-09-19
 
@@ -73,7 +83,6 @@ Dodano filtry po nazwie rundy i kolejki oraz dwie opcjonalne kolumny włączane 
 
 ## Jeszcze niewykonane
 
-- Szczegóły meczu (`MeczDetailView`, `matches/detail.html`, model `players.py`, rozszerzenie `Mecz`) — etap 5.
 - Podgląd ostatnich meczów bezpośrednio na stronie startowej (obecnie: tylko przycisk do pełnej listy) — świadomie odłożone.
 - Dostęp administratora i pozostałe widoki odczytu (etapy 6–7).
 - Dodatkowe pozycje sidebara podłączone do realnych widoków (obecnie większość to `href="#"`) — razem z odpowiadającymi im widokami/etapami.
@@ -84,6 +93,6 @@ Dodano filtry po nazwie rundy i kolejki oraz dwie opcjonalne kolumny włączane 
 
 ## Następny krok
 
-Etap 5 z [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md): szczegóły meczu — rozszerzenie modelu `Mecz`, model `players.py`/`sklady`, `pobierz_szczegoly` w kontrakcie i repozytorium, `MeczDetailView`, adaptacja `match_detail.html` prototypu. Przed tym warto ustalić interpretację wariantów wyniku i `zamiana` (patrz DATA.md) — obecnie nie są jeszcze rozstrzygnięte.
+Dostęp administratora i kolejne uzgodnione widoki odczytu z [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md). Lista i szczegóły meczów są zaimplementowane; ich aktualne warstwy opisują DIRECTORY_STRUCTURE i UML.
 
 Nie używać `python ../run.py` jako komendy uruchomienia nowej aplikacji: dotyczy starszego serwisu i jego procesu importu.
