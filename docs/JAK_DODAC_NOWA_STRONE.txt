@@ -1,0 +1,425 @@
+==============================================================
+JAK DODAĆ NOWĄ STRONĘ (np. "Zawodnicy") — SZABLON KROK PO KROKU
+==============================================================
+
+Ten plik to instrukcja "dla laika" — kolejność, w jakiej trzeba
+tworzyć pliki, żeby dodać nową listę w administracji, wzorem
+istniejącej strony "Mecze". Zamiast "Mecze" wstaw swój temat,
+np. "Zawodnicy" — w tekście wszędzie, gdzie jest ZAWODNICY,
+podstaw nazwę swojej strony.
+
+Nie zmieniaj kolejności kroków. Każdy kolejny krok opiera się
+na poprzednim.
+
+
+--------------------------------------------------------------
+OGÓLNY OBRAZEK — CO POWSTAJE I W JAKIEJ KOLEJNOŚCI
+--------------------------------------------------------------
+
+    1. MODEL           -> jak wygląda tabela w bazie (już gotowe,
+                           jeśli tabela istnieje — patrz krok 1)
+    2. DOMENA          -> jak wygląda "jedna pozycja listy"
+                           i "filtry" w zwykłym Pythonie
+    3. KONTRAKT        -> obietnica: "dane da się pobrać w taki
+                           sposób" (bez mówienia jak)
+    4. REPOZYTORIUM    -> prawdziwe zapytanie SQL, które dotrzymuje
+                           obietnicy z kroku 3
+    5. SERWIS          -> miejsce na reguły biznesowe (na razie
+                           zwykle tylko przekazuje dalej)
+    6. FORMULARZ       -> sprawdza, co użytkownik wpisał w filtrach
+    7. WIDOK           -> "recepcjonista" — łączy wszystko powyżej
+                           i wybiera szablon do wyświetlenia
+    8. TRASA (URL)     -> podpięcie widoku pod adres w przeglądarce
+    9. SZABLON HTML    -> jak strona wygląda + plik .md z opisem
+   10. NAWIGACJA       -> link w menu/sidebarze
+   11. TESTY           -> sprawdzenie, że wszystko działa
+   12. FABRYKA ZALEŻNOŚCI -> spięcie repozytorium z serwisem
+
+Przepływ w działaniu (gdy ktoś otwiera stronę w przeglądarce):
+
+    przeglądarka
+        |
+        v
+    TRASA (URL) ---------> WIDOK
+                              |
+                              v
+                         FORMULARZ (sprawdza filtry z adresu)
+                              |
+                              v
+                          SERWIS
+                              |
+                              v
+                       REPOZYTORIUM --------> BAZA DANYCH
+                              |                    |
+                              v                    |
+                          (wyniki) <----------------
+                              |
+                              v
+                          WIDOK
+                              |
+                              v
+                       SZABLON HTML
+                              |
+                              v
+                        przeglądarka (gotowa strona)
+
+
+--------------------------------------------------------------
+KROK 1. MODEL — sprawdź / dodaj mapowanie tabeli
+--------------------------------------------------------------
+
+Miejsce: src/handball/infrastructure/database/models/
+
+Sprawdź, czy tabela już ma swój model (np. tabela "zawodnicy"
+-> plik players.py z klasą Zawodnik). Jeśli nie ma — utwórz go,
+wzorując się na istniejącym pliku, np. venues.py (tabela "hale"):
+
+    class Zawodnik(Baza):
+        __tablename__ = "zawodnicy"
+        __table_args__ = {"schema": "public"}
+
+        id: Mapped[int] = mapped_column(primary_key=True)
+        imie: Mapped[str | None]
+        nazwisko: Mapped[str | None]
+
+WAŻNE: to tylko odwzorowanie istniejącej tabeli. Nie twórz nowych
+tabel, nie zmieniaj kolumn — model ma pasować do tego, co już
+jest w bazie.
+
+
+--------------------------------------------------------------
+KROK 2. DOMENA — opisz "jedną pozycję listy" i "filtry"
+--------------------------------------------------------------
+
+Miejsce: src/handball/domain/players.py  (nowy plik)
+
+Wzór: src/handball/domain/matches.py
+
+Potrzebne są zwykle 3 klasy:
+
+    @dataclass(frozen=True)
+    class FiltryZawodnikow:
+        szukaj_nazwiska: str | None = None
+        strona: int = 1
+        rozmiar_strony: int = 20
+
+    @dataclass(frozen=True)
+    class PozycjaListyZawodnikow:
+        id_zawodnik: int
+        imie: str | None
+        nazwisko: str | None
+
+    @dataclass(frozen=True)
+    class StronaZawodnikow:
+        pozycje: list[PozycjaListyZawodnikow]
+        liczba_wszystkich: int
+        strona: int
+        rozmiar_strony: int
+
+To są zwykłe "pudełka na dane" — żadnej logiki bazy danych,
+żadnego Flaska. Dzięki temu dają się łatwo testować.
+
+
+--------------------------------------------------------------
+KROK 3. KONTRAKT — obietnica, jak dane będą pobierane
+--------------------------------------------------------------
+
+Miejsce: src/handball/contracts/player_repository.py  (nowy plik)
+
+Wzór: src/handball/contracts/match_repository.py
+
+    class ZawodnikReadRepository(Protocol):
+        def pobierz_liste(self, filtry: FiltryZawodnikow) -> StronaZawodnikow: ...
+
+To jest tylko "nagłówek" metody — bez ciała. Mówi: "cokolwiek
+dostarczy te dane, musi mieć taką metodę". Dzięki temu serwis
+(krok 5) będzie dało się testować bez prawdziwej bazy.
+
+
+--------------------------------------------------------------
+KROK 4. REPOZYTORIUM — prawdziwe zapytanie do bazy
+--------------------------------------------------------------
+
+Miejsce: src/handball/infrastructure/repositories/player_repository.py
+
+Wzór: src/handball/infrastructure/repositories/match_repository.py
+(dla prostszych list bez złączeń — season_repository.py albo
+venue_repository.py to lepszy, krótszy wzór)
+
+    class ZawodnikSQLAlchemyRepository:
+        def __init__(self, sesja: Session) -> None:
+            self._sesja = sesja
+
+        def pobierz_liste(self, filtry: FiltryZawodnikow) -> StronaZawodnikow:
+            try:
+                return self._pobierz_liste(filtry)
+            except SQLAlchemyError as wyjatek:
+                raise BladOdczytuDanych("Nie udalo sie odczytac listy zawodnikow") from wyjatek
+
+        def _pobierz_liste(self, filtry: FiltryZawodnikow) -> StronaZawodnikow:
+            ... tutaj prawdziwe zapytanie select(...) ...
+
+Zasada: to jedyne miejsce w całym projekcie, gdzie wolno pisać
+zapytania SQL/SQLAlchemy dla tej strony. Każdy błąd bazy
+zamieniamy na BladOdczytuDanych — wyżej nikt nie wie, że pod spodem
+jest SQL.
+
+
+--------------------------------------------------------------
+KROK 5. SERWIS — miejsce na logikę biznesową
+--------------------------------------------------------------
+
+Miejsce: src/handball/services/player_service.py
+
+Wzór: src/handball/services/match_service.py
+
+    class ZawodnikService:
+        def __init__(self, repozytorium: ZawodnikReadRepository) -> None:
+            self._repozytorium = repozytorium
+
+        def pobierz_liste(self, filtry: FiltryZawodnikow) -> StronaZawodnikow:
+            return self._repozytorium.pobierz_liste(filtry)
+
+Na start to zwykle tylko "przekaż dalej". Jeśli pojawi się
+reguła biznesowa (np. "nie pokazuj wycofanych zawodników"),
+to jej miejsce jest właśnie tutaj — nie w widoku i nie w
+repozytorium.
+
+
+--------------------------------------------------------------
+KROK 6. FORMULARZ — walidacja filtrów z adresu URL
+--------------------------------------------------------------
+
+Miejsce: src/handball/interface/admin/forms/player_filters.py
+
+Wzór: src/handball/interface/admin/forms/match_filters.py
+
+    class ZawodnikFilterForm(Form):
+        nazwisko = StringField(validators=[validators.Optional()])
+        strona = IntegerField(default=1, validators=[validators.Optional()])
+        rozmiar_strony = IntegerField(default=20, validators=[validators.Optional()])
+
+        def do_filtrow(self) -> FiltryZawodnikow:
+            return FiltryZawodnikow(
+                szukaj_nazwiska=self.nazwisko.data or None,
+                strona=self.strona.data or 1,
+                rozmiar_strony=self.rozmiar_strony.data or 20,
+            )
+
+Tu sprawdzamy, czy to, co ktoś wpisał w polu wyszukiwania /
+filtrze, ma sensowny format, zanim trafi dalej.
+
+
+--------------------------------------------------------------
+KROK 7. WIDOK — recepcjonista, który spina wszystko
+--------------------------------------------------------------
+
+Miejsce: src/handball/interface/admin/views/player_views.py
+
+Wzór: src/handball/interface/admin/views/match_views.py
+
+    class ZawodnikListView(MethodView):
+        def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+            self._fabryka_zaleznosci = fabryka_zaleznosci
+
+        def get(self) -> str:
+            formularz = ZawodnikFilterForm(request.args)
+            if not formularz.validate():
+                abort(400, description=str(formularz.errors))
+
+            filtry = formularz.do_filtrow()
+            serwis = self._fabryka_zaleznosci.utworz_serwis_zawodnikow()
+            try:
+                strona = serwis.pobierz_liste(filtry)
+            except BladOdczytuDanych as wyjatek:
+                obsluz_blad_domeny(wyjatek)
+
+            return render_template(
+                "admin/players/list.html",
+                sekcja_aktywna="zawodnicy",
+                strona=strona,
+                filtry=filtry,
+                formularz=formularz,
+            )
+
+
+--------------------------------------------------------------
+KROK 8. TRASA — podpięcie widoku pod adres
+--------------------------------------------------------------
+
+Miejsce: src/handball/interface/admin/__init__.py
+
+Dopisz linię obok istniejącej trasy do meczów:
+
+    blueprint.add_url_rule(
+        "/zawodnicy",
+        view_func=ZawodnikListView.as_view("lista_zawodnikow", fabryka_zaleznosci),
+    )
+
+Efekt: adres będzie brzmiał /administracja/zawodnicy
+
+
+--------------------------------------------------------------
+KROK 9. SZABLON HTML — jak strona wygląda
+--------------------------------------------------------------
+
+Miejsca:
+    src/handball/interface/templates/admin/players/list.html
+    src/handball/interface/templates/admin/players/list.md   <- WYMAGANE
+
+W tym projekcie KAŻDY plik .html MUSI mieć swój bliźniaczy
+plik .md obok siebie, opisujący co ten szablon robi, skąd
+biorą się dane i jak wygląda na ekranie (rysunek tekstowy).
+Wzór do skopiowania i przerobienia:
+    src/handball/interface/templates/admin/matches/list.md
+
+Sam HTML (skrócony wzór na podstawie list.html meczów):
+
+    {% extends "base.html" %}
+    {% block tytul %}Zawodnicy — Handball DataScience{% endblock %}
+    {% block tresc %}
+    <section class="pagehead">
+      <h1>Zawodnicy</h1>
+    </section>
+    <section class="panel">
+      <table>
+        <thead><tr><th>Imię</th><th>Nazwisko</th></tr></thead>
+        <tbody>
+        {% for pozycja in strona.pozycje %}
+          <tr><td>{{ pozycja.imie }}</td><td>{{ pozycja.nazwisko }}</td></tr>
+        {% else %}
+          <tr><td colspan="2" class="note">Brak zawodników.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% include "partials/pagination.html" %}
+    </section>
+    {% endblock %}
+
+Rysunek tekstowy strony (do wklejenia w .md, sekcja
+"Układ tekstowy i mapa zmian" — patrz wzór w matches/list.md):
+
+    +--------------------------------------------------+
+    | Start > Dane > Zawodnicy                          |
+    | Zawodnicy                                         |
+    +--------------------------------------------------+
+    | [ Filtry: nazwisko ______ ] [Filtruj]             |
+    +--------------------------------------------------+
+    | Imię        | Nazwisko                            |
+    |-------------+--------------------------------------|
+    | Jan         | Kowalski                             |
+    | ...         | ...                                  |
+    +--------------------------------------------------+
+    | << 1 2 3 >>                                       |
+    +--------------------------------------------------+
+
+
+--------------------------------------------------------------
+KROK 10. NAWIGACJA — link w menu
+--------------------------------------------------------------
+
+Miejsce: src/handball/interface/navigation.py
+
+Pozycja "zawodnicy" już tam jest w SIDEBAR, ale ma
+punkt_koncowy=None (czyli link jest "martwy"). Podmień None na
+prawdziwy endpoint:
+
+    PRZED:
+    PozycjaMenu("zawodnicy", "Zawodnicy", None, "◎"),
+
+    PO:
+    PozycjaMenu("zawodnicy", "Zawodnicy", "administracja.lista_zawodnikow", "◎"),
+
+
+--------------------------------------------------------------
+KROK 11. FABRYKA ZALEŻNOŚCI — spięcie repozytorium z serwisem
+--------------------------------------------------------------
+
+Miejsce: src/handball/request_dependencies.py
+
+Dopisz analogicznie do istniejących metod dla meczów:
+
+  w __init__:
+    self._fabryka_repozytorium_zawodnikow = fabryka_repozytorium_zawodnikow or (
+        lambda: ZawodnikSQLAlchemyRepository(cast(Session, baza_danych.session))
+    )
+
+  nowa metoda:
+    def utworz_serwis_zawodnikow(self) -> ZawodnikService:
+        return ZawodnikService(self._fabryka_repozytorium_zawodnikow())
+
+
+--------------------------------------------------------------
+KROK 12. TESTY — sprawdzenie, że działa
+--------------------------------------------------------------
+
+a) Fałszywe repozytorium do testów (bez prawdziwej bazy):
+   Miejsce: tests/helpers/player_repository.py
+   Wzór:    tests/helpers/match_repository.py
+
+    class ZawodnikInMemoryRepository:
+        def __init__(self, pozycje: list[PozycjaListyZawodnikow] | None = None) -> None:
+            self._pozycje = pozycje or []
+
+        def pobierz_liste(self, filtry: FiltryZawodnikow) -> StronaZawodnikow:
+            ... tak samo jak w MeczInMemoryRepository, tylko na Zawodnikach ...
+
+b) Test serwisu (bez Flaska, bez bazy):
+   Miejsce: tests/unit/test_player_service.py
+   Wzór:    tests/unit/test_match_service.py
+
+c) Test całej strony przez testowego klienta Flaska:
+   Miejsce: tests/interface/test_players.py
+   Wzór:    tests/interface/test_matches.py
+
+   Sprawdź co najmniej:
+     - pusta lista (brak zawodników w repozytorium)
+     - poprawne dane renderują się w tabeli
+     - niepoprawny filtr -> błąd 400
+     - paginacja działa
+
+Uruchomienie testów: uv run pytest
+
+
+--------------------------------------------------------------
+SZYBKA ŚCIĄGA — LISTA PLIKÓW DO STWORZENIA/ZMIANY
+--------------------------------------------------------------
+
+NOWE PLIKI:
+  [ ] src/handball/infrastructure/database/models/players.py        (jeśli brak modelu)
+  [ ] src/handball/domain/players.py
+  [ ] src/handball/contracts/player_repository.py
+  [ ] src/handball/infrastructure/repositories/player_repository.py
+  [ ] src/handball/services/player_service.py
+  [ ] src/handball/interface/admin/forms/player_filters.py
+  [ ] src/handball/interface/admin/views/player_views.py
+  [ ] src/handball/interface/templates/admin/players/list.html
+  [ ] src/handball/interface/templates/admin/players/list.md
+  [ ] tests/helpers/player_repository.py
+  [ ] tests/unit/test_player_service.py
+  [ ] tests/interface/test_players.py
+
+ISTNIEJĄCE PLIKI DO ZMIANY:
+  [ ] src/handball/interface/admin/__init__.py       (dodaj trasę)
+  [ ] src/handball/request_dependencies.py           (dodaj fabrykę serwisu)
+  [ ] src/handball/interface/navigation.py           (podmień None na endpoint)
+
+
+--------------------------------------------------------------
+NAZEWNICTWO — PRZYPOMNIENIE (patrz docs/CODING_STANDARDS.md)
+--------------------------------------------------------------
+
+- Nazwy plików, katalogów, modułów: PO ANGIELSKU
+  (np. player_repository.py, players/list.html)
+- Nazwy klas, metod, zmiennych domenowych: PO POLSKU, bez
+  polskich znaków diakrytycznych, z angielską "rolą techniczną"
+  na końcu nazwy klasy:
+    ZawodnikService, ZawodnikRepository, ZawodnikListView,
+    ZawodnikSQLAlchemyRepository, ZawodnikReadRepository
+- Bez komentarzy w nowym kodzie i testach — wyjaśnienia idą
+  do plików .md / docs.
+- Nie twórz repozytorium/serwisu "na zapas" bez realnej potrzeby —
+  jeśli nowa strona jest bardzo prosta (np. sam słownik bez
+  filtrów), można pominąć osobny formularz i ograniczyć serwis
+  do przekazania dalej, ale zachowaj podział na warstwy
+  (kontrakt / repozytorium / widok) — to on daje testowalność.

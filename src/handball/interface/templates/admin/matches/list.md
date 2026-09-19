@@ -52,3 +52,60 @@ Zweryfikowane integracyjnie **wobec rzeczywistej bazy**:
 - `test_filtr_rozgrywki_po_nazwie_obejmuje_wiele_sezonow` — dla realnej nazwy występującej w kilku sezonach (np. "I Liga Kobiet": 6 sezonów, 750 meczów) filtr zwraca dokładnie tę liczbę i te sezony.
 
 Sprawdzono też ręcznie w przeglądarce wobec żywej bazy: dropdown "Rozgrywki" nie ma ani jednej powtórzonej nazwy (sprawdzono zliczeniem wystąpień w wygenerowanym HTML), filtr po nazwie "I Liga Kobiet" zwraca 750 wyników z 6 różnych sezonów zgodnie z bezpośrednim zapytaniem kontrolnym; sortowanie po kliknięciu (strzałka zmienia kierunek, adres zawiera `sortowanie=-data`), kolumny Sezon/Rozgrywki z realnymi danymi, brak podpowiedzi w polu daty. Nie sprawdzono: zachowania przy błędzie połączenia z bazą (503) na żywo, kaskadowego odświeżenia listy rozgrywek bez przeładowania strony (celowo brak JS na tym etapie).
+
+## Układ tekstowy i mapa zmian
+
+Stan: układ istniejącego `list.html`. Numery 1–6 oznaczają miejsca opisane w tabeli poniżej. Nagłówek, górne menu, sidebar i stopka pochodzą z `base.html`.
+
+```text
+[HD  Handball DataScience / Administracja danych]             wspólna rama
+[Start | Dane | Import | Kontrola danych | Logi]              wspólne menu
++-------------------+----------------------------------------------------------+
+| Administracja     | [☰ Menu] tylko na wąskim ekranie                        |
+| Dane              | [komunikaty, jeżeli są]                                |
+| ...               |                                                          |
+| Mecze [aktywne]   | (1) Start › Dane › Mecze                                 |
+| ...               |     MECZE                                                |
+| Import / eksport  |     Zwarta lista meczów. Tabela jest głównym elementem.   |
+| Narzędzia         |                                                          |
+|                   | (2) FILTRY                                               |
+|                   | [Sezon v] [Rozgrywki v] [Hala v]                         |
+|                   | [Drużyna: tekst] [Data: tekst] [Filtruj]                  |
+|                   |                                                          |
+|                   | (3) TABELA                                               |
+|                   | ID | Data ▲/▼ | Godz. | Sezon | Rozgrywki |              |
+|                   | Gospodarz | Wynik | Gość | Hala                          |
+|                   | (4) dane kolejnego meczu w tych samych kolumnach          |
+|                   |     ...                                                  |
+|                   | (5) albo: Brak meczów spełniających wybrane filtry.        |
+|                   |                                                          |
+|                   | (6) Wyniki od–do z wszystkich    [« Poprzednia] [Następna »]|
++-------------------+----------------------------------------------------------+
+[Handball DataScience                                      Flask + PostgreSQL]
+```
+
+Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czytelności. HTML ma jedną tabelę z dziewięcioma kolumnami w pokazanej kolejności; filtrami steruje siatka CSS. Przycisk „Filtruj” jest szóstym elementem siatki, a nie osobnym szerokim paskiem.
+
+**Zachowanie i warianty:**
+
+- „Filtruj” wysyła GET. `id_sezon`, `rozgrywki` i `id_hala` to listy wyboru; `druzyna` i `data_meczu` to pola tekstowe. Pusty sezon oznacza wszystkie sezony.
+- Kliknięcie „Data” przełącza kierunek, zachowuje filtry i ustawia stronę 1. Pozostałe nagłówki nie są linkami sortowania.
+- Brak terminu, nazwy lub hali jest pokazany jako `—`; brak wyniku jako `- : -`. Wynik jest pogrubiony przez `.score`.
+- Pusty wynik zajmuje dziewięć kolumn (`colspan="9"`). Paginacja wtedy nie jest renderowana.
+- Siatka `.filters` ma 7 kolumn powyżej 1100 px, 4 przy szerokości do 1100 px, 2 do 700 px i 1 do 430 px. Nie wszystkie kolumny muszą być zajęte. Tabela przewija się poziomo we własnym `.table-wrap`.
+- Do 920 px sidebar jest początkowo ukryty. Przycisk „☰ Menu” przełącza go przez wspólny JS.
+
+### Mapa zmian
+
+| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
+| --- | --- | --- |
+| 1. Ścieżka, tytuł i opis | [list.html](list.html) | `.pagehead`, `.crumb`, `<h1>` i `<p>`; tytuł karty w bloku `tytul`. |
+| 2. Etykiety, kolejność i przycisk filtrów | [list.html](list.html) | Sekcja „Filtry”, `<form method="get">`, `.filters` i `.pole-przycisku`. |
+| 2. Rodzaj pola, walidacja i konwersja | [match_filters.py](../../../admin/forms/match_filters.py) | `MeczFilterForm` i `do_filtrow()`. |
+| 2. Opcje list rozwijanych | [match_views.py](../../../admin/views/match_views.py) | `MeczListView.get()` ustawia `choices`; źródła opcji zbiera `SlownikiMeczowService`. |
+| 3. Kolumny i kierunek sortowania | [list.html](list.html) | `<thead>`, link w nagłówku „Data” i odpowiadające im `<td>` w `<tbody>`. Przy zmianie liczby kolumn popraw również `colspan` pustego wiersza. |
+| 4. Pobierane dane i wynik meczu | [match_repository.py](../../../../infrastructure/repositories/match_repository.py) | `_pobierz_liste()` buduje dane, `_sformatuj_wynik()` napis wyniku; pola wyniku opisuje `PozycjaListyMeczow` w `domain/matches.py`. |
+| 5. Treść pustego wyniku | [list.html](list.html) | Gałąź `{% else %}` pętli po `strona.pozycje`. |
+| 6. Licznik i przyciski stron | [pagination.html](../../partials/pagination.html) | Wspólny fragment; jego opis jest w `partials/pagination.md`. |
+| Odstępy, szerokości i responsywność | [admin.css](../../../static/css/admin.css) | `.pagehead`, `.filters`, `.pole-przycisku`, `.table-wrap`, `th`, `td`, `.score` oraz zapytania `@media`. |
+| Nagłówek, sidebar i stopka | [base.md](../../base.md) | Wspólny układ opisany osobno; lista meczów wypełnia tylko blok `tresc`. |

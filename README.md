@@ -30,6 +30,7 @@ Ostatnia komenda sprawdza logikę i widoki bez bazy. Testy w `tests/integration`
 | --- | --- |
 | [AGENTS.md](AGENTS.md) | Główne instrukcje pracy AI w tym katalogu |
 | [PROJECT](docs/PROJECT.md) | Zakres produktu i kryteria pierwszego etapu |
+| [MOJA_ARCHITECTURE — MD](docs/MOJA_ARCHITECTURE.md) / [HTML](docs/MOJA_ARCHITECTURE.html) | Przewodnik po kodzie krok po kroku, z interaktywnym UML |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | Ustalenia techniczne i otwarte decyzje |
 | [TECH_STACK](docs/TECH_STACK.md) | Wybrane technologie i etapy ich wdrażania |
 | [CODING_STANDARDS](docs/CODING_STANDARDS.md) | Obiektowy Python, SOLID, typowanie i kryteria review |

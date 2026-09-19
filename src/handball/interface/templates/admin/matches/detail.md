@@ -27,3 +27,31 @@ Sprawdź niepełne składy, brak wyniku, ostrzeżenia, długie nazwy i bezpieczn
 ## Stan implementacji
 
 Nie ma jeszcze bloków Jinja2, selektorów CSS ani powiązań JS do potwierdzenia. Przy implementacji zastąp ten zapis rzeczywistymi nazwami bloków, selektorów i plików testów; nie wpisuj planowanych kontroli jako wykonanych.
+
+## Układ tekstowy i mapa zmian
+
+Stan: **plan — brak odpowiadającego HTML**. Poniżej tekstowa mapa zakresu z dotychczasowej notatki, nie zatwierdzony projekt rozmieszczenia pól.
+
+```text
+[planowana wspólna rama: base.html]
++------------------------------------------------------------+
+| Szczegóły meczu
+| [uczestnicy i wynik]
+| [metadane spotkania]
+| [składy i dostępne statystyki]
+| [braki danych / ostrzeżenia]
++------------------------------------------------------------+
+[planowana stopka wspólnego układu]
+```
+
+Kolejność, szczegółowe pola i selektory wymagają potwierdzenia przy adaptacji prototypu `match_detail.html`. Własny HTML, widok szczegółów i kontrakt wyniku nie istnieją.
+
+Układ mobilny, dokładne etykiety i selektory nie są jeszcze ustalone. Po powstaniu HTML zastąp ten schemat rzeczywistym rozmieszczeniem, opisz warunki widoczności oraz dodaj mapę konkretnych pól i przycisków.
+
+### Mapa zmian
+
+| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
+| --- | --- | --- |
+| Zakres i przyszły układ | [detail.md](detail.md) | Najpierw uzupełnij ten opis; planowany plik `detail.html` jeszcze nie istnieje. |
+| Wspólna rama strony | [base.md](../../base.md) | Opis nagłówka, menu, sidebara, miejsca treści i stopki; sposób użycia dla tego ekranu potwierdź przy implementacji. |
+| Pozycja nawigacji | [navigation.py](../../../navigation.py) | Odpowiednia pozycja menu pozostaje bez własnego widoku. Dla szczegółów meczu osobnej pozycji menu nie ma. |

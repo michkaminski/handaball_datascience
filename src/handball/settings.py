@@ -23,7 +23,7 @@ class Ustawienia:
             port_bazy=int(os.environ.get("BAZA_PORT", "5432")),
             nazwa_bazy=os.environ.get("BAZA_NAZWA", "zprp"),
             uzytkownik_bazy=os.environ.get("BAZA_UZYTKOWNIK", "postgres"),
-            haslo_bazy=os.environ.get("BAZA_HASLO", ""),
+            haslo_bazy=os.environ.get("BAZA_HASLO", "michal"),
         )
 
     def waliduj(self) -> None:

@@ -81,7 +81,7 @@ Obsługę zapisu i jego transakcji projektuj dopiero po wyraźnym zleceniu użyt
 
 ## Dokumentacja szablonów
 
-Każdy szablon HTML/Jinja2, również układ, fragment i plik makr, ma własny MD w tym samym katalogu. Dokument opisuje kontrakt danych, zależności i miejsca wprowadzania zmian. Przeczytaj go przed edycją i utrzymuj zgodność z implementacją. Szczegóły i istniejące opisy: [TEMPLATES](TEMPLATES.md).
+Każdy szablon HTML/Jinja2, również układ, fragment i plik makr, ma własny MD w tym samym katalogu. Dokument opisuje kontrakt danych, zależności i miejsca wprowadzania zmian. Na końcu zawiera tekstowy układ strony lub fragmentu oraz mapę elementów do plików, bloków Jinja2, selektorów i źródeł danych. Rysunek odzwierciedla rzeczywisty HTML; dla niezaimplementowanych ekranów jest jawnie oznaczonym planem. Przeczytaj go przed edycją i utrzymuj zgodność z implementacją. Szczegóły i istniejące opisy: [TEMPLATES](TEMPLATES.md).
 
 ## Listy z filtrami
 

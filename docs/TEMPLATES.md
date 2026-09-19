@@ -15,9 +15,20 @@ MD opisuje aktualny kontrakt i miejsca zmian, a nie dziennik każdej korekty tek
 - Wskazanie, które zmiany wymagają backendu, oraz stany błędu i braków danych.
 - Sposób weryfikacji i powiązane testy; wyraźne odróżnienie planu od wykonanych kontroli.
 
+## Układ tekstowy na końcu każdego MD
+
+Każdy opis szablonu kończy się sekcją `## Układ tekstowy i mapa zmian`. Dotyczy to stron, układów bazowych, fragmentów, makr oraz notatek dla planowanych HTML.
+
+- W bloku `text` rozrysuj stronę lub fragment w kolejności widocznej dla użytkownika: nagłówek, nawigację, treść, filtry, przyciski, kolumny, komunikaty i paginację — wyłącznie elementy występujące w danym szablonie lub wyraźnie oznaczone jako odziedziczona rama.
+- Oznacz obszary numerami lub nazwami. Pod rysunkiem dodaj tabelę „Mapa zmian”: element → rzeczywisty plik → konkretny blok Jinja2, selektor, pole lub metoda. Używaj względnych, działających odnośników.
+- Rozróżniaj zmianę etykiety/układu w HTML, wyglądu w CSS, interakcji w JS oraz danych i walidacji w Pythonie. Wskaż wspólne fragmenty, zamiast sugerować zmianę ich kopii w każdym ekranie.
+- Dopisz warunki widoczności, pusty wynik i istotne różnice na wąskim ekranie. Jeżeli rysunek zawija szeroką tabelę dla czytelności, zaznacz to, aby nie sugerować innego układu HTML.
+- Dla planowanego HTML napisz „plan — brak odpowiadającego HTML”; pokaż wyłącznie ustalony zakres, a nieznane pola, kolumny i akcje oznacz jako nieustalone. Nie linkuj do nieistniejących plików.
+- Przy zmianie HTML aktualizuj rysunek i mapę w tej samej zmianie. Ta sekcja pozostaje ostatnią sekcją opisu.
+
 ## Obecne opisy
 
-Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogów, łącznie z planowanym logowaniem. Po etapie 4 sześć z nich ma też rzeczywisty HTML (baza, nawigacja, komunikaty, paginacja, start, matches/list); pozostałe cztery to nadal wyłącznie MD i katalogi.
+Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogów, łącznie z planowanym logowaniem. Po etapie 4 sześć z nich ma też rzeczywisty HTML (baza, nawigacja, komunikaty, paginacja, start, matches/list); pozostałe pięć to nadal wyłącznie MD i katalogi. Łącznie z 12 wczesnymi notatkami poniżej są 23 opisy; każdy ma na końcu tekstowy układ i mapę zmian.
 
 | Planowany szablon | Dokument | HTML |
 | --- | --- | --- |

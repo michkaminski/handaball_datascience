@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Handball DataScience — dokumentacja architektury</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+  <script>
+    window.__mermaidReady = import("https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs").then(({default: mermaid}) => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "neutral",
+      securityLevel: "strict",
+      class: { useMaxWidth: false },
+      flowchart: { useMaxWidth: false }
+    });
+    return mermaid;
+    }).catch(() => null);
+  </script>
+  <style>
+    :root {
+      --bg: #fff;
+      --ink: #1f2328;
+      --muted: #59636e;
+      --line: #d8dee4;
+      --pre: #f6f8fa;
+      --link: #0969da;
+      --nav: 230px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 17px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+    .bar {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 48px; padding: 0 20px;
+      background: #fff; border-bottom: 1px solid var(--line);
+    }
+    .bar strong { font-size: 14px; }
+    .bar span { color: var(--muted); font-size: 13px; margin-left: 8px; }
+    .burger {
+      display: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 4px 10px;
+      font: 13px/1.4 inherit;
+      cursor: pointer;
+    }
+    .layout { display: grid; grid-template-columns: var(--nav) minmax(0, 1fr); }
+    .toc {
+      position: sticky; top: 48px;
+      height: calc(100vh - 48px);
+      overflow: auto;
+      padding: 16px 12px 40px;
+      border-right: 1px solid var(--line);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .toc p {
+      margin: 0 0 8px;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .toc a {
+      overflow-wrap: anywhere;
+      display: block;
+      padding: 5px 8px;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 6px;
+    }
+    .toc a.h3 { padding-left: 16px; font-size: 12px; }
+    .toc a:hover, .toc a.active { color: var(--ink); background: var(--pre); }
+    article {
+      max-width: none;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      padding: 32px 28px 80px;
+    }
+    article :is(p, ul, ol, h1, h2, h3, table, hr, blockquote) {
+      max-width: 46rem;
+    }
+    article h2, article h3 { scroll-margin-top: 64px; }
+    article h1 { font-size: 2rem; line-height: 1.25; margin: 0 0 16px; }
+    article h2 {
+      font-size: 1.45rem;
+      margin: 2.4rem 0 12px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    article h2:first-of-type { border-top: 0; }
+    article h3 { font-size: 1.12rem; margin: 1.8rem 0 8px; }
+    article p { margin: 0 0 12px; }
+    article li { margin: .25rem 0; }
+    article a { color: var(--link); }
+    article hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+    article code {
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: .86em;
+      background: var(--pre);
+      padding: .12em .35em;
+      border-radius: 4px;
+    }
+    article pre {
+      background: var(--pre);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      margin: 0 0 16px;
+      width: max-content;
+      max-width: calc(100vw - var(--nav) - 56px);
+      box-sizing: border-box;
+    }
+    article pre code { background: none; padding: 0; font-size: inherit; }
+    .uml-box {
+      margin: 0 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      max-width: calc(100vw - var(--nav) - 56px);
+    }
+    .uml-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--pre);
+      font-size: 13px;
+    }
+    .uml-bar button {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 4px 10px;
+      cursor: pointer;
+      border-radius: 6px;
+      font: 13px/1.3 inherit;
+    }
+    .uml-bar button:hover { background: #eef2f6; }
+    .uml-pct { min-width: 3.5em; font-variant-numeric: tabular-nums; }
+    .uml-bar em { color: var(--muted); font-style: normal; margin-left: 4px; }
+    .uml-stage {
+      height: min(78vh, 920px);
+      overflow: hidden;
+      cursor: grab;
+      position: relative;
+      background: #fafbfc;
+      touch-action: none;
+    }
+    .uml-stage.is-drag { cursor: grabbing; }
+    .uml-box:fullscreen { background: #fff; max-width: none; }
+    .uml-box:fullscreen .uml-stage { height: calc(100vh - 48px); }
+    .mermaid {
+      display: inline-block;
+      transform-origin: 0 0;
+      background: transparent;
+      padding: 12px;
+    }
+    .mermaid svg { max-width: none !important; height: auto; }
+    article table { display: block; overflow-x: auto; border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; }
+    article th, article td {
+      border: 1px solid var(--line);
+      padding: 7px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    article th { background: var(--pre); }
+    article td:first-child code, article td:last-child code { word-break: break-all; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc {
+        display: none;
+        position: fixed; right: 0; top: 48px; width: min(280px, 90vw);
+        background: #fff; z-index: 15; border-left: 1px solid var(--line);
+      }
+      .toc.open { display: block; }
+      .burger { display: inline-block; }
+      article { padding: 24px 18px 64px; }
+      article pre, .uml-box { max-width: calc(100vw - 36px); }
+      article table { max-width: calc(100vw - 36px); }
+      .bar span { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <div><strong>Handball DataScience</strong><span>dokumentacja architektury</span></div>
+    <button class="burger" type="button" id="burger">spis</button>
+  </header>
+  <div class="layout">
+    <nav class="toc" id="toc"><p>Spis</p></nav>
+    <article id="doc"></article>
+    <noscript>Do wersji interaktywnej potrzebny jest JavaScript. Otwórz sąsiedni plik MOJA_ARCHITECTURE.md.</noscript>
+  </div>
+  <textarea id="src" hidden># Handball DataScience — dokumentacja architektury
+
+## Cel dokumentu
+
+Ten dokument wyjaśnia krok po kroku, jak działa aplikacja z tego repozytorium: gdzie zaczyna się żądanie, kto składa obiekty, kto pobiera dane i kto tworzy stronę. Punktem odniesienia jest rzeczywisty kod odczytany 2026-09-14, po zmianie nazw pakietu, katalogów i klas.
+
+Działa strona startowa administracji i lista meczów. Szczegóły meczu, logowanie, większość pozycji menu i eksport pozostają planowane. Głównym przykładem jest **wyświetlenie listy meczów z filtrami**. Dokument nie przedstawia planowanych klas z wcześniejszego UML jako istniejącej implementacji.
+
+Wersja HTML ma tę samą treść co ten MD. Opisy plików są względne wobec katalogu projektu; klikalne odnośniki prowadzą do źródeł. Zasady projektowania znajdują się osobno w [ARCHITECTURE](ARCHITECTURE.md), a szczegółowy stan prac w [STATUS](STATUS.md).
+
+---
+
+## 1. Główna struktura projektu
+
+```text
+handball_datascience/
+├── run.bat                                  ← Przygotowuje środowisko i uruchamia Flaska.
+├── pyproject.toml                           ← Pakiet, zależności i narzędzia jakości.
+├── uv.lock                                  ← Konkretne wersje zależności.
+├── src/
+│   └── handball/                            ← Importowany pakiet aplikacji.
+│       ├── __init__.py                      ← create_app(): wejście dla Flaska.
+│       ├── app_factory.py                   ← Składa i konfiguruje aplikację.
+│       ├── settings.py                      ← Ustawienia i adres połączenia.
+│       ├── extensions.py                    ← Wspólna integracja Flask-SQLAlchemy.
+│       ├── request_dependencies.py          ← Składa serwisy i repozytoria żądania.
+│       ├── domain/                          ← Filtry, dane wyniku i błędy domenowe.
+│       │   ├── matches.py                   ← FiltryMeczow, StronaMeczow, zakres daty.
+│       │   ├── options.py                   ← OpcjaWyboru do list rozwijanych.
+│       │   └── errors.py                    ← Brak meczu i błąd odczytu.
+│       ├── contracts/                       ← Umowy odczytu jako Protocol.
+│       ├── services/                        ← Przypadki użycia bez Flask request i SQL.
+│       │   ├── match_service.py             ← Pobranie listy meczów.
+│       │   └── match_dictionary_service.py  ← Opcje sezonów, rozgrywek i hal.
+│       ├── infrastructure/
+│       │   ├── database/
+│       │   │   ├── connection.py            ← Konfiguracja połączenia READ ONLY.
+│       │   │   └── models/                  ← Mapowanie istniejących tabel.
+│       │   └── repositories/                ← Zapytania SQLAlchemy i wynik domenowy.
+│       └── interface/
+│           ├── registration.py              ← Rejestruje Blueprint administracji.
+│           ├── navigation.py                ← Struktura menu i context processor.
+│           ├── errors.py                    ← Tłumaczy błędy domenowe na HTTP.
+│           ├── admin/
+│           │   ├── __init__.py              ← Adresy stron i podłączenie MethodView.
+│           │   ├── views/                   ← StartView i MeczListView.
+│           │   └── forms/                   ← MeczFilterForm: dane wejściowe GET.
+│           ├── templates/                   ← HTML/Jinja2 i MD przy każdym szablonie.
+│           └── static/                      ← CSS i JS administracji.
+├── tests/
+│   ├── unit/                                ← Logika, filtry i konfiguracja.
+│   ├── interface/                           ← Odpowiedzi HTTP i zasoby.
+│   ├── helpers/                             ← Repozytoria pamięciowe do testów.
+│   └── integration/                         ← Testy repozytoriów zależne od bazy.
+└── docs/                                    ← Dokumentacja projektu i rozpoznanej bazy.
+```
+
+`handball` jest nazwą pakietu Pythona, a Handball DataScience nazwą produktu. Pliki i katalogi są angielskie. Pojęcia domenowe, metody i zmienne pozostają polskie, np. `Mecz`, `FiltryMeczow`, `pobierz_liste()`. Role techniczne klas są angielskie: `MeczService`, `MeczSQLAlchemyRepository`.
+
+Pełny wykaz plików: [DIRECTORY_STRUCTURE](DIRECTORY_STRUCTURE.md). Katalogi z samymi opisami MD w `templates/admin/` nie oznaczają, że odpowiadające im ekrany już działają.
+
+---
+
+## 2. Rysunek warstw projektu
+
+```text
+                         PRZEGLĄDARKA
+                              |
+                              | GET /administracja/mecze
+                              v
++---------------------------------------------------------------+
+| INTERFACE                                                     |
+| Blueprint -&gt; MeczListView -&gt; MeczFilterForm                     |
+| Odczyt HTTP, walidacja, renderowanie odpowiedzi.                |
++-------------------------------+-------------------------------+
+                                |
+                                | gotowe filtry / sezon
+                                v
++---------------------------------------------------------------+
+| SERVICES                                                      |
+| MeczService                  SlownikiMeczowService              |
+| Lista meczów                 Opcje do list rozwijanych          |
+| Zależności opisane kontraktami, bez zapytań SQL w serwisie.      |
++-------------------------------+-------------------------------+
+                                |
+                                | wywołanie kontraktu repozytorium
+                                v
++---------------------------------------------------------------+
+| INFRASTRUCTURE                                                |
+| MeczSQLAlchemyRepository + repozytoria słowników                |
+| Modele ORM -&gt; SQLAlchemy Session -&gt; sterownik psycopg           |
++-------------------------------+-------------------------------+
+                                |
+                                | SELECT w transakcji READ ONLY
+                                v
+                         PostgreSQL / zprp
+```
+
+Kontrakty z `contracts/` opisują operacje, których serwis potrzebuje. Konkretne repozytoria je realizują. `domain/` dostarcza wspólny język danych wejściowych i wyników: filtrów, opcji i pozycji listy.
+
+Powyższe strzałki pokazują **przebieg wywołania**. Zależności kodu mają dodatkową granicę: serwis importuje kontrakt, a nie klasę SQLAlchemy. Dzięki temu w teście można podstawić repozytorium pamięciowe.
+
+```text
+MeczService -------- zna umowę --------&gt; MeczReadRepository
+                                                ^
+                                                | realizuje
+                                  MeczSQLAlchemyRepository
+```
+
+`request_dependencies.py` jest miejscem, które zna oba światy i łączy konkretną implementację z serwisem.
+
+---
+
+## 3. Najprostszy rysunek warstw
+
+```text
+Adres z filtrami
+      |
+      v
+MeczListView       ← rozumie HTTP i wybiera szablon
+      |
+      v
+MeczService        ← udostępnia przypadek użycia
+      |
+      v
+Repozytorium       ← rozumie zapytanie i strukturę bazy
+      |
+      v
+StronaMeczow       ← zwykły wynik Pythona
+      |
+      v
+Jinja2 -&gt; HTML -&gt; przeglądarka
+```
+
+Widok nie buduje SQL. Szablon nie otwiera sesji. Repozytorium zwraca przygotowane dane, więc wyświetlenie nazwy gospodarza w Jinja2 nie powinno uruchamiać kolejnego zapytania ORM.
+
+---
+
+## 4. Lista meczów — dokładniej: pliki i odpowiedzialności
+
+Lista potrzebuje dwóch zestawów danych: opcji do filtrów oraz samych meczów. W obecnym widoku opcje są pobierane przed pełną walidacją formularza.
+
+```text
+interface/admin/views/match_views.py
+MeczListView.get()
+    |
+    +--&gt; SlownikiMeczowService.pobierz_opcje(id_sezon)
+    |       +--&gt; SezonReadRepository.pobierz_wszystkie()
+    |       +--&gt; RozgrywkiReadRepository.pobierz_nazwy(id_sezon)
+    |       +--&gt; HalaReadRepository.pobierz_wszystkie()
+    |
+    +--&gt; MeczFilterForm(request.args)
+    |       +--&gt; ustawienie choices
+    |       +--&gt; validate()
+    |       +--&gt; do_filtrow() -&gt; FiltryMeczow
+    |
+    +--&gt; MeczService.pobierz_liste(filtry)
+    |       +--&gt; MeczReadRepository.pobierz_liste(filtry)
+    |               +--&gt; licznik wyników
+    |               +--&gt; strona wyników
+    |
+    +--&gt; render_template("admin/matches/list.html", ...)
+```
+
+Główne wejście to `GET /administracja/mecze`. Parametry HTTP obejmują `id_sezon`, `rozgrywki`, `id_hala`, `druzyna`, `data_meczu`, `strona`, `rozmiar_strony` i `sortowanie`. Brak sezonu oznacza wszystkie sezony, bez przekierowania do najnowszego.
+
+Wynik stanowi strona HTML z tabelą, filtrami i paginacją. Pusta lista nadal daje HTTP 200. Niepoprawne wejście daje 400, a błąd odczytu jest tłumaczony na 503.
+
+---
+
+## 5. Diagram klas UML — lista meczów
+
+```mermaid
+classDiagram
+    class MethodView
+    class MeczListView {
+        +get() str
+    }
+    class MeczFilterForm {
+        +do_filtrow() FiltryMeczow
+    }
+    class ZaleznosciZadaniaFactory {
+        +utworz_serwis_meczow() MeczService
+        +utworz_serwis_slownikow() SlownikiMeczowService
+    }
+    class MeczService {
+        +pobierz_liste(filtry) StronaMeczow
+    }
+    class MeczReadRepository {
+        &lt;&lt;Protocol&gt;&gt;
+        +pobierz_liste(filtry) StronaMeczow
+    }
+    class MeczSQLAlchemyRepository {
+        +pobierz_liste(filtry) StronaMeczow
+        -_pobierz_liste(filtry) StronaMeczow
+        -_sformatuj_wynik(mecz) str
+    }
+    class MeczInMemoryRepository {
+        +pobierz_liste(filtry) StronaMeczow
+    }
+    class SlownikiMeczowService {
+        +pobierz_opcje(id_sezon) OpcjeFiltrowMeczow
+    }
+    class SezonReadRepository {
+        &lt;&lt;Protocol&gt;&gt;
+        +pobierz_wszystkie() list
+    }
+    class RozgrywkiReadRepository {
+        &lt;&lt;Protocol&gt;&gt;
+        +pobierz_nazwy(id_sezon) list
+    }
+    class HalaReadRepository {
+        &lt;&lt;Protocol&gt;&gt;
+        +pobierz_wszystkie() list
+    }
+    class FiltryMeczow {
+        +id_sezon
+        +rozgrywki
+        +szukaj_druzyny
+        +sortowanie
+    }
+    class StronaMeczow {
+        +pozycje
+        +liczba_wszystkich
+        +strona
+        +rozmiar_strony
+    }
+    class PozycjaListyMeczow
+    class OpcjeFiltrowMeczow
+    class Session
+    class Mecz
+    MethodView &lt;|-- MeczListView
+    MeczListView --&gt; ZaleznosciZadaniaFactory
+    MeczListView ..&gt; MeczFilterForm
+    MeczListView ..&gt; MeczService
+    MeczListView ..&gt; SlownikiMeczowService
+    MeczFilterForm ..&gt; FiltryMeczow
+    ZaleznosciZadaniaFactory ..&gt; MeczService : tworzy
+    ZaleznosciZadaniaFactory ..&gt; SlownikiMeczowService : tworzy
+    ZaleznosciZadaniaFactory ..&gt; MeczSQLAlchemyRepository : domyslna implementacja
+    MeczService --&gt; MeczReadRepository
+    MeczSQLAlchemyRepository ..|&gt; MeczReadRepository
+    MeczInMemoryRepository ..|&gt; MeczReadRepository
+    MeczSQLAlchemyRepository --&gt; Session
+    MeczSQLAlchemyRepository ..&gt; Mecz
+    MeczService ..&gt; FiltryMeczow
+    MeczService ..&gt; StronaMeczow
+    StronaMeczow o-- PozycjaListyMeczow
+    SlownikiMeczowService --&gt; SezonReadRepository
+    SlownikiMeczowService --&gt; RozgrywkiReadRepository
+    SlownikiMeczowService --&gt; HalaReadRepository
+    SlownikiMeczowService ..&gt; OpcjeFiltrowMeczow
+```
+
+Pusty trójkąt z linią ciągłą oznacza dziedziczenie. Linia przerywana z trójkątem oznacza realizację kontraktu. `Protocol` jest strukturalny: repozytorium nie musi jawnie po nim dziedziczyć. Przerywana strzałka bez trójkąta pokazuje użycie, a romb przy `StronaMeczow` — zawieranie pozycji listy.
+
+### Skąd pochodzą klasy z diagramu
+
+| Klasa / kontrakt | Plik |
+| --- | --- |
+| `MeczListView` | [match_views.py](../src/handball/interface/admin/views/match_views.py) |
+| `MeczFilterForm` | [match_filters.py](../src/handball/interface/admin/forms/match_filters.py) |
+| `ZaleznosciZadaniaFactory` | [request_dependencies.py](../src/handball/request_dependencies.py) |
+| `MeczService` | [match_service.py](../src/handball/services/match_service.py) |
+| `MeczReadRepository` | [match_repository.py](../src/handball/contracts/match_repository.py) |
+| `MeczSQLAlchemyRepository` | [match_repository.py](../src/handball/infrastructure/repositories/match_repository.py) |
+| `MeczInMemoryRepository` | [match_repository.py](../tests/helpers/match_repository.py) |
+| `SlownikiMeczowService` | [match_dictionary_service.py](../src/handball/services/match_dictionary_service.py) |
+| `SezonReadRepository` | [season_repository.py](../src/handball/contracts/season_repository.py) |
+| `RozgrywkiReadRepository` | [competition_repository.py](../src/handball/contracts/competition_repository.py) |
+| `HalaReadRepository` | [venue_repository.py](../src/handball/contracts/venue_repository.py) |
+| `FiltryMeczow`, `StronaMeczow`, `PozycjaListyMeczow`, `OpcjeFiltrowMeczow` | [matches.py](../src/handball/domain/matches.py) |
+| `Mecz` | [matches.py](../src/handball/infrastructure/database/models/matches.py) |
+| `MethodView`, `Session` | Klasy bibliotek Flask i SQLAlchemy, nie własne pliki projektu. |
+
+Implementacje słowników to `SezonSQLAlchemyRepository`, `RozgrywkiSQLAlchemyRepository` i `HalaSQLAlchemyRepository` z `infrastructure/repositories/`. Mają osobne kontrakty, ponieważ lista sezonów i wyszukiwanie meczów to różne operacje.
+
+---
+
+## 6. Lista meczów — plik po pliku, funkcja po funkcji
+
+### `interface/admin/views/match_views.py`
+
+**Klasa:** `MeczListView`.
+
+**Po co istnieje:** łączy świat HTTP z przypadkami użycia i szablonem. Konstruktor przechowuje fabrykę zależności. Dopiero `get()` tworzy potrzebne serwisy.
+
+`get()` odczytuje wybrany sezon, pobiera opcje, buduje formularz, ustawia jego `choices` i sprawdza poprawność. Następnie tworzy `FiltryMeczow`, pobiera `StronaMeczow` i renderuje `admin/matches/list.html`.
+
+Widok przekazuje do Jinja2 `strona`, `filtry`, `opcje`, `formularz` i `sekcja_aktywna`. Obsługuje błędy odczytu opcji niezależnie od błędów pobierania meczów. Ponieważ słowniki są odczytywane wcześniej, błędny formularz nie oznacza automatycznie braku zapytań do bazy.
+
+### `interface/admin/forms/match_filters.py`
+
+**Klasa:** `MeczFilterForm`, oparta na WTForms.
+
+**Po co istnieje:** sprawdza i przekształca tekst z parametrów adresu. Listy sezonów, rozgrywek i hal dostają dopuszczalne opcje od widoku.
+
+- `validate()` jest odziedziczoną metodą WTForms; sprawdza pola i listy wyboru.
+- `do_filtrow()` zamienia puste wybory na `None`, identyfikatory na liczby, a datę na zakres.
+- `_waliduj_czesciowa_date()` jest funkcją modułu, nie metodą klasy. Tłumaczy błąd parsera na komunikat walidacji formularza.
+
+`druzyna` w adresie trafia do pola `szukaj_druzyny` w domenie. `data_meczu` trafia do `data_od` i `data_do`. Sortowanie pozostaje polem walidowanym, ale w HTML jest obsługiwane linkiem w nagłówku tabeli.
+
+### `domain/matches.py`
+
+**Obiekty:** `FiltryMeczow`, `PozycjaListyMeczow`, `StronaMeczow` i `OpcjeFiltrowMeczow`.
+
+**Po co istnieje:** opisuje wejście i wynik niezależnie od Flaska oraz SQLAlchemy.
+
+`zakres_z_czesciowej_daty(tekst)` przyjmuje rok, rok i miesiąc albo pełną datę. Zwraca początek i wyłączny koniec przedziału. Dla `2026-09` jest to od 1 września do 1 października, bez włączania października.
+
+`FiltryMeczow.__post_init__()` pilnuje dodatniego numeru strony, rozmiaru strony 1–100 i sortowania `data` albo `-data`. Formularz odpowiada za interpretację HTTP, a ten obiekt za podstawowe warunki użycia filtrów także poza HTTP.
+
+Klasy mają `frozen=True`. Nie oznacza to głębokiej niezmienności list zawartych w obiektach, np. `StronaMeczow.pozycje` nadal jest listą.
+
+### `services/match_service.py`
+
+**Klasa:** `MeczService`.
+
+**Po co istnieje:** daje widokowi kontrakt przypadku użycia. Konstruktor przyjmuje `MeczReadRepository`.
+
+`pobierz_liste(filtry)` obecnie deleguje bezpośrednio do repozytorium. Nie ma tu jeszcze rozbudowanych obliczeń statystycznych ani dodatkowej polityki biznesowej. Ta cienka warstwa pozwala rozbudować przypadek użycia bez przenoszenia SQL do widoku.
+
+### `services/match_dictionary_service.py`
+
+**Klasa:** `SlownikiMeczowService`.
+
+**Po co istnieje:** zbiera opcje formularza z trzech wąskich kontraktów.
+
+`pobierz_opcje(id_sezon)` pobiera wszystkie sezony i hale oraz nazwy rozgrywek, opcjonalnie ograniczone do sezonu. Składa wynik `OpcjeFiltrowMeczow`. Nie renderuje elementów `&lt;select&gt;` — tym zajmują się formularz i Jinja2.
+
+### `contracts/match_repository.py` i kontrakty słowników
+
+**Kontrakt:** `MeczReadRepository`.
+
+**Po co istnieje:** opisuje metodę `pobierz_liste(filtry) -&gt; StronaMeczow`, której potrzebuje serwis. Nie obejmuje zapisu, usuwania ani szczegółów meczu.
+
+Słowniki mają osobne kontrakty: sezony i hale udostępniają `pobierz_wszystkie()`, a rozgrywki `pobierz_nazwy(id_sezon)`. Nazwy zwracane przez repozytorium rozgrywek są unikalne; użytkownik wybiera nazwę rozgrywek, nie osobny identyfikator dla każdego sezonu.
+
+### `infrastructure/repositories/match_repository.py`
+
+**Klasa:** `MeczSQLAlchemyRepository`.
+
+**Po co istnieje:** zamyka wiedzę o tabelach, zapytaniach i przygotowaniu wyniku.
+
+- `__init__(sesja)` dostaje sesję z zewnątrz; nie tworzy własnego połączenia.
+- `pobierz_liste(filtry)` uruchamia odczyt i tłumaczy `SQLAlchemyError` na `BladOdczytuDanych`.
+- `_pobierz_liste(filtry)` buduje złączenia, filtry, licznik, sortowanie i paginację, wykonuje zapytania oraz tworzy obiekty wyniku.
+- `_sformatuj_wynik(mecz)` jest metodą statyczną: brak którejkolwiek części wyniku daje `- : -`, a wartości liczbowe tworzą napis, np. `0 : 0`.
+
+Gospodarz i gość są dwoma aliasami `ZespolSezon`. Złączenie używa identyfikatora zespołu **i sezonu**, aby pokazać nazwę historyczną. Zespoły i hala są dołączane zewnętrznie, więc ich brak nie musi usuwać meczu z wyniku.
+
+Wyszukiwanie drużyny znajduje identyfikatory zespołów przez `ILIKE` na nazwach w `zespoly_sezony`, a następnie filtruje gospodarza lub gościa po tych identyfikatorach. Jedna historyczna nazwa może zatem znaleźć mecze z innych sezonów. Krótka fraza może dopasować kilka różnych zespołów.
+
+Repozytorium wykonuje osobne zapytanie liczące i osobne zapytanie strony. Sortuje po dacie, a przy remisie po `Mecz.id`; używa `LIMIT` i `OFFSET`. Nie należy z tego wyciągać wniosku, że licznik i strona zawsze widzą identyczną migawkę przy równoległych zmianach — kod nie ustawia tu osobno poziomu izolacji.
+
+### `request_dependencies.py`
+
+**Klasa:** `ZaleznosciZadaniaFactory`.
+
+**Po co istnieje:** wybiera konkretne repozytoria i przekazuje je serwisom. Konstruktor przyjmuje opcjonalne funkcje tworzące repozytoria. Domyślne funkcje korzystają z `baza_danych.session`.
+
+`utworz_serwis_meczow()` tworzy repozytorium meczów i `MeczService`. `utworz_serwis_slownikow()` tworzy trzy repozytoria słowników i `SlownikiMeczowService`. To tutaj test może podstawić implementacje pamięciowe.
+
+### `interface/templates/admin/matches/list.html`
+
+**Po co istnieje:** pokazuje gotowy wynik jako tabelę i formularz. Dziedziczy [base.html](../src/handball/interface/templates/base.html) i dołącza fragment paginacji.
+
+Nie zawiera klas Pythona. Korzysta z obiektów przekazanych przez widok. Nagłówek „Data” przełącza sortowanie i resetuje numer strony; paginacja zachowuje pozostałe parametry. Szczegółowy kontrakt: [list.md](../src/handball/interface/templates/admin/matches/list.md).
+
+### `interface/navigation.py` i `interface/errors.py`
+
+`PozycjaMenu` opisuje pojedynczą pozycję nawigacji. `zarejestruj_kontekst_nawigacji()` rejestruje funkcję wstrzykującą menu do szablonów. Pozycje z `punkt_koncowy=None` są widoczne, ale nie prowadzą do działającego widoku.
+
+`obsluz_blad_domeny()` tłumaczy brak meczu na 404, a `BladOdczytuDanych` na 503. Własne szablony błędów są jeszcze planowane; obecnie używana jest standardowa odpowiedź Flaska.
+
+---
+
+## 7. Co robi każda warstwa
+
+| Warstwa | Co rozumie | Przykład w tym projekcie |
+| --- | --- | --- |
+| Widok | HTTP, formularz, wybór odpowiedzi | `MeczListView.get()` |
+| Formularz | Tekst parametrów i dopuszczalne wybory | `MeczFilterForm.do_filtrow()` |
+| Serwis | Operację potrzebną odbiorcy | `MeczService.pobierz_liste()` |
+| Kontrakt | Metody wymagane od dostępu do danych | `MeczReadRepository` |
+| Repozytorium | SQL, złączenia, paginację i projekcję | `MeczSQLAlchemyRepository` |
+| Model ORM | Tabelę i kolumny istniejącej bazy | `Mecz`, `ZespolSezon` |
+| Obiekt domenowy | Dane potrzebne logice i prezentacji | `FiltryMeczow`, `StronaMeczow` |
+| Szablon | Sposób pokazania danych | `admin/matches/list.html` |
+| Fabryka zależności | Konkretne implementacje i konstruktory | `ZaleznosciZadaniaFactory` |
+
+Osobny `Mapper` nie istnieje. Konwersja wierszy ORM do `PozycjaListyMeczow` odbywa się w repozytorium. Nie ma też klas Pydantic opisujących JSON API listy: wejściem jest formularz GET, a wyjściem HTML.
+
+---
+
+## 8. Przepływ konkretnego procesu
+
+Przykład ilustracyjny — nie jest zapytaniem wykonanym teraz na bazie:
+
+```text
+GET /administracja/mecze?druzyna=Kielce&amp;data_meczu=2026-09&amp;sortowanie=-data
+```
+
+```text
+1. Flask dopasowuje adres do administracja.lista_meczow.
+2. Tworzy MeczListView z przekazaną fabryką zależności.
+3. Widok pobiera opcje sezonów, rozgrywek i hal.
+4. Formularz sprawdza tekst i dopuszczalne wartości.
+5. do_filtrow() tworzy FiltryMeczow:
+       szukaj_druzyny = "Kielce"
+       data_od = 2026-09-01
+       data_do = 2026-10-01
+       sortowanie = "-data"
+       strona = 1, rozmiar_strony = 20
+6. MeczService przekazuje filtry do repozytorium.
+7. Repozytorium ogranicza mecze, liczy wynik i pobiera stronę.
+8. Wiersze są zamieniane na PozycjaListyMeczow i StronaMeczow.
+9. Jinja2 renderuje tabelę, opcje filtrów i paginację.
+10. Flask zwraca HTML; zamknięcie kontekstu sprząta sesję.
+```
+
+Błędy mają różne znaczenie:
+
+```text
+Niepoprawna data albo opcja formularza -&gt; 400
+Brak pasujących meczów                 -&gt; 200, komunikat pustej listy
+Awaria odczytu opcji albo meczów        -&gt; 503
+Brak konkretnego meczu                 -&gt; błąd domenowy z mapowaniem 404
+                                         (szczegóły meczu jeszcze nie istnieją)
+```
+
+W zwykłym przebiegu listy powstają trzy odczyty słowników oraz dwa odczyty repozytorium meczów. Dopasowanie nazwy zespołu jest podzapytaniem wewnątrz zapytań meczów, a nie osobnym pobraniem identyfikatorów do Pythona.
+
+---
+
+## 9. Jak obiekty są tworzone
+
+```text
+run.bat / flask --app handball
+    |
+    v
+create_app()
+    +--&gt; Ustawienia.z_srodowiska()
+    +--&gt; AplikacjaFactory(ustawienia).utworz()
+             +--&gt; Flask("handball", ...)
+             +--&gt; PolaczenieConfigurator.skonfiguruj_odczyt()
+             +--&gt; baza_danych.init_app()
+             +--&gt; zarejestruj_kontekst_nawigacji()
+             +--&gt; WidokiRegistrar.zarejestruj()
+                      +--&gt; utworz_blueprint_administracji()
+                      +--&gt; MeczListView.as_view(..., fabryka_zaleznosci)
+```
+
+[create_app()](../src/handball/__init__.py) jest małym adapterem wymaganym przez narzędzia Flaska. [AplikacjaFactory](../src/handball/app_factory.py) składa aplikację. [WidokiRegistrar](../src/handball/interface/registration.py) rejestruje Blueprint, a funkcja [utworz_blueprint_administracji()](../src/handball/interface/admin/__init__.py) przypisuje adresy do klas widoków.
+
+Framework tworzy instancję `MeczListView` dla żądania. Obecny konstruktor widoku przechowuje fabrykę; serwisy powstają podczas `get()`, nie przy starcie aplikacji. Fabryka przechowuje funkcje tworzące repozytoria, a domyślne funkcje odwołują się do sesji bieżącego kontekstu.
+
+```text
+Obiekty aplikacji: konfiguracja, integracja ORM, rejestracja, fabryka
+                                   |
+                                   v
+Kontekst żądania: widok -&gt; serwisy -&gt; repozytoria -&gt; sesja
+                                   |
+                                   v
+Wynik odłączony od ORM: StronaMeczow -&gt; Jinja2
+```
+
+Nie ma zewnętrznego kontenera DI. Wstrzykiwanie zależności oznacza tu zwykłe konstruktory i funkcje tworzące obiekty. W testach te funkcje zwracają repozytoria pamięciowe zamiast repozytoriów SQLAlchemy.
+
+---
+
+## 10. Transakcje i skutki uboczne
+
+[PolaczenieConfigurator](../src/handball/infrastructure/database/connection.py) ustawia adres SQLAlchemy, `pool_pre_ping=True` i `execution_options={"postgresql_readonly": True}`. Integrację z Flaskiem udostępnia [extensions.py](../src/handball/extensions.py).
+
+```text
+Utworzenie aplikacji
+    -&gt; konfiguracja silnika, bez pobierania danych
+
+Żądanie listy
+    -&gt; pierwsze użycie sesji
+    -&gt; transakcja READ ONLY
+    -&gt; odczyty słowników, licznik i strona meczów
+    -&gt; utworzenie obiektów wyniku
+    -&gt; odpowiedź HTML
+    -&gt; usunięcie sesji przy zamknięciu kontekstu
+    -&gt; rollback otwartej transakcji i zwrot połączenia do puli
+```
+
+Repozytorium nie zatwierdza transakcji i nie zmienia rekordów. Nie ma osobnej klasy `UnitOfWork` ani ścieżki zapisu. Sprzątanie sesji należy do integracji Flask-SQLAlchemy, nie do `MeczService`.
+
+Baza ma istniejące schematy `public` i `logs`; modele aplikacji mapują wybrane tabele potrzebne liście. Dokumentacja bazy opisuje również funkcje wykonujące zapis. Samo użycie `SELECT` nie oznacza więc, że dowolna funkcja bazy jest tylko odczytem. Ten dokument powstał bez wykonywania SQL.
+
+Konfigurację opisujemy nazwami zmiennych, np. `BAZA_HOST`, `BAZA_NAZWA`, `BAZA_HASLO`, bez wartości sekretów. Lokalny plik ustawień może różnić się od wersji zapisanej w Git; jego treść nie jest kopiowana do dokumentacji.
+
+---
+
+## 11. Dane — obiekty domenowe, modele i wejście/wyjście
+
+```text
+Parametry HTTP: tekst
+    |
+    v
+MeczFilterForm                   ← walidacja i konwersja wejścia
+    |
+    v
+FiltryMeczow                     ← kryteria niezależne od HTTP
+    |
+    v
+SQLAlchemy: Mecz + złączenia      ← mapowanie istniejących tabel
+    |
+    v
+PozycjaListyMeczow               ← dane jednego wiersza strony
+    |
+    v
+StronaMeczow                    ← pozycje, licznik i paginacja
+    |
+    v
+Jinja2                          ← gotowy HTML
+```
+
+### Model ORM
+
+`Mecz` z `infrastructure/database/models/matches.py` odpowiada tabeli `public.mecze`. `ZespolSezon` opisuje sezonową migawkę zespołu, a `Sezon`, `Rozgrywki` i `Hala` dostarczają danych użytych w złączeniach.
+
+Modele mają prawdziwe nazwy tabel, kolumn i schematów. Zmiana nazwy pliku na `matches.py` nie zmieniła tabeli `mecze` na `matches`.
+
+### Dane wyniku
+
+`PozycjaListyMeczow` zawiera `id_mecz`, termin, sezon, rozgrywki, gospodarza, gościa, wynik i halę. Są to pola do prezentacji; obiekt nie zna sesji SQLAlchemy. `StronaMeczow` dokłada listę pozycji, liczbę wszystkich wyników, numer strony i rozmiar strony.
+
+Wynik meczu jest obecnie napisem z pól `wynik_gosp_full` i `wynik_gosc_full`. Brak wyniku jest odróżniony od `0 : 0`. Interpretacja dodatkowych wariantów wyniku i pola `zamiana` wymaga dalszych ustaleń przed szczegółami meczu.
+
+### Dane słowników
+
+`OpcjaWyboru` z [options.py](../src/handball/domain/options.py) zawiera wartość i etykietę. Używają go sezony i hale. Rozgrywki są listą unikalnych nazw, ponieważ ta sama nazwa może wystąpić w wielu sezonach.
+
+### Gdy zmieni się interfejs albo baza
+
+Inny interfejs może wywołać `MeczService` z obiektem `FiltryMeczow`. Nie musi kopiować zapytań z widoku. Baza z angielskimi nazwami wymagałaby zmiany mapowania i zapytań, ale nie wymusza angielskich nazw obiektów domenowych. Zmiany znaczenia danych nadal trzeba osobno przeanalizować i przetestować.
+
+---
+
+## 12. Testy — co sprawdzają
+
+```text
+unit/          -&gt; filtry, parser daty, delegację serwisu, konfigurację
+interface/     -&gt; odpowiedź HTTP, renderowanie, sortowanie i zasoby
+helpers/       -&gt; pamięciowe zamienniki kontraktów repozytoriów
+integration/   -&gt; zachowanie zapytań wobec PostgreSQL
+```
+
+### Testy jednostkowe
+
+[test_match_filters.py](../tests/unit/test_match_filters.py) sprawdza zakres roku, miesiąca i dnia, przejście grudnia do kolejnego roku, niepoprawne daty oraz granice paginacji i sortowania.
+
+[test_match_service.py](../tests/unit/test_match_service.py) sprawdza delegację do repozytorium i pusty wynik. [test_app_factory.py](../tests/unit/test_app_factory.py) oraz [test_settings.py](../tests/unit/test_settings.py) dotyczą konfiguracji i budowania aplikacji.
+
+### Testy interfejsu
+
+[test_matches.py](../tests/interface/test_matches.py) podstawia repozytoria pamięciowe przez fabrykę zależności. Sprawdza listę bez filtrów, błędne wejście, częściową datę, renderowanie danych, pusty wynik i link sortowania w nagłówku.
+
+[test_start.py](../tests/interface/test_start.py) sprawdza stronę startową oraz dostępność CSS i JS. Te testy nie dowodzą poprawności SQL ani dopasowania historycznych nazw zespołów w prawdziwej bazie.
+
+### Testy integracyjne
+
+[test_match_repository.py](../tests/integration/test_match_repository.py) sprawdza odczyt repozytorium, puste wyniki, wyszukiwanie historycznych nazw i unikalność nazw rozgrywek. Obecne testy zależą od zmiennej `BAZA_HASLO` oraz danych w bazie; bez niej są pomijane.
+
+Jeden test próbuje utworzyć tabelę tymczasową, aby potwierdzić blokadę zapisu. Zgodnie z zasadami projektu nie uruchamiamy go automatycznie na bazie użytkownika. Do sprawdzania zapisów potrzebne jest osobno udostępnione, odizolowane środowisko.
+
+### Zakres potwierdzenia
+
+W poprzedniej weryfikacji migracji nazw przeszło 37 testów jednostkowych i interfejsu; zapisano też pozytywny wynik Ruff i mypy w STATUS. To wyniki wcześniejszego zadania. Przy przygotowaniu tego dokumentu nie uruchamiano aplikacji ani testów bazy.
+
+Nie ma katalogu `tests/architecture/`. Zasady kierunku zależności są opisane w dokumentacji, ale nie należy przypisywać projektowi nieistniejącego automatycznego zestawu testów architektury.
+
+---
+
+## 13. Co pozostaje do zbudowania
+
+Następny etap to szczegóły meczu. `MeczDetailView` nie istnieje jeszcze w kodzie, a [detail.md](../src/handball/interface/templates/admin/matches/detail.md) opisuje planowany szablon.
+
+Do wykonania pozostają także dostęp administratora, pozostałe ekrany menu, własne strony błędów i eksport. Wygląd menu nie oznacza gotowości tych funkcji. Ten przewodnik należy rozszerzać, gdy pojawią się ich rzeczywiste implementacje.
+</textarea>
+  <script>
+    const src = document.getElementById("src").value;
+    if (!window.marked) {
+      const text = document.createElement("pre");
+      text.textContent = src;
+      document.getElementById("doc").appendChild(text);
+      document.getElementById("toc").append("Brak biblioteki z CDN. Wyświetlono źródło Markdown.");
+    } else {
+    const renderer = new marked.Renderer();
+    const origCode = renderer.code.bind(renderer);
+    renderer.code = function (token) {
+      const lang = token.lang || "";
+      const text = token.text || "";
+      if (lang === "mermaid") {
+        const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return '<div class="mermaid">' + esc + "</div>";
+      }
+      return origCode(token);
+    };
+    marked.setOptions({ gfm: true, renderer });
+    const doc = document.getElementById("doc");
+    doc.innerHTML = marked.parse(src);
+
+    const toc = document.getElementById("toc");
+    const used = {};
+    function slug(text) {
+      let s = text.toLowerCase().replace(/[`*_]/g, "").replace(/[^a-z0-9ąćęłńóśźż]+/gi, "-").replace(/^-|-$/g, "");
+      used[s] = (used[s] || 0) + 1;
+      if (used[s] > 1) s += "-" + used[s];
+      return s;
+    }
+    doc.querySelectorAll("h2, h3").forEach((h) => {
+      const id = slug(h.textContent);
+      h.id = id;
+      const a = document.createElement("a");
+      a.href = "#" + id;
+      a.textContent = h.textContent;
+      a.className = h.tagName.toLowerCase();
+      toc.appendChild(a);
+    });
+
+    document.getElementById("burger").addEventListener("click", () => toc.classList.toggle("open"));
+    toc.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => toc.classList.remove("open")));
+
+    const links = [...toc.querySelectorAll("a")];
+    const heads = links.map((a) => document.getElementById(a.getAttribute("href").slice(1))).filter(Boolean);
+    const io = new IntersectionObserver((entries) => {
+      const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!vis) return;
+      links.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + vis.target.id));
+    }, { rootMargin: "-12% 0px -75% 0px", threshold: [0, 0.2, 0.5] });
+    heads.forEach((h) => io.observe(h));
+
+    function fitPreToScreen() {
+      document.querySelectorAll("article pre").forEach((pre) => {
+        pre.style.fontSize = "";
+        const extra = pre.scrollWidth - pre.clientWidth;
+        if (extra <= 2) return;
+        const current = parseFloat(getComputedStyle(pre).fontSize);
+        const next = current * (pre.clientWidth / pre.scrollWidth);
+        if (next >= 10) pre.style.fontSize = next + "px";
+      });
+    }
+
+    function enhanceUml(el) {
+      if (el.closest(".uml-box")) return;
+      const svg = el.querySelector("svg");
+      if (!svg) return;
+      const vb = svg.viewBox && svg.viewBox.baseVal;
+      let w = vb && vb.width;
+      let h = vb && vb.height;
+      if (!w || !h) {
+        try {
+          const box = svg.getBBox();
+          w = w || box.width;
+          h = h || box.height;
+        } catch (err) {
+          w = w || 1200;
+          h = h || 800;
+        }
+      }
+      svg.style.maxWidth = "none";
+      svg.style.width = w + "px";
+      svg.style.height = h + "px";
+
+      const wrap = document.createElement("div");
+      wrap.className = "uml-box";
+      wrap.innerHTML =
+        '<div class="uml-bar">' +
+        '<button type="button" data-act="out">−</button>' +
+        '<span class="uml-pct">100%</span>' +
+        '<button type="button" data-act="in">+</button>' +
+        '<button type="button" data-act="reset">100%</button>' +
+        '<button type="button" data-act="fit">dopasuj</button>' +
+        '<button type="button" data-act="full">pełny ekran</button>' +
+        "<em>kółko myszy powiększa, przeciągnij żeby przesunąć</em>" +
+        "</div>" +
+        '<div class="uml-stage"></div>';
+      el.parentNode.insertBefore(wrap, el);
+      const stage = wrap.querySelector(".uml-stage");
+      const pct = wrap.querySelector(".uml-pct");
+      stage.appendChild(el);
+
+      let scale = 1, x = 16, y = 16, drag = false, lx = 0, ly = 0;
+
+      function apply() {
+        el.style.transform = "translate(" + x + "px," + y + "px) scale(" + scale + ")";
+        pct.textContent = Math.round(scale * 100) + "%";
+      }
+
+      function fit() {
+        const pad = 24;
+        const sw = stage.clientWidth - pad;
+        const sh = stage.clientHeight - pad;
+        scale = Math.min(sw / w, sh / h, 1.5);
+        x = Math.max(12, (stage.clientWidth - w * scale) / 2);
+        y = Math.max(12, (stage.clientHeight - h * scale) / 2);
+        apply();
+      }
+
+      function zoomAt(factor, cx, cy) {
+        const next = Math.min(5, Math.max(0.2, scale * factor));
+        const rect = stage.getBoundingClientRect();
+        const px = cx - rect.left;
+        const py = cy - rect.top;
+        x = px - (px - x) * (next / scale);
+        y = py - (py - y) * (next / scale);
+        scale = next;
+        apply();
+      }
+
+      wrap.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const act = btn.dataset.act;
+          if (act === "in") zoomAt(1.2, stage.getBoundingClientRect().left + stage.clientWidth / 2, stage.getBoundingClientRect().top + stage.clientHeight / 2);
+          if (act === "out") zoomAt(1 / 1.2, stage.getBoundingClientRect().left + stage.clientWidth / 2, stage.getBoundingClientRect().top + stage.clientHeight / 2);
+          if (act === "reset") { scale = 1; x = 16; y = 16; apply(); }
+          if (act === "fit") fit();
+          if (act === "full") {
+            if (document.fullscreenElement === wrap) document.exitFullscreen();
+            else if (wrap.requestFullscreen) wrap.requestFullscreen().then(fit).catch(() => {});
+          }
+        });
+      });
+      document.addEventListener("fullscreenchange", () => {
+        if (document.fullscreenElement === wrap || !document.fullscreenElement) setTimeout(fit, 40);
+      });
+      stage.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY);
+      }, { passive: false });
+      stage.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        drag = true;
+        lx = e.clientX;
+        ly = e.clientY;
+        stage.classList.add("is-drag");
+        stage.setPointerCapture(e.pointerId);
+      });
+      stage.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        x += e.clientX - lx;
+        y += e.clientY - ly;
+        lx = e.clientX;
+        ly = e.clientY;
+        apply();
+      });
+      stage.addEventListener("pointerup", () => { drag = false; stage.classList.remove("is-drag"); });
+      stage.addEventListener("pointercancel", () => { drag = false; stage.classList.remove("is-drag"); });
+      fit();
+    }
+
+    async function runMermaid() {
+      const mermaid = await window.__mermaidReady;
+      if (!mermaid) {
+        document.querySelectorAll(".mermaid").forEach((el) => {
+          const pre = document.createElement("pre");
+          pre.textContent = "Diagram: biblioteka Mermaid z CDN jest niedostępna.\n\n" + el.textContent;
+          el.replaceWith(pre);
+        });
+        return;
+      }
+      try {
+        await mermaid.run({ querySelector: ".mermaid" });
+        document.querySelectorAll(".mermaid").forEach(enhanceUml);
+      } catch (error) {
+        const message = document.createElement("p");
+        message.textContent = "Nie udało się wyrenderować diagramu. Sprawdź źródło Mermaid w pliku MD.";
+        document.getElementById("doc").appendChild(message);
+      }
+    }
+    runMermaid();
+    fitPreToScreen();
+    window.addEventListener("resize", fitPreToScreen);
+    }
+  </script>
+</body>
+</html>

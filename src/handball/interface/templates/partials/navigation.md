@@ -29,3 +29,27 @@ Sprawdź adresy, aktywną sekcję, obsługę klawiatury i zachowanie na wąskim 
 ## Stan implementacji
 
 Wykonano: sprawdzenie w przeglądarce (Playwright, Chromium headless) na ~1400px i ~380px — pozycje "Start" i "Dane" widoczne, poprawnie oznaczane jako aktywne na odpowiednich stronach, pasek nie zawija się nieprawidłowo. `uv run pytest` sprawdza obecność `class="nav"` w odpowiedzi. Nie sprawdzono: nawigacji klawiaturą (Tab/Enter).
+
+## Układ tekstowy i mapa zmian
+
+Stan: fragment istniejącego menu, dołączany pod nagłówkiem w `base.html`.
+
+```text
+<nav class="nav">
+  (1) [Start] [Dane] [Import] [Kontrola danych] [Logi]
+         ^       ^
+         |       aktywne dla sekcja_aktywna="mecze"
+         aktywne dla sekcja_aktywna="start"
+</nav>
+```
+
+Kolejność wynika z `GORNY_PASEK`. „Start” i „Dane” mają realne adresy; trzy pozostałe pozycje mają `href="#"`. Klasa `.active` wyróżnia bieżącą sekcję. Na wąskim ekranie `.nav-inner` przewija się poziomo i nie zawija pozycji. Fragment nie zawiera sidebara ani przycisku „☰ Menu”.
+
+### Mapa zmian
+
+| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
+| --- | --- | --- |
+| 1. Etykiety, kolejność i adresy | [navigation.py](../../navigation.py) | Lista `GORNY_PASEK`; `punkt_koncowy` określa cel, a `klucz` porównanie z aktywną sekcją. |
+| Znacznik pojedynczej pozycji | [navigation.html](navigation.html) | Pętla po `gorny_pasek`, `<a>` i warunek `class="active"`. |
+| Kolory, odstępy i poziome przewijanie | [admin.css](../../static/css/admin.css) | `.nav`, `.nav-inner`, `.nav a`, `.nav a.active`. |
+| Miejsce menu na stronie | [base.html](../base.html) | Include `partials/navigation.html`, pomiędzy nagłówkiem a `.layout`. |

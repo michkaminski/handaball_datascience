@@ -27,3 +27,29 @@ Nie dotyczy — brak implementacji.
 ## Stan implementacji
 
 Nie zaimplementowano. Zbliżone do etapu 7 z [IMPLEMENTATION_PLAN](../../../../../../docs/IMPLEMENTATION_PLAN.md) ("Modele schematu logs oraz repozytoria i widoki diagnostyki — wyłącznie odczyt istniejących importów, anomalii i historii"). Operacje zapisu (uruchomienie importu, eksport) wymagają osobnej, wyraźnej decyzji użytkownika przed implementacją.
+
+## Układ tekstowy i mapa zmian
+
+Stan: **plan — brak odpowiadającego HTML**. Poniżej tekstowa mapa zakresu z dotychczasowej notatki, nie zatwierdzony projekt rozmieszczenia pól.
+
+```text
+[planowana wspólna rama: base.html]
++------------------------------------------------------------+
+| Import / eksport
+| [miejsce na: Import danych / Historia importów / Eksport danych]
+| [podział ekranów / akcje / pola: nieustalone]
++------------------------------------------------------------+
+[planowana stopka wspólnego układu]
+```
+
+Jedna notatka opisuje trzy pozycje menu. Rysunek nie stanowi zgody na import, eksport ani zmiany bazy i nie dodaje przycisków do aplikacji.
+
+Układ mobilny, dokładne etykiety i selektory nie są jeszcze ustalone. Po powstaniu HTML zastąp ten schemat rzeczywistym rozmieszczeniem, opisz warunki widoczności oraz dodaj mapę konkretnych pól i przycisków.
+
+### Mapa zmian
+
+| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
+| --- | --- | --- |
+| Zakres i przyszły układ | [panel.md](panel.md) | Najpierw uzupełnij ten opis; planowany plik `panel.html` jeszcze nie istnieje. |
+| Wspólna rama strony | [base.md](../../base.md) | Opis nagłówka, menu, sidebara, miejsca treści i stopki; sposób użycia dla tego ekranu potwierdź przy implementacji. |
+| Pozycja nawigacji | [navigation.py](../../../navigation.py) | Odpowiednia pozycja menu pozostaje bez własnego widoku. Dla szczegółów meczu osobnej pozycji menu nie ma. |
