@@ -40,6 +40,11 @@ Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</stron
 {% if not przebieg.wykonane and not przebieg.kolejka %}<p role="status">Nie znaleziono meczów wymagających uzupełnienia.</p>{% endif %}
 {% else %}<p class="note">Liczba zadań rośnie podczas odnajdywania rund, kolejek i meczów.</p>{% endif %}
 {% if przebieg.blad %}<p class="notice notice-error" role="alert">{{ przebieg.blad }}</p>{% endif %}
+{% if przebieg.pominiete %}
+<details class="notice notice-warning"><summary>Pominięto {{ przebieg.pominiete|length }} zadań po kilku nieudanych próbach — import poszedł dalej</summary>
+<ul>{% for p in przebieg.pominiete %}<li>{{ p.endpoint }} {{ p.parametry }} — {{ p.blad }}</li>{% endfor %}</ul>
+</details>
+{% endif %}
 {% if przebieg.status in ('POBIERANIE', 'BLAD') %}
 <form method="post" id="pobieranie" data-auto="tak">
 <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="krok">

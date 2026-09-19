@@ -29,7 +29,7 @@
   if (!form) return;
   let running = false;
   let bledyZRzedu = 0;
-  const MAKS_AUTO_PONOWIEN = 5;
+  const MAKS_OPOZNIENIE_MS = 5000;
   const button = form.querySelector('button');
   const status = document.getElementById('stan-pobierania');
   async function download() {
@@ -48,11 +48,10 @@
         document.getElementById('liczba-oczekujacych').textContent = result.oczekujace;
         if (result.status === 'BLAD') {
           bledyZRzedu += 1;
-          if (bledyZRzedu > MAKS_AUTO_PONOWIEN) {
-            throw new Error(`Nie udało się pobrać po ${MAKS_AUTO_PONOWIEN} automatycznych próbach: ${result.blad || ''}`);
-          }
-          status.textContent = `Błąd kroku (${result.blad || ''}), automatyczne ponowienie ${bledyZRzedu}/${MAKS_AUTO_PONOWIEN}…`;
-          await new Promise(resolve => setTimeout(resolve, 1000 * bledyZRzedu));
+          const pominieteInfo = result.pominiete ? ` Pominięto dotąd: ${result.pominiete}.` : '';
+          status.textContent =
+            `Błąd kroku (${result.blad || ''}), ponawiam automatycznie (próba ${bledyZRzedu})…${pominieteInfo}`;
+          await new Promise(resolve => setTimeout(resolve, Math.min(1000 * bledyZRzedu, MAKS_OPOZNIENIE_MS)));
           continue;
         }
         bledyZRzedu = 0;

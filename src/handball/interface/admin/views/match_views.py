@@ -32,6 +32,11 @@ class MeczListView(MethodView):
             (str(opcja.wartosc), opcja.etykieta) for opcja in opcje.hale
         ]
 
+        formularz.runda.choices = [("", "Wszystkie")] + [(nazwa, nazwa) for nazwa in opcje.rundy]
+        formularz.kolejka.choices = [("", "Wszystkie")] + [
+            (nazwa, nazwa) for nazwa in opcje.kolejki
+        ]
+
         if not formularz.validate():
             abort(400, description=str(formularz.errors))
 
@@ -53,4 +58,22 @@ class MeczListView(MethodView):
             filtry=filtry,
             opcje=opcje,
             formularz=formularz,
+        )
+
+
+class MeczSzczegolyView(MethodView):
+    def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+        self._fabryka_zaleznosci = fabryka_zaleznosci
+
+    def get(self, id_mecz: int) -> str:
+        serwis = self._fabryka_zaleznosci.utworz_serwis_meczow()
+        try:
+            szczegoly = serwis.pobierz_szczegoly(id_mecz)
+        except (NieZnalezionoMeczu, BladOdczytuDanych) as wyjatek:
+            obsluz_blad_domeny(wyjatek)
+
+        return render_template(
+            "admin/matches/detail.html",
+            sekcja_aktywna="mecze",
+            szczegoly=szczegoly,
         )

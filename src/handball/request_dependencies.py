@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.match_repository import MeczReadRepository
+from handball.contracts.match_stage_repository import EtapMeczowReadRepository
 from handball.contracts.season_repository import SezonReadRepository
 from handball.contracts.venue_repository import HalaReadRepository
 from handball.extensions import baza_danych
@@ -14,6 +15,9 @@ from handball.infrastructure.repositories.competition_repository import (
     RozgrywkiSQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.match_repository import MeczSQLAlchemyRepository
+from handball.infrastructure.repositories.match_stage_repository import (
+    EtapMeczowSQLAlchemyRepository,
+)
 from handball.infrastructure.repositories.season_repository import SezonSQLAlchemyRepository
 from handball.infrastructure.repositories.venue_repository import HalaSQLAlchemyRepository
 from handball.services.match_dictionary_service import SlownikiMeczowService
@@ -27,6 +31,7 @@ class ZaleznosciZadaniaFactory:
         fabryka_repozytorium_sezonow: Callable[[], SezonReadRepository] | None = None,
         fabryka_repozytorium_rozgrywek: Callable[[], RozgrywkiReadRepository] | None = None,
         fabryka_repozytorium_hal: Callable[[], HalaReadRepository] | None = None,
+        fabryka_repozytorium_etapow: Callable[[], EtapMeczowReadRepository] | None = None,
     ) -> None:
         self._fabryka_repozytorium_meczow = fabryka_repozytorium_meczow or (
             lambda: MeczSQLAlchemyRepository(cast(Session, baza_danych.session))
@@ -41,6 +46,10 @@ class ZaleznosciZadaniaFactory:
             lambda: HalaSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
 
+        self._fabryka_repozytorium_etapow = fabryka_repozytorium_etapow or (
+            lambda: EtapMeczowSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
+
     def utworz_serwis_meczow(self) -> MeczService:
         return MeczService(self._fabryka_repozytorium_meczow())
 
@@ -49,4 +58,5 @@ class ZaleznosciZadaniaFactory:
             self._fabryka_repozytorium_sezonow(),
             self._fabryka_repozytorium_rozgrywek(),
             self._fabryka_repozytorium_hal(),
+            self._fabryka_repozytorium_etapow(),
         )

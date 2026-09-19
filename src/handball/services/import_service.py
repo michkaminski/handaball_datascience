@@ -11,6 +11,8 @@ from handball.contracts.import_storage import ImportStore, ZprpReadClient
 from handball.domain.imports import LIGI_IMPORTU, BladImportu, PrzebiegImportu, ZadaniePobrania
 from handball.services.import_mapping import ZprpImportMapper
 
+LIMIT_PROB_ZADANIA = 3
+
 
 class ImportService:
     def __init__(
@@ -49,27 +51,47 @@ class ImportService:
             roboczy.status = "POBIERANIE"
             try:
                 while roboczy.kolejka:
-                    zadanie = roboczy.kolejka.pop(0)
+                    zadanie = roboczy.kolejka[0]
                     klucz = sha256(
                         json.dumps([zadanie.endpoint, zadanie.parametry], sort_keys=True).encode()
                     ).hexdigest()
                     if klucz in roboczy.wykonane:
+                        roboczy.kolejka.pop(0)
                         continue
-                    url, tresc = self._klient.pobierz(zadanie)
-                    self.magazyn.zapisz_zrodlo(identyfikator, klucz, url, tresc)
-                    ZprpImportMapper(roboczy, klucz).przetworz(
-                        zadanie, json.loads(tresc.decode("utf-8-sig"))
-                    )
+                    try:
+                        url, tresc = self._klient.pobierz(zadanie)
+                        self.magazyn.zapisz_zrodlo(identyfikator, klucz, url, tresc)
+                        ZprpImportMapper(roboczy, klucz).przetworz(
+                            zadanie, json.loads(tresc.decode("utf-8-sig"))
+                        )
+                    except BladImportu as blad:
+                        proby = roboczy.nieudane_probowania.get(klucz, 0) + 1
+                        roboczy.nieudane_probowania[klucz] = proby
+                        if proby < LIMIT_PROB_ZADANIA:
+                            raise
+                        roboczy.kolejka.pop(0)
+                        roboczy.nieudane_probowania.pop(klucz, None)
+                        roboczy.pominiete.append(
+                            {
+                                "endpoint": zadanie.endpoint,
+                                "parametry": zadanie.parametry,
+                                "blad": str(blad),
+                            }
+                        )
+                        continue
+                    roboczy.kolejka.pop(0)
                     roboczy.wykonane.append(klucz)
                     roboczy.skroty_zrodel[klucz] = sha256(tresc).hexdigest()
+                    roboczy.nieudane_probowania.pop(klucz, None)
                     break
                 if not roboczy.kolejka:
                     self._repozytorium.porownaj(roboczy)
                     roboczy.status = "PODGLAD"
                 przebieg.__dict__.update(roboczy.__dict__)
             except BladImportu as blad:
-                przebieg.status = "BLAD"
-                przebieg.blad = str(blad)
+                roboczy.status = "BLAD"
+                roboczy.blad = str(blad)
+                przebieg.__dict__.update(roboczy.__dict__)
             return przebieg
 
     def zastosuj(self, identyfikator: str) -> PrzebiegImportu:

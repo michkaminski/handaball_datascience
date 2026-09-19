@@ -74,6 +74,8 @@ class PrzebiegImportu:
     blad: str | None = None
     id_przebieg_bazy: int | None = None
     tryb: str = "pelny"
+    nieudane_probowania: dict[str, int] = field(default_factory=dict)
+    pominiete: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def nazwa_trybu(self) -> str:

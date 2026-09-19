@@ -19,3 +19,10 @@
 .import-form{display:grid;gap:10px;max-width:680px;margin-bottom:12px}.import-choice{display:flex;gap:8px;align-items:center;margin:6px 0}.import-choice input{width:auto}.import-form fieldset{border:1px solid var(--line);border-radius:6px}.import-form .btn{justify-self:start}details{margin:8px 0}summary{cursor:pointer;padding:6px;font-weight:600}
 
 .import-selection:not([hidden]){display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+
+[data-columns-open][hidden],#matches-table [hidden]{display:none}
+.match-columns-dialog{padding:0;border:1px solid var(--line2);border-radius:10px;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;color:var(--ink);background:var(--panel)}
+.match-columns-dialog::backdrop{background:rgba(16,32,49,.45)}
+.match-columns-dialog .modal-body p{margin:0 0 12px;font-size:.88rem;color:var(--muted)}
+.column-choice{display:flex;align-items:center;gap:8px;padding:6px 0}
+.row-clickable{cursor:pointer}

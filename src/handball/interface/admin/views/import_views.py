@@ -105,6 +105,7 @@ class ImportPanelView(MethodView):
                         "status": przebieg.status,
                         "wykonane": len(przebieg.wykonane),
                         "oczekujace": len(przebieg.kolejka),
+                        "pominiete": len(przebieg.pominiete),
                         "blad": przebieg.blad,
                     }
                 )

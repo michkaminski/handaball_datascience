@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-from handball.interface.admin.views.match_views import MeczListView
+from handball.interface.admin.views.match_views import MeczListView, MeczSzczegolyView
 from handball.interface.admin.views.start import StartView
 from handball.request_dependencies import ZaleznosciZadaniaFactory
 
@@ -11,5 +11,9 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/mecze",
         view_func=MeczListView.as_view("lista_meczow", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/mecze/<int:id_mecz>",
+        view_func=MeczSzczegolyView.as_view("szczegoly_meczu", fabryka_zaleznosci),
     )
     return blueprint

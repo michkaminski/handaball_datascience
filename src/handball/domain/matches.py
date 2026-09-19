@@ -49,6 +49,8 @@ class FiltryMeczow:
     strona: int = 1
     rozmiar_strony: int = 20
     sortowanie: str = "data"
+    runda: str | None = None
+    kolejka: str | None = None
 
     def __post_init__(self) -> None:
         if self.strona < 1:
@@ -69,6 +71,9 @@ class PozycjaListyMeczow:
     gosc: str | None
     wynik: str
     hala: str | None
+    runda: str | None = None
+    kolejka: str | None = None
+    dopisek_wyniku: str | None = None
 
 
 @dataclass(frozen=True)
@@ -84,3 +89,40 @@ class OpcjeFiltrowMeczow:
     sezony: list[OpcjaWyboru] = field(default_factory=list)
     rozgrywki: list[str] = field(default_factory=list)
     hale: list[OpcjaWyboru] = field(default_factory=list)
+    rundy: list[str] = field(default_factory=list)
+    kolejki: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ZawodnikMeczu:
+    nr_koszulki: str
+    zawodnik: str
+    pozycja: str
+    bramki: str
+    dwie_minuty: str
+    upomnienie: str
+    dyskwalifikacja: str
+    kd: str
+    wyjscie: str
+    karne: str
+    karne_seria: str
+
+
+@dataclass(frozen=True)
+class SzczegolyMeczu:
+    id_mecz: int
+    gospodarz: str
+    gosc: str
+    wynik_naglowek: str
+    wynik_do_przerwy: str
+    dopisek_wyniku: str
+    rozgrywki: str
+    kolejka: str
+    termin: str
+    hala: str
+    status: str
+    dane_podstawowe: list[tuple[str, str]]
+    statystyki: list[tuple[str, str, str]]
+    sklad_gospodarz: list[ZawodnikMeczu]
+    sklad_gosc: list[ZawodnikMeczu]
+    sklad_inne: list[ZawodnikMeczu]

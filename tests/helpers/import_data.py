@@ -9,12 +9,16 @@ class ImportTestClient(ZprpClient):
     def __init__(self) -> None:
         self.wynik = "29"
         self.awaria = False
+        self.awarie_dla: dict[str, int] = {}
         self.zapytania: list[str] = []
 
     def pobierz(self, zadanie: ZadaniePobrania) -> tuple[str, bytes]:
         self.zapytania.append(zadanie.endpoint)
         if self.awaria:
             raise BladImportu("Testowa awaria API")
+        if self.awarie_dla.get(zadanie.endpoint, 0) > 0:
+            self.awarie_dla[zadanie.endpoint] -= 1
+            raise BladImportu("Testowa awaria pojedynczego zadania")
         mecz = {
             "Id": "206511",
             "ID_sezon": "195",

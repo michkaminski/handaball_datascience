@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block tytul %}Mecz #{{ szczegoly.id_mecz }} — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Dane › Mecze › Szczegóły</div>
+<h1>Szczegóły meczu #{{ szczegoly.id_mecz }}</h1>
+<p>Widok informacyjny rekordu meczu.</p>
+</section>
+<section class="hero">
+<div class="score-hero">
+<div class="team-box">
+<div class="team-name">{{ szczegoly.gospodarz }}</div>
+<div class="team-meta">gospodarz</div>
+</div>
+<div class="result-box">
+<div class="result-main">{{ szczegoly.wynik_naglowek }}</div>
+{% if szczegoly.wynik_do_przerwy %}<div class="result-sub">{{ szczegoly.wynik_do_przerwy }}</div>{% endif %}
+{% if szczegoly.dopisek_wyniku %}<div class="result-sub">{{ szczegoly.dopisek_wyniku }}</div>{% endif %}
+</div>
+<div class="team-box right">
+<div class="team-name">{{ szczegoly.gosc }}</div>
+<div class="team-meta">gość</div>
+</div>
+</div>
+<div class="hero-meta">
+<span class="meta-chip">{{ szczegoly.rozgrywki }}</span>
+<span class="meta-chip">{{ szczegoly.kolejka }}</span>
+<span class="meta-chip">{{ szczegoly.termin }}</span>
+<span class="meta-chip">{{ szczegoly.hala }}</span>
+<span class="meta-chip"><span class="badge {{ 'ok' if szczegoly.status == 'Rozegrany' else ('warn' if szczegoly.status in ('Wycofany', 'Walkower') else 'plan') }}">{{ szczegoly.status }}</span></span>
+</div>
+</section>
+<div class="toolbar">
+<div class="left"><a class="btn secondary" href="{{ url_for('administracja.lista_meczow') }}">← Powrót do listy</a></div>
+</div>
+<div class="grid2">
+<section class="panel">
+<h2>Dane podstawowe</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Pole</th><th>Wartość</th></tr></thead>
+<tbody>
+{% for etykieta, wartosc in szczegoly.dane_podstawowe %}
+<tr><td>{{ etykieta }}</td><td>{{ wartosc }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+<section class="panel">
+<h2>Wynik i statystyki</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Statystyka</th><th>{{ szczegoly.gospodarz }}</th><th>{{ szczegoly.gosc }}</th></tr></thead>
+<tbody>
+{% for etykieta, wartosc_gospodarz, wartosc_gosc in szczegoly.statystyki %}
+<tr><td>{{ etykieta }}</td><td>{{ wartosc_gospodarz }}</td><td>{{ wartosc_gosc }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<div class="grid2">
+<section class="panel">
+<h2>Skład — {{ szczegoly.gospodarz }}</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>Zawodnik</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
+<tbody>
+{% for zawodnik in szczegoly.sklad_gospodarz %}
+<tr><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+{% else %}
+<tr><td colspan="11" class="note">Brak danych o składzie.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+<section class="panel">
+<h2>Skład — {{ szczegoly.gosc }}</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>Zawodnik</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
+<tbody>
+{% for zawodnik in szczegoly.sklad_gosc %}
+<tr><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+{% else %}
+<tr><td colspan="11" class="note">Brak danych o składzie.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+</div>
+{% if szczegoly.sklad_inne %}
+<section class="panel">
+<h2>Pozostałe osoby przypisane do meczu</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>Osoba</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
+<tbody>
+{% for zawodnik in szczegoly.sklad_inne %}
+<tr><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+{% endif %}
+{% endblock %}

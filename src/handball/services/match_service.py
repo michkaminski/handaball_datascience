@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from handball.contracts.match_repository import MeczReadRepository
-from handball.domain.matches import FiltryMeczow, StronaMeczow
+from handball.domain.matches import FiltryMeczow, StronaMeczow, SzczegolyMeczu
 
 
 class MeczService:
@@ -10,3 +10,6 @@ class MeczService:
 
     def pobierz_liste(self, filtry: FiltryMeczow) -> StronaMeczow:
         return self._repozytorium.pobierz_liste(filtry)
+
+    def pobierz_szczegoly(self, id_mecz: int) -> SzczegolyMeczu:
+        return self._repozytorium.pobierz_szczegoly(id_mecz)

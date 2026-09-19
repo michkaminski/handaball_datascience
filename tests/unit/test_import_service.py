@@ -66,6 +66,22 @@ def test_odrzuca_niedozwolony_zakres(tmp_path: Path, ligi: list[int]) -> None:
         serwis.rozpocznij(ligi)
 
 
+def test_trwale_nieudane_zadanie_jest_pomijane_a_import_idzie_dalej(tmp_path: Path) -> None:
+    klient = ImportTestClient()
+    klient.awarie_dla["pokaz_sezony.php"] = 10
+    magazyn = ImportFileStore(tmp_path)
+    serwis = ImportService(magazyn, klient, ImportTestRepository())
+    przebieg = serwis.rozpocznij([12007])
+    for _ in range(20):
+        przebieg = serwis.krok(przebieg.id)
+        if przebieg.status in ("PODGLAD", "ZAPISANO"):
+            break
+    assert przebieg.status == "PODGLAD", przebieg.blad
+    assert len(przebieg.pominiete) == 1
+    assert przebieg.pominiete[0]["endpoint"] == "pokaz_sezony.php"
+    assert przebieg.nieudane_probowania == {}
+
+
 class NiepelneDaneTestClient(ImportTestClient):
     def __init__(self, pusta_lista: object, szczegoly: object) -> None:
         super().__init__()

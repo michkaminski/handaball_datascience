@@ -13,6 +13,8 @@
 <form class="panel-body filters" method="get">
 <label>Sezon{{ formularz.id_sezon() }}</label>
 <label>Rozgrywki{{ formularz.rozgrywki() }}</label>
+<label>Runda{{ formularz.runda() }}</label>
+<label>Kolejka{{ formularz.kolejka() }}</label>
 <label>Hala{{ formularz.id_hala() }}</label>
 <label>Drużyna{{ formularz.druzyna(placeholder="nazwa drużyny...") }}</label>
 <label>Data{{ formularz.data_meczu() }}</label>
@@ -21,8 +23,11 @@
 </section>
 <section class="panel">
 <div class="panel-body">
+<div class="toolbar">
+<button class="btn secondary small" type="button" data-columns-open aria-haspopup="dialog" aria-controls="match-columns-dialog" hidden>Widoczne kolumny</button>
+</div>
 <div class="table-wrap">
-<table>
+<table id="matches-table">
 <thead>
 <tr>
 <th>ID</th>
@@ -34,27 +39,33 @@ Data {{ "▼" if filtry.sortowanie == "-data" else "▲" }}
 <th>Godz.</th>
 <th>Sezon</th>
 <th>Rozgrywki</th>
+<th data-match-column="runda" hidden>Runda</th>
+<th data-match-column="kolejka" hidden>Kolejka</th>
 <th>Gospodarz</th>
 <th>Wynik</th>
 <th>Gość</th>
 <th>Hala</th>
+<th></th>
 </tr>
 </thead>
 <tbody>
 {% for pozycja in strona.pozycje %}
-<tr>
+<tr data-href="{{ url_for('administracja.szczegoly_meczu', id_mecz=pozycja.id_mecz) }}" title="Kliknij dwukrotnie, aby zobaczyć szczegóły meczu">
 <td>{{ pozycja.id_mecz }}</td>
 <td>{{ pozycja.termin.strftime("%d.%m.%Y") if pozycja.termin else "—" }}</td>
 <td>{{ pozycja.termin.strftime("%H:%M") if pozycja.termin else "—" }}</td>
 <td>{{ pozycja.sezon or "—" }}</td>
 <td>{{ pozycja.rozgrywki or "—" }}</td>
+<td data-match-column="runda" hidden>{{ pozycja.runda or "—" }}</td>
+<td data-match-column="kolejka" hidden>{{ pozycja.kolejka or "—" }}</td>
 <td>{{ pozycja.gospodarz or "—" }}</td>
-<td><span class="score">{{ pozycja.wynik }}</span></td>
+<td><span class="score">{{ pozycja.wynik }}</span>{% if pozycja.dopisek_wyniku %}<br><span class="note">{{ pozycja.dopisek_wyniku }}</span>{% endif %}</td>
 <td>{{ pozycja.gosc or "—" }}</td>
 <td>{{ pozycja.hala or "—" }}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=pozycja.id_mecz) }}" title="Szczegóły meczu" target="_blank" rel="noopener">◈ Szczegóły</a></td>
 </tr>
 {% else %}
-<tr><td colspan="9" class="note">Brak meczów spełniających wybrane filtry.</td></tr>
+<tr><td colspan="10" class="note" data-empty-matches>Brak meczów spełniających wybrane filtry.</td></tr>
 {% endfor %}
 </tbody>
 </table>
@@ -62,4 +73,22 @@ Data {{ "▼" if filtry.sortowanie == "-data" else "▲" }}
 {% include "partials/pagination.html" %}
 </div>
 </section>
+<dialog id="match-columns-dialog" class="match-columns-dialog" aria-labelledby="match-columns-title" aria-describedby="match-columns-description">
+<form data-columns-form>
+<div class="modal-head">
+<h2 id="match-columns-title">Widoczne kolumny</h2>
+<button class="close" type="button" data-columns-close aria-label="Zamknij">×</button>
+</div>
+<div class="modal-body">
+<p id="match-columns-description">Wybierz dodatkowe kolumny tabeli. Filtry rundy i kolejki są dostępne niezależnie od tego wyboru.</p>
+<label class="column-choice"><input type="checkbox" name="runda"> Runda</label>
+<label class="column-choice"><input type="checkbox" name="kolejka"> Kolejka</label>
+</div>
+<div class="modal-foot">
+<button class="btn secondary" type="button" data-columns-close>Anuluj</button>
+<button class="btn" type="submit">Zastosuj</button>
+</div>
+</form>
+</dialog>
+<script src="{{ url_for('static', filename='js/matches.js') }}" defer></script>
 {% endblock %}

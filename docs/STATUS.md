@@ -8,6 +8,10 @@ Poniższe opisy etapów zachowują wyniki wcześniejszych weryfikacji. Wynik mig
 
 Dodano tryb uzupełniający: wybiera z bazy mecze sezonu 2026/2027 sprzed dzisiejszego dnia z brakującym wynikiem lub składem jednej strony, pomija walkowery i wycofane spotkania, pobiera tylko szczegóły i uzupełnia brakujące wartości. Pełny import pozostaje dostępny do odkrywania spotkań i korekt. Opis ograniczeń, przepływu i zapisu: [IMPORTS](IMPORTS.md). Klient API zachowuje trzysekundowy odstęp między żądaniami w jednym procesie. Lista meczów uwzględnia `zamiana`, odwracając drużyny wraz z wynikiem. Zmiany nie obejmują uruchomienia rzeczywistego importu ani modyfikacji bazy przez AI. Weryfikacja: 85 testów bez integracji z bazą przechodzi, z wyłączonym hasłem importu w środowisku procesu testów; mypy oraz Ruff dla kodu i testów jednostkowych/widoków przechodzą. Zapytania wyboru kandydatów nie uruchamiano na rzeczywistym PostgreSQL.
 
+## Runda i kolejka na liście meczów — 2026-09-19
+
+Dodano filtry po nazwie rundy i kolejki oraz dwie opcjonalne kolumny włączane osobno w modalu „Widoczne kolumny”. Kolumny są domyślnie ukryte; wybór zapamiętuje przeglądarka. Filtry są stale dostępne. Kontrakt, zachowanie i aktualny spis elementów: [list.md](../src/handball/interface/templates/admin/matches/list.md).
+
 ## Gotowe
 
 - Przyjęta nazwa Handball DataScience i katalog projektu.
@@ -74,7 +78,6 @@ Dodano tryb uzupełniający: wybiera z bazy mecze sezonu 2026/2027 sprzed dzisie
 - Dostęp administratora i pozostałe widoki odczytu (etapy 6–7).
 - Dodatkowe pozycje sidebara podłączone do realnych widoków (obecnie większość to `href="#"`) — razem z odpowiadającymi im widokami/etapami.
 - Kaskadowe odświeżanie listy rozgrywek po zmianie sezonu bez przeładowania strony (obecnie: zwykły GET, bez JS) — możliwe usprawnienie później.
-- Filtrowanie po rundzie/kolejce na liście meczów — usunięte z UI, można przywrócić jako rozwijane listy, jeśli będzie potrzebne.
 - Własny wygląd stron błędów (`errors/400.html`, `404.html`, `503.html`) — na razie domyślne strony Flaska.
 - Pozostałe szablony (logowanie) — ma MD, brak HTML.
 - Eksport i publiczny serwis.
