@@ -91,8 +91,8 @@ class MeczSQLAlchemyRepository:
                 termin=wiersz.Mecz.data_faktyczna,
                 sezon=wiersz[1],
                 rozgrywki=wiersz[2],
-                gospodarz=wiersz[3],
-                gosc=wiersz[4],
+                gospodarz=wiersz[4] if wiersz.Mecz.zamiana else wiersz[3],
+                gosc=wiersz[3] if wiersz.Mecz.zamiana else wiersz[4],
                 wynik=self._sformatuj_wynik(wiersz.Mecz),
                 hala=wiersz[5],
             )
@@ -110,4 +110,6 @@ class MeczSQLAlchemyRepository:
     def _sformatuj_wynik(mecz: Mecz) -> str:
         if mecz.wynik_gosp_full is None or mecz.wynik_gosc_full is None:
             return "- : -"
+        if mecz.zamiana:
+            return f"{mecz.wynik_gosc_full} : {mecz.wynik_gosp_full}"
         return f"{mecz.wynik_gosp_full} : {mecz.wynik_gosc_full}"

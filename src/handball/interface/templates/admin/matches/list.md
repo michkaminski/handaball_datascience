@@ -4,6 +4,44 @@ Status: etap 4 ukończony i trzykrotnie rozszerzony na wyraźne polecenie użytk
 
 Docelowy szablon względem katalogu szablony: `admin/matches/list.html`.
 
+## Szybka lista elementów do zgłaszania zmian
+
+Elementy poniżej są wymienione w kolejności na stronie. Oznaczenia F/T/P służą do wskazywania zmian w rozmowie; nie są wyświetlane w aplikacji.
+
+### Filtry — F
+
+| Oznaczenie | Element | Obecne działanie |
+| --- | --- | --- |
+| F1 | Sezon | Lista rozwijana; „Wszystkie” albo wybrany sezon |
+| F2 | Rozgrywki | Lista rozwijana z unikalnymi nazwami rozgrywek |
+| F3 | Hala | Lista rozwijana z nazwami hal |
+| F4 | Drużyna | Pole tekstowe; wyszukiwanie po nazwie drużyny, także historycznej |
+| F5 | Data | Pole tekstowe: rok, rok-miesiąc albo pełna data |
+| F6 | Filtruj | Przycisk zastosowania wybranych filtrów |
+
+### Tabela meczów — T
+
+| Oznaczenie | Kolumna | Obecna zawartość |
+| --- | --- | --- |
+| T1 | ID | Identyfikator meczu |
+| T2 | Data | Dzień meczu w formacie DD.MM.RRRR; kliknięcie nagłówka zmienia sortowanie |
+| T3 | Godz. | Godzina meczu w formacie GG:MM |
+| T4 | Sezon | Nazwa sezonu, np. 2026/2027 |
+| T5 | Rozgrywki | Nazwa rozgrywek |
+| T6 | Gospodarz | Nazwa gospodarza z uwzględnieniem zmiany gospodarza |
+| T7 | Wynik | Pogrubiony wynik, np. 19 : 46; kolejność zgodna z drużynami |
+| T8 | Gość | Nazwa gościa z uwzględnieniem zmiany gospodarza |
+| T9 | Hala | Nazwa hali |
+
+### Pod tabelą — P
+
+| Oznaczenie | Element | Obecne działanie |
+| --- | --- | --- |
+| P1 | Licznik wyników | Zakres wyświetlanych pozycji i liczba wszystkich wyników |
+| P2 | Poprzednia / Następna | Przejście między stronami z zachowaniem filtrów |
+
+Przykłady krótkich poleceń: „F4: poszerz pole drużyny”, „T9: usuń kolumnę Hala”, „T2: ustaw domyślnie najnowsze mecze”, „Za T5 dodaj kolumnę Kolejka”. To przykłady sposobu zgłaszania, nie lista zmian do wykonania.
+
 ## Przeznaczenie
 
 Tabela meczów i zwarte filtry na podstawie matches.html prototypu v6. Kolumny: ID, Data (klikalny nagłówek sortujący), Godz., Sezon, Rozgrywki, Gospodarz, Wynik, Gość, Hala. Kol./Status/Akcje z prototypu wciąż nie są dostarczane przez `PozycjaListyMeczow` — świadomie odłożone.
@@ -13,6 +51,10 @@ Filtry sezonu, rozgrywek i hali są rozwijanymi listami z nazwami (nie polami li
 **Filtr Rozgrywki filtruje po nazwie, nie po `id_rozgrywki`.** Ta sama nazwa rozgrywek (np. "I Liga Kobiet") ma osobny wiersz w tabeli `rozgrywki` w każdym sezonie, w którym się odbyły — bez tej zmiany lista rozwijana pokazywałaby tę samą nazwę wielokrotnie (raz na sezon). `RozgrywkiSQLAlchemyRepository.pobierz_nazwy()` zwraca `DISTINCT` nazwy, a `MeczSQLAlchemyRepository` filtruje przez `Rozgrywki.nazwa == filtry.rozgrywki` (dokładne dopasowanie, bo nazwa pochodzi z zamkniętej listy rozwijanej, nie z wolnego tekstu) — to samo złączenie z `Rozgrywki`, które i tak istnieje do wyświetlenia kolumny "Rozgrywki". Dzięki temu wybór jednej nazwy pokazuje mecze ze wszystkich sezonów tej nazwy, chyba że dodatkowo zawężono filtrem Sezon.
 
 **Sortowanie jest w nagłówku kolumny "Data", nie w panelu filtrów** — to ustalona konwencja dla wszystkich list z filtrami w tym projekcie, patrz [CODING_STANDARDS](../../../../../../docs/CODING_STANDARDS.md), sekcja "Listy z filtrami". Panel filtrów nie ma już pola "Sortowanie".
+
+## Zmiana gospodarza
+
+Repozytorium uwzględnia `Mecz.zamiana`: dla wartości `True` przekazuje gościa źródłowego jako gospodarza prezentowanego, gospodarza jako gościa i odwraca wynik `*_full`. Przykład: Wisła Płock — 46 : 19 — MMTS Kwidzyn staje się MMTS Kwidzyn — 19 : 46 — Wisła Płock. Dla `False` i `NULL` zachowuje kolejność. Brak którejkolwiek części wyniku nadal daje `- : -`. Szablon otrzymuje już gotowe nazwy i wynik; nie wykonuje drugiej zamiany. Zmiana dotyczy prezentacji, bez aktualizacji danych w bazie.
 
 ## Dane wejściowe
 
@@ -90,6 +132,7 @@ Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czyteln
 
 - „Filtruj” wysyła GET. `id_sezon`, `rozgrywki` i `id_hala` to listy wyboru; `druzyna` i `data_meczu` to pola tekstowe. Pusty sezon oznacza wszystkie sezony.
 - Kliknięcie „Data” przełącza kierunek, zachowuje filtry i ustawia stronę 1. Pozostałe nagłówki nie są linkami sortowania.
+- Przy `zamiana=True` kolumny Gospodarz/Wynik/Gość pokazują odwrócone drużyny i wynik.
 - Brak terminu, nazwy lub hali jest pokazany jako `—`; brak wyniku jako `- : -`. Wynik jest pogrubiony przez `.score`.
 - Pusty wynik zajmuje dziewięć kolumn (`colspan="9"`). Paginacja wtedy nie jest renderowana.
 - Siatka `.filters` ma 7 kolumn powyżej 1100 px, 4 przy szerokości do 1100 px, 2 do 700 px i 1 do 430 px. Nie wszystkie kolumny muszą być zajęte. Tabela przewija się poziomo we własnym `.table-wrap`.

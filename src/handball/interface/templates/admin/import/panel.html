@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block tytul %}Import ZPRP — Handball DataScience{% endblock %}
+{% block tresc %}
+<section class="pagehead"><div class="crumb">Start › Import danych</div>
+<h1>Aktualizacja danych ZPRP</h1><p>Pobierz sezon 2026/2027, sprawdź różnice i zatwierdź aktualizację bazy.</p></section>
+{% if not konfiguracja %}
+<section class="panel"><h2>Dostęp administratora</h2><div class="panel-body">
+<p>Ustaw hasło administratora w środowisku aplikacji: <code>HDS_IMPORT_PASSWORD</code>. Po ponownym uruchomieniu zaloguj się jako <strong>admin</strong>.</p>
+</div></section>
+{% else %}
+<section class="panel"><h2>Zakres pobierania</h2><div class="panel-body">
+<form method="post" action="{{ url_for('administracja.import_danych') }}" class="import-form">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="rozpocznij">
+<label class="field">Sezon <select name="sezon"><option value="195">2026/2027</option></select></label>
+<fieldset data-wybor-lig><legend>Rozgrywki</legend>
+<div class="import-selection" role="group" aria-label="Szybkie zaznaczanie rozgrywek" hidden>
+<button class="btn secondary small" type="button" data-wybor="wszystkie">Zaznacz wszystkie</button>
+<button class="btn secondary small" type="button" data-wybor="zadne">Odznacz wszystkie</button>
+<button class="btn secondary small" type="button" data-wybor="superliga ">Tylko Superligi</button>
+<button class="btn secondary small" type="button" data-wybor="liga centralna ">Tylko Ligi Centralne</button>
+<button class="btn secondary small" type="button" data-wybor="i liga ">Tylko I ligi</button>
+<button class="btn secondary small" type="button" data-wybor="ii liga ">Tylko II ligi</button>
+<button class="btn secondary small" type="button" data-wybor="puchar polski ">Tylko Puchar Polski</button>
+</div>
+{% for id, nazwa in ligi.items() %}
+<label class="import-choice"><input type="checkbox" name="ligi" value="{{ id }}" data-nazwa="{{ nazwa }}" checked> {{ nazwa }}</label>
+{% endfor %}</fieldset>
+<p class="note">Pierwsze pobranie uzupełnia dane, a kolejne sprawdza również korekty rozegranych spotkań. Istniejące rekordy nie są usuwane.</p>
+<button class="btn" type="submit" name="tryb" value="pelny">Pełny import — sprawdź aktualizacje ZPRP</button>
+<button class="btn secondary" type="submit" name="tryb" value="uzupelniajacy">Uzupełnij brakujące dane meczów</button>
+<p class="note">Import uzupełniający sprawdza tylko znane mecze sprzed dzisiejszego dnia z brakującym wynikiem lub składem gospodarzy albo gości. Pomija walkowery i mecze wycofane. Zachowuje istniejące wartości; korekty i nowe mecze pobierzesz pełnym importem.</p>
+</form></div></section>
+{% if przebieg %}
+<section class="panel" id="przebieg"><h2>Przebieg: {{ przebieg.status }}</h2><div class="panel-body">
+<p>Tryb: <strong>{{ przebieg.nazwa_trybu }}</strong></p>
+<p>Pobrano <strong id="liczba-pobran">{{ przebieg.wykonane|length }}</strong> odpowiedzi API.
+Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</strong> odkrytych zadań.</p>
+{% if przebieg.tryb == 'uzupelniajacy' %}
+<p class="note">Pobierane są wyłącznie szczegóły wybranych meczów, bez składów sezonowych. Brakujące odpowiedzi są pomijane.</p>
+{% if not przebieg.wykonane and not przebieg.kolejka %}<p role="status">Nie znaleziono meczów wymagających uzupełnienia.</p>{% endif %}
+{% else %}<p class="note">Liczba zadań rośnie podczas odnajdywania rund, kolejek i meczów.</p>{% endif %}
+{% if przebieg.blad %}<p class="notice notice-error" role="alert">{{ przebieg.blad }}</p>{% endif %}
+{% if przebieg.status in ('POBIERANIE', 'BLAD') %}
+<form method="post" id="pobieranie" data-auto="tak">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="krok">
+<button class="btn" type="submit">{{ 'Ponów pobieranie' if przebieg.status == 'BLAD' else 'Kontynuuj pobieranie' }}</button>
+<span id="stan-pobierania" role="status" aria-live="polite"></span></form>
+{% elif przebieg.status == 'PODGLAD' %}
+<div class="stats-strip"><span class="stat-pill">Nowe: <b>{{ przebieg.podsumowanie.nowe }}</b></span>
+<span class="stat-pill">Zmienione: <b>{{ przebieg.podsumowanie.zmienione }}</b></span>
+<span class="stat-pill">Bez zmian: <b>{{ przebieg.podsumowanie.bez_zmian }}</b></span></div>
+{% if przebieg.rekordy %}
+<form method="post" class="import-form"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="zastosuj">
+<label class="import-choice"><input type="checkbox" name="potwierdzenie" value="tak" required> Zatwierdzam pokazane zmiany sezonu 2026/2027 w bazie.</label>
+<button class="btn" type="submit">Zastosuj aktualizację</button></form>
+{% else %}<p>Brak danych do zapisania.</p>{% endif %}
+<form method="post"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="porownaj"><button class="btn secondary" type="submit">Odśwież podgląd</button></form>
+{% elif przebieg.status == 'ZAPISANO' %}
+<p class="notice notice-success">Aktualizacja zatwierdzona. Numer przebiegu w bazie: {{ przebieg.id_przebieg_bazy }}.</p>
+<p><a href="{{ url_for('administracja.lista_meczow', id_sezon=195) }}">Przejdź do meczów sezonu 2026/2027</a></p>
+{% endif %}</div></section>
+{% if przebieg.status in ('PODGLAD', 'ZAPISANO') %}
+<section class="panel"><h2>Zmiany rekordów</h2><div class="panel-body">
+{% for tabela, rekordy in przebieg.rekordy|groupby('tabela') %}
+<details><summary>{{ tabela }} — {{ rekordy|length }} rekordów</summary><div class="table-wrap">
+<table><thead><tr><th>Rekord</th><th>Pole</th><th>Przed</th><th>Po</th></tr></thead><tbody>
+{% for rekord in rekordy %}{% for pole, wartosc in rekord.zmiany.items() %}
+<tr><td>{{ rekord.klucz }}</td><td>{{ pole }}</td><td>{{ rekord.poprzednio.get(pole) if rekord.poprzednio else 'nowy rekord' }}</td><td>{{ wartosc if wartosc is not none else 'brak wartości' }}</td></tr>
+{% endfor %}{% endfor %}</tbody></table></div></details>{% endfor %}
+</div></section>{% endif %}{% endif %}
+<section class="panel" id="historia"><h2>Historia pobrań w Handball DataScience</h2><div class="table-wrap">
+<table><thead><tr><th>Rozpoczęcie</th><th>Tryb</th><th>Status</th><th>Ligi</th><th>Błąd</th></tr></thead><tbody>
+{% for wpis in historia %}<tr><td><a href="{{ url_for('administracja.import_danych', identyfikator=wpis.adres_id) }}">{{ wpis.rozpoczecie }}</a></td><td>{{ wpis.nazwa_trybu }}</td><td>{{ wpis.status }}</td><td>{% for id in wpis.ligi %}{{ ligi[id] }}{% if not loop.last %}, {% endif %}{% endfor %}</td><td>{{ wpis.blad or '—' }}</td></tr>
+{% else %}<tr><td colspan="5">Brak przebiegów. Wybierz ligi i sprawdź aktualizacje.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<script src="{{ url_for('static', filename='js/import.js') }}" defer></script>
+{% endif %}{% endblock %}

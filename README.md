@@ -34,6 +34,7 @@ Ostatnia komenda sprawdza logikę i widoki bez bazy. Testy w `tests/integration`
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | Ustalenia techniczne i otwarte decyzje |
 | [TECH_STACK](docs/TECH_STACK.md) | Wybrane technologie i etapy ich wdrażania |
 | [CODING_STANDARDS](docs/CODING_STANDARDS.md) | Obiektowy Python, SOLID, typowanie i kryteria review |
+| [IMPORTS](docs/IMPORTS.md) | Aktualizacja ZPRP krok po kroku, tekstowy UML, statusy i zapis danych |
 | [DATA](docs/DATA.md) | Źródła i pułapki interpretacji danych |
 | [Baza danych](docs/database/README.md) | Zweryfikowane połączenie, rzeczywisty schemat, relacje i historia zmian |
 | [AI_WORKFLOW](docs/AI_WORKFLOW.md) | Role agentów i dobór skillsów |

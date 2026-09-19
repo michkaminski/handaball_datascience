@@ -16,7 +16,7 @@ class PozycjaMenu:
 GORNY_PASEK: list[PozycjaMenu] = [
     PozycjaMenu("start", "Start", "administracja.start"),
     PozycjaMenu("mecze", "Dane", "administracja.lista_meczow"),
-    PozycjaMenu("import", "Import", None),
+    PozycjaMenu("import", "Import", "administracja.import_danych"),
     PozycjaMenu("kontrola", "Kontrola danych", None),
     PozycjaMenu("logi", "Logi", None),
 ]
@@ -40,7 +40,7 @@ SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
     (
         "Import / eksport",
         [
-            PozycjaMenu("import_danych", "Import danych", None, "⇪"),
+            PozycjaMenu("import", "Import danych", "administracja.import_danych", "⇪"),
             PozycjaMenu("historia_importow", "Historia importów", None, "⇄"),
             PozycjaMenu("eksport_danych", "Eksport danych", None, "⇩"),
         ],

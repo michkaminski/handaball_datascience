@@ -4,6 +4,10 @@ Aktualizacja: 2026-09-14.
 
 Poniższe opisy etapów zachowują wyniki wcześniejszych weryfikacji. Wynik migracji nazw z 2026-09-14 podano osobno; nie ponawiano historycznych kontroli na bazie użytkownika.
 
+## Import i prezentacja meczów — 2026-09-19
+
+Dodano tryb uzupełniający: wybiera z bazy mecze sezonu 2026/2027 sprzed dzisiejszego dnia z brakującym wynikiem lub składem jednej strony, pomija walkowery i wycofane spotkania, pobiera tylko szczegóły i uzupełnia brakujące wartości. Pełny import pozostaje dostępny do odkrywania spotkań i korekt. Opis ograniczeń, przepływu i zapisu: [IMPORTS](IMPORTS.md). Klient API zachowuje trzysekundowy odstęp między żądaniami w jednym procesie. Lista meczów uwzględnia `zamiana`, odwracając drużyny wraz z wynikiem. Zmiany nie obejmują uruchomienia rzeczywistego importu ani modyfikacji bazy przez AI. Weryfikacja: 85 testów bez integracji z bazą przechodzi, z wyłączonym hasłem importu w środowisku procesu testów; mypy oraz Ruff dla kodu i testów jednostkowych/widoków przechodzą. Zapytania wyboru kandydatów nie uruchamiano na rzeczywistym PostgreSQL.
+
 ## Gotowe
 
 - Przyjęta nazwa Handball DataScience i katalog projektu.

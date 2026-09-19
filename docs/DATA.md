@@ -40,3 +40,8 @@ Tabele domenowe są w `public`. Stan rzeczywisty obejmuje 30 tabel `public`, 35 
 Schemat oraz obecność 20 sezonów od 2007/2008 do 2026/2027 potwierdzono. Do ustalenia pozostają sposób normalizacji podczas importu oraz mapowanie statusów i wariantów wyniku na prezentację. Ostatni zapisany przebieg importu ma status `CZESCIOWY`; liczby rekordów nie dowodzą kompletności archiwum.
 
 Nie naprawiaj danych ani nie uruchamiaj ponownie importu na podstawie tych obserwacji. Zmiany w bazie są dozwolone dopiero na wyraźną prośbę użytkownika.
+
+
+## Prezentacja zmiany gospodarza — 2026-09-19
+
+Na polecenie użytkownika lista meczów uwzględnia `mecze.zamiana=True`: odwraca nazwy obu drużyn oraz części wyniku `wynik_gosp_full` / `wynik_gosc_full`. Dla `False` lub `NULL` pozostawia kolejność. Reguła jest stosowana raz, przy budowaniu pozycji listy w repozytorium, bez zmiany danych źródłowych. Nie rozszerza automatycznie tej interpretacji na składy ani przyszłe statystyki.

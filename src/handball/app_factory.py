@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import Flask
 
 from handball.extensions import baza_danych
+from handball.import_factory import ImportRegistrar
 from handball.infrastructure.database.connection import PolaczenieConfigurator
 from handball.interface.navigation import zarejestruj_kontekst_nawigacji
 from handball.interface.registration import WidokiRegistrar
@@ -36,4 +37,5 @@ class AplikacjaFactory:
         baza_danych.init_app(aplikacja)
         zarejestruj_kontekst_nawigacji(aplikacja)
         self._rejestrator_widokow.zarejestruj(aplikacja)
+        ImportRegistrar().zarejestruj(aplikacja)
         return aplikacja

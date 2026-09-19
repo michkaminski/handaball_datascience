@@ -2,6 +2,8 @@
 
 Status: projekt, nie dokumentacja istniejącego kodu. Diagramy zapisano w Mermaid, dzięki czemu pozostają edytowalną częścią MD. Pierwszy zakres to odczyt listy meczów i później szczegóły. [Projekt katalogów](DIRECTORY_STRUCTURE.md) przypisuje klasy do plików. [Relacje bazy](database/RELATIONSHIPS.md) opisują osobno istniejący model danych.
 
+Aktualny importer ma osobny opis i podstawowy diagram tekstowy w [IMPORTS](IMPORTS.md). Poniższe diagramy dotyczą odczytu meczów.
+
 ## Konwencja nazw a diagramy
 
 Diagramy i tabela modułów używają nazw wdrożonych 2026-09-14 zgodnie z [CODING_STANDARDS](CODING_STANDARDS.md#język-i-nazewnictwo). Modele i metody pozostają polskie; klasy techniczne mają angielskie role, np. `MeczService`, `MeczReadRepository` i `MeczListView`. Elementy szczegółów meczu pozostają planowane.

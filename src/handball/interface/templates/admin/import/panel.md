@@ -1,55 +1,89 @@
-# Import / eksport danych
+# Import danych ZPRP
 
-Status: projekt szablonu. Katalog `import/` i ten plik nie mają jeszcze odpowiadającego HTML ani żadnego kodu. Wzorzec: prototyp v6 `imports.html` — placeholder ("Przykładowa strona administracyjna"), bez własnego układu poza wspólnym `base.html`.
+Istniejący szablon [panel.html](panel.html) obsługuje wybór rozgrywek sezonu 2026/2027, podgląd przebiegu i historię pobrań. Dziedziczy `base.html`; definiuje bloki `tytul` i `tresc`. Wzorzec v6 `imports.html` dostarcza wspólną ramę administracji, a jego treść była placeholderem.
 
-Docelowy szablon względem katalogu szablony: `admin/import/panel.html` (nazwa robocza).
+Opis całego procesu, magazynów danych i tekstowy UML: [Importy — krok po kroku](../../../../../../docs/IMPORTS.md).
 
-## Przeznaczenie
+## Dane i powiązania
 
-Obsługuje trzy pozycje sidebara z grupy "Import / eksport" ("Import danych", "Historia importów", "Eksport danych") oraz pozycję "Import" w górnym pasku — w prototypie wszystkie cztery linki prowadzą do tego samego `imports.html` (jedna strona, prawdopodobnie z zakładkami). Docelowo: historia przebiegów importu (`logs` — patrz [database/README](../../../../../../docs/database/README.md), tabela "Stan importu i istniejące anomalie") oraz pochodzenie danych (`public.pliki_zrodlowe`, `public.rekordy_zrodla`).
+[ImportPanelView](../../../admin/views/import_views.py) przekazuje:
 
-## Dane wejściowe
+| Pole | Znaczenie |
+| --- | --- |
+| `sekcja_aktywna` | `import` — aktywna pozycja menu |
+| `konfiguracja` | Czy skonfigurowano dostęp administratora |
+| `csrf` | Token formularzy POST, przekazywany przy skonfigurowanym dostępie |
+| `ligi` | Słownik identyfikatorów i nazw `LIGI_IMPORTU` z [imports.py](../../../../domain/imports.py) |
+| `przebieg` | `PrzebiegImportu` lub `None` |
+| `historia` | Lista przebiegów z magazynu serwisu |
 
-Nieustalone. Ostatni zapisany przebieg importu ma status `CZESCIOWY` (patrz DATA.md) — ekran historii importów powinien to pokazywać wprost, nie ukrywać. "Import danych" i "Eksport danych" to operacje zmieniające stan — wymagają wyraźnego zlecenia użytkownika przed implementacją zapisu (patrz AGENTS.md, CODING_STANDARDS.md); na start realny może być tylko odczyt historii.
+Widok korzysta z `ImportService`. Brak konfiguracji zwraca ekran instrukcji dostępu (503), brak poprawnego logowania HTTP Basic — 401. Formularze POST wymagają tokenu CSRF. Dokument opisuje istniejący interfejs; zmiana zaznaczenia nie uruchamia importu.
 
-## Powiązania
+## Dwa tryby importu
 
-Dziedziczyłby `base.html`. Modele schematu `logs` jeszcze nie istnieją w `infrastructure/database/models/`. Pozycje menu w `interface/navigation.py` (`GORNY_PASEK` klucz `import`; `SIDEBAR` grupa "Import / eksport", klucze `import_danych`, `historia_importow`, `eksport_danych`) mają obecnie `punkt_koncowy=None`.
+Formularz rozpoczynania ma dwa przyciski `name="tryb"`: `pelny` pobiera cały wybrany zakres, a `uzupelniajacy` pobiera tylko szczegóły znanych meczów sprzed dzisiejszego dnia (Europe/Warsaw), którym brakuje dowolnej części wyniku `*_full` albo zawodników po stronie `gosp` lub `gosc`. Wycofane mecze i walkowery są pomijane. Nie obejmuje to nieznanych meczów, dzisiejszych spotkań, meczów bez daty ani niepełnych statystyk wewnątrz istniejących składów.
 
-## Gdzie wprowadzać zmiany
+Tryb uzupełniający nie pobiera składów sezonowych i nie nadpisuje istniejących niepustych wartości. Nowych zawodników dodaje z danych szczegółów meczu. Pełny import służy także korektom. `przebieg.nazwa_trybu` jest widoczna nad postępem oraz w kolumnie „Tryb” historii. Starsze lokalne przebiegi bez pola `tryb` są odczytywane jako pełne.
 
-Nie dotyczy — brak implementacji.
+Brak kandydatów prowadzi od razu do podglądu z komunikatem „Nie znaleziono meczów wymagających uzupełnienia”, bez żądań do ZPRP. Przy pustej liście rekordów przycisk zatwierdzenia nie jest wyświetlany. Każdy klient API w procesie aplikacji zachowuje odstęp co najmniej 3 sekund między rozpoczęciami żądań.
 
-## Sprawdzenie zmiany
+## Szybki wybór rozgrywek
 
-Nie dotyczy — brak implementacji.
+Nad checkboxami znajduje się siedem przycisków typu `button`: „Zaznacz wszystkie”, „Odznacz wszystkie”, „Tylko Superligi”, „Tylko Ligi Centralne”, „Tylko I ligi”, „Tylko II ligi” i „Tylko Puchar Polski”. Przyciski „Tylko…” zastępują cały wybór, zaznaczając rozgrywki obu płci danej grupy. Następnie można ręcznie zmienić dowolny checkbox.
 
-## Stan implementacji
+Klasa `WyborLigController` w [import.js](../../../static/js/import.js) operuje wyłącznie wewnątrz `[data-wybor-lig]`. Nazwy pochodzą z `data-nazwa` checkboxów, a prefiksy z `data-wybor` przycisków. Porównanie ignoruje wielkość liter. Prefiksy `i liga ` i `ii liga ` są rozłączne. `puchar polski ` obejmuje rozgrywki wojewódzkie i eliminacje, ale nie Superpuchar Polski. „Zaznacz wszystkie” obejmuje również Superpuchary.
 
-Nie zaimplementowano. Zbliżone do etapu 7 z [IMPLEMENTATION_PLAN](../../../../../../docs/IMPLEMENTATION_PLAN.md) ("Modele schematu logs oraz repozytoria i widoki diagnostyki — wyłącznie odczyt istniejących importów, anomalii i historii"). Operacje zapisu (uruchomienie importu, eksport) wymagają osobnej, wyraźnej decyzji użytkownika przed implementacją.
+Obsługa inicjalizuje się również bez formularza pobierania `#pobieranie`. Przyciski nie wysyłają formularza ani żądania sieciowego. Bez JavaScript pasek pozostaje ukryty, a checkboxy działają ręcznie. Domyślnie wszystkie ligi są zaznaczone. Pusty wybór po wysłaniu odrzuca istniejąca walidacja serwisu.
+
+## Pozostałe stany
+
+Przy `konfiguracja=False` widoczny jest tylko panel dostępu administratora. Przy braku przebiegu formularz wyboru i historia pozostają dostępne. Pusta historia pokazuje komunikat o braku przebiegów.
+
+`POBIERANIE` i `BLAD` pokazują formularz kontynuacji oraz status pobierania; istniejący skrypt obsługuje automatyczne kroki i ponowienia. `PODGLAD` pokazuje liczniki zmian, osobne potwierdzenie zastosowania oraz odświeżenie podglądu. `ZAPISANO` pokazuje potwierdzenie i link do meczów. Tabela zmian występuje dla `PODGLAD` i `ZAPISANO`. Historia zawiera rozpoczęcie, tryb, status, ligi i błąd.
+
+## Weryfikacja
+
+Testy [test_imports.py](../../../../../../tests/interface/test_imports.py) sprawdzają widok z podmienionym serwisem i repozytorium testowym. Przy zmianie szybkiego wyboru sprawdź wszystkie siedem akcji, zastępowanie wcześniejszego wyboru, rozdzielenie I/II ligi oraz wyłączenie Superpucharów z Pucharu Polski. Kontrole wyboru nie wymagają API ZPRP ani połączenia z bazą.
 
 ## Układ tekstowy i mapa zmian
 
-Stan: **plan — brak odpowiadającego HTML**. Poniżej tekstowa mapa zakresu z dotychczasowej notatki, nie zatwierdzony projekt rozmieszczenia pól.
-
 ```text
-[planowana wspólna rama: base.html]
-+------------------------------------------------------------+
-| Import / eksport
-| [miejsce na: Import danych / Historia importów / Eksport danych]
-| [podział ekranów / akcje / pola: nieustalone]
-+------------------------------------------------------------+
-[planowana stopka wspólnego układu]
+[wspólna rama base.html: nagłówek, menu, sidebar]
+Aktualizacja danych ZPRP
+[brak konfiguracji: Dostęp administratora]
+[skonfigurowany dostęp:]
+  Zakres pobierania
+    Sezon [2026/2027]
+    Rozgrywki
+      [Zaznacz wszystkie] [Odznacz wszystkie]
+      [Tylko Superligi] [Tylko Ligi Centralne]
+      [Tylko I ligi] [Tylko II ligi] [Tylko Puchar Polski]
+      [x] Nazwa rozgrywek ...
+    Informacja o pobieraniu
+    [Pełny import — sprawdź aktualizacje ZPRP]
+    [Uzupełnij brakujące dane meczów]
+    Opis zakresu uzupełniania
+  [jeśli istnieje przebieg:]
+    Przebieg: status, tryb, liczba pobrań i zadań, ewentualny błąd
+    [uzupełnianie bez kandydatów: komunikat o braku meczów]
+    [kontynuacja / podgląd i zatwierdzenie / potwierdzenie zapisu]
+    [dla podglądu i zapisu: rozwijane tabele zmian rekordów]
+  Historia pobrań w Handball DataScience
+    Rozpoczęcie | Tryb | Status | Ligi | Błąd
+[wspólna stopka]
 ```
 
-Jedna notatka opisuje trzy pozycje menu. Rysunek nie stanowi zgody na import, eksport ani zmiany bazy i nie dodaje przycisków do aplikacji.
+Pasek przycisków zawija się według dostępnej szerokości; rysunek pokazuje umowny podział na wiersze. Historia i zmiany rekordów korzystają z `.table-wrap`.
 
-Układ mobilny, dokładne etykiety i selektory nie są jeszcze ustalone. Po powstaniu HTML zastąp ten schemat rzeczywistym rozmieszczeniem, opisz warunki widoczności oraz dodaj mapę konkretnych pól i przycisków.
-
-### Mapa zmian
-
-| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
+| Element | Plik | Miejsce zmiany |
 | --- | --- | --- |
-| Zakres i przyszły układ | [panel.md](panel.md) | Najpierw uzupełnij ten opis; planowany plik `panel.html` jeszcze nie istnieje. |
-| Wspólna rama strony | [base.md](../../base.md) | Opis nagłówka, menu, sidebara, miejsca treści i stopki; sposób użycia dla tego ekranu potwierdź przy implementacji. |
-| Pozycja nawigacji | [navigation.py](../../../navigation.py) | Odpowiednia pozycja menu pozostaje bez własnego widoku. Dla szczegółów meczu osobnej pozycji menu nie ma. |
+| Nagłówek, formularze i warunki widoczności | [panel.html](panel.html) | Bloki `tytul`, `tresc`, warunki `konfiguracja` i `przebieg.status` |
+| Wybór trybu | [panel.html](panel.html) | Przyciski `name="tryb"`, `przebieg.tryb`, `przebieg.nazwa_trybu`; selekcja w `ImportSQLAlchemyRepository.pobierz_brakujace()` |
+| Przyciski i checkboxy | [panel.html](panel.html) | `[data-wybor-lig]`, `.import-selection`, `data-wybor`, `data-nazwa`, `name="ligi"` |
+| Zaznaczanie grup | [import.js](../../../static/js/import.js) | `WyborLigController.uruchom()` i `zaznacz()` |
+| Odstępy i zawijanie przycisków | [admin.css](../../../static/css/admin.css) | `.import-selection:not([hidden])`, `.btn.secondary.small`, `.import-form`, `.import-choice` |
+| Lista nazw i identyfikatorów | [imports.py](../../../../domain/imports.py) | `LIGI_IMPORTU` |
+| Dane widoku i obsługa formularzy | [import_views.py](../../../admin/views/import_views.py) | `ImportPanelView.get()` i `post()` |
+| Postęp pobierania | [import.js](../../../static/js/import.js) | `#pobieranie`, `#stan-pobierania`, liczniki odpowiedzi i zadań |
+| Historia i różnice | [panel.html](panel.html) | `#historia`, `przebieg.rekordy`, `.table-wrap` |
+| Wspólna rama | [base.md](../../base.md) | Nagłówek, nawigacja, sidebar i stopka |

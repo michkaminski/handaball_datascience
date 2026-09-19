@@ -5,3 +5,7 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .env
+
+instance/
+src/instance/
+.test-postgres/

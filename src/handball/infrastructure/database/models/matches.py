@@ -23,3 +23,4 @@ class Mecz(Baza):
     wynik_gosp_full: Mapped[int | None] = mapped_column(SmallInteger)
     wynik_gosc_full: Mapped[int | None] = mapped_column(SmallInteger)
     wycofany: Mapped[bool | None]
+    zamiana: Mapped[bool | None]
