@@ -10,7 +10,7 @@ Górne menu sekcji i oznaczenie bieżącego ekranu, zgodne z prototypem v6 (`.na
 
 ## Dane wejściowe
 
-Stała `GORNY_PASEK` z `interface/navigation.py` (lista `PozycjaMenu`: `klucz`, `etykieta`, `punkt_koncowy` — nazwa endpointu Flask albo `None`), wstrzykiwana globalnie do wszystkich szablonów przez `zarejestruj_kontekst_nawigacji()`. Zmienna `sekcja_aktywna` (string) przekazywana przez widok określa, która pozycja ma klasę `active`. Szablon tylko renderuje, nie decyduje o uprawnieniach ani dostępności pozycji.
+Stała `GORNY_PASEK` z `interface/navigation.py` (lista `PozycjaMenu`: `klucz`, `etykieta`, `punkt_koncowy` — nazwa endpointu Flask albo `None`), wstrzykiwana globalnie do wszystkich szablonów przez `zarejestruj_kontekst_nawigacji()`. Zmienna `sekcja_aktywna` (string) przekazywana przez widok określa, która pozycja ma klasę `active`. Dla `sekcja_aktywna="zawodnicy"` aktywna jest górna pozycja „Dane”; sidebar wyróżnia „Zawodnicy”. Szablon tylko renderuje, nie decyduje o uprawnieniach ani dostępności pozycji.
 
 ## Powiązania
 
@@ -20,7 +20,7 @@ Dołączany przez `base.html` przez `{% include %}`. Ta sama stała `GORNY_PASEK
 
 Tutaj zmieniaj znacznik HTML pozycji menu (klasa `active`, struktura `<a>`). Etykiety, kolejność, zestaw pozycji i ich docelowe endpointy zmieniaj w `interface/navigation.py` — nie hardkoduj ich w tym szablonie. Ukrycie odnośnika nie zastępuje kontroli uprawnień w backendzie.
 
-Pozycje "Import", "Kontrola danych", "Logi" mają `punkt_koncowy=None` (renderują się jako `href="#"`, widoczne zgodnie z pełnym menu prototypu, ale nieaktywne) — nie mają jeszcze odpowiadających widoków. Podłącz prawdziwy endpoint w `interface/navigation.py` dopiero, gdy dany ekran faktycznie powstanie.
+Pozycje "Kontrola danych" i "Logi" mają `punkt_koncowy=None` (renderują się jako `href="#"`, widoczne zgodnie z pełnym menu prototypu, ale nieaktywne) — nie mają jeszcze odpowiadających widoków. Podłącz prawdziwy endpoint w `interface/navigation.py` dopiero, gdy dany ekran faktycznie powstanie.
 
 ## Sprawdzenie zmiany
 
@@ -38,12 +38,12 @@ Stan: fragment istniejącego menu, dołączany pod nagłówkiem w `base.html`.
 <nav class="nav">
   (1) [Start] [Dane] [Import] [Kontrola danych] [Logi]
          ^       ^
-         |       aktywne dla sekcja_aktywna="mecze"
+         |       aktywne dla sekcja_aktywna="mecze" lub "zawodnicy"
          aktywne dla sekcja_aktywna="start"
 </nav>
 ```
 
-Kolejność wynika z `GORNY_PASEK`. „Start” i „Dane” mają realne adresy; trzy pozostałe pozycje mają `href="#"`. Klasa `.active` wyróżnia bieżącą sekcję. Na wąskim ekranie `.nav-inner` przewija się poziomo i nie zawija pozycji. Fragment nie zawiera sidebara ani przycisku „☰ Menu”.
+Kolejność wynika z `GORNY_PASEK`. „Start”, „Dane” i „Import” mają realne adresy; dwie pozostałe pozycje mają `href="#"`. Klasa `.active` wyróżnia bieżącą sekcję. Na wąskim ekranie `.nav-inner` przewija się poziomo i nie zawija pozycji. Fragment nie zawiera sidebara ani przycisku „☰ Menu”.
 
 ### Mapa zmian
 

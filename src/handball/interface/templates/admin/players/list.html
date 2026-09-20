@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block tytul %}Zawodnicy — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Dane › Zawodnicy</div>
+<h1>Zawodnicy</h1>
+<p>Zawodnicy i statystyki w wybranym zakresie.</p>
+</section>
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body filters" method="get" data-player-filters>
+<input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}">
+<input type="hidden" name="rozmiar_strony" value="{{ filtry.rozmiar_strony }}">
+<label>Sezon{{ formularz.id_sezon() }}</label>
+<label>Rozgrywki{{ formularz.rozgrywki() }}</label>
+<label>Drużyna{{ formularz.druzyna(placeholder="nazwa drużyny...") }}</label>
+<label>Pozycja{{ formularz.pozycja() }}</label>
+<label>Rocznik{{ formularz.rocznik(min=1, max=9999) }}</label>
+<label>Szukaj{{ formularz.szukaj(placeholder="imię, nazwisko...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.lista_zawodnikow', id_sezon='') }}">Wyczyść filtry</a></div>
+</form>
+</section>
+<section class="panel">
+<div class="panel-body">
+<div class="table-wrap">
+<table id="players-table" aria-describedby="players-legend">
+<thead>
+<tr>
+{% for pole, etykieta in [('id', 'ID'), ('imie', 'Imię'), ('nazwisko', 'Nazwisko'), ('pozycje', 'Poz.'), ('druzyny', 'Drużyny'), ('rocznik', 'Rocznik'), ('wzrost', 'Wzrost'), ('waga', 'Waga')] %}
+{% if pole in ['pozycje', 'druzyny'] %}
+<th scope="col">{{ etykieta }}</th>
+{% else %}
+<th scope="col"{% if filtry.sortowanie == pole %} aria-sort="ascending"{% elif filtry.sortowanie == '-' + pole %} aria-sort="descending"{% endif %}>
+<a href="{{ url_for(request.endpoint, **dict(request.args, sortowanie=(pole if filtry.sortowanie == '-' + pole else '-' + pole), strona=1)) }}">{{ etykieta }}{% if filtry.sortowanie == pole %} ▲{% elif filtry.sortowanie == '-' + pole %} ▼{% endif %}</a>
+</th>
+{% endif %}
+{% endfor %}
+<th scope="col">Akcje</th>
+</tr>
+</thead>
+<tbody>
+{% for zawodnik in strona.pozycje %}
+<tr data-player-href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=zawodnik.id_zawodnik) }}" title="Kliknij dwukrotnie, aby otworzyć szczegóły zawodnika">
+<td>{{ zawodnik.id_zawodnik }}</td>
+<td>{{ zawodnik.imie }}</td>
+<td>{{ zawodnik.nazwisko }}</td>
+<td>{{ zawodnik.pozycje }}</td>
+<td class="player-teams">{{ zawodnik.druzyny }}</td>
+<td>{{ zawodnik.rocznik }}</td>
+<td>{{ zawodnik.wzrost }}</td>
+<td>{{ zawodnik.waga }}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=zawodnik.id_zawodnik) }}" target="_blank" rel="noopener">◎ Szczegóły</a></td>
+</tr>
+{% else %}
+<tr><td colspan="9" class="note">Brak zawodników spełniających wybrane filtry.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<p class="note" id="players-legend">Wzrost i waga to najnowsze dostępne wartości każdego pola w historii składów. Drużyny i pozycje dotyczą wybranego zakresu. — Brak danych.</p>
+{% include "partials/pagination.html" %}
+</div>
+</section>
+<dialog id="player-detail-dialog" class="match-detail-dialog" aria-labelledby="player-detail-title">
+<div class="modal-head"><h2 id="player-detail-title">Szczegóły zawodnika</h2><button class="close" type="button" data-player-close aria-label="Zamknij szczegóły zawodnika" autofocus>×</button></div>
+<div class="modal-body" data-player-content aria-live="polite"></div>
+<div class="modal-foot"><a class="btn secondary" data-player-open-tab target="_blank" rel="noopener">Otwórz w nowej karcie</a><button class="btn secondary" type="button" data-player-close>Zamknij</button></div>
+</dialog>
+<script src="{{ url_for('static', filename='js/players.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/player_details.js') }}" defer></script>
+{% endblock %}

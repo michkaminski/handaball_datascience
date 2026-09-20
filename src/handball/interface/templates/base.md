@@ -10,7 +10,9 @@ Wspólna szerokość strony, nagłówek, obszar nawigacji, miejsce na komunikaty
 
 ## Dane wejściowe
 
-Bloki Jinja2 `tytul` (zawartość `<title>`) i `tresc` (treść `<main>`) dostarczane przez szablon potomny. Zmienna `sekcja_aktywna` (string, klucz pozycji menu, np. `"start"` lub `"mecze"`) musi być przekazana przez widok do `render_template` — określa, która pozycja górnego paska i sidebara jest podświetlona jako aktywna.
+Bloki Jinja2 `tytul` (zawartość `<title>`) i `tresc` (treść `<main>`) dostarczane przez szablon potomny. Zmienna `sekcja_aktywna` (string, klucz pozycji menu, np. `"start"`, `"mecze"` lub `"zawodnicy"`) musi być przekazana przez widok do `render_template` — określa, która pozycja górnego paska i sidebara jest podświetlona jako aktywna.
+
+Dla listy zawodników sidebar wyróżnia „Zawodnicy”, a górny pasek „Dane”. Pozycja zawodników prowadzi do `administracja.lista_zawodnikow`.
 
 Struktura samego menu (`GORNY_PASEK`, `SIDEBAR` — pełny zestaw grup i pozycji 1:1 z prototypem v6, patrz `interface/navigation.py`) nie jest przekazywana przez widok: jest wstrzykiwana globalnie do wszystkich szablonów przez `zarejestruj_kontekst_nawigacji()` (context processor Flask, wywoływany w `AplikacjaFactory.utworz()`). Każda pozycja ma `klucz`, `etykieta`, `ikona` i `punkt_koncowy` (nazwa endpointu Flask albo `None`, jeśli widok jeszcze nie istnieje).
 

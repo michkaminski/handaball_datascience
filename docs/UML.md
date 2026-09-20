@@ -100,3 +100,43 @@ Lista działa analogicznie z `MeczFilterForm`, słownikami, `FiltryMeczow`, `Str
 ## Przeglądarka
 
 `matches.js` obsługuje pamięć filtrów, widoczność kolumn, modal szczegółów i zakładki. Modal pobiera tę samą trasę szczegółów i wyciąga `[data-match-detail]`; pełna karta oraz podgląd korzystają z jednego presentera i szablonu. Szczegóły kontraktów: [list.md](../src/handball/interface/templates/admin/matches/list.md), [detail.md](../src/handball/interface/templates/admin/matches/detail.md).
+
+## Lista zawodników — 2026-09-20
+
+```mermaid
+classDiagram
+    class ZawodnikReadRepository {
+        <<Protocol>>
+        +pobierz_liste(filtry) StronaZawodnikow
+        +pobierz_pozycje() list
+    }
+    ZawodnikListView --> ZawodnikFilterForm
+    ZawodnikListView --> ZawodnikService
+    ZawodnikListView --> SlownikiZawodnikowService
+    ZawodnikListView --> ZawodnikPresenter
+    ZawodnikService --> ZawodnikReadRepository
+    ZawodnikSQLAlchemyRepository ..|> ZawodnikReadRepository
+    ZawodnikSQLAlchemyRepository --> Zawodnik
+    ZawodnikSQLAlchemyRepository --> MeczZawodnik
+    ZawodnikPresenter --> StronaZawodnikowViewModel
+    SlownikiZawodnikowService --> SezonReadRepository
+    SlownikiZawodnikowService --> RozgrywkiReadRepository
+```
+
+Fabryka przekazuje repozytorium z sesją żądania. GET waliduje filtry, pobiera stronę domenową i prezentuje gotowe teksty. PostgreSQL wykonuje agregację po zawodniku z liczbą różnych meczów i kontrolą wielokrotnych stron. Repozytorium ogranicza paginację do ostatniej strony. Błędy danych wejściowych dają 400, odczytu 503; bez wyników widok zwraca 200.
+
+## Karta zawodnika
+
+```mermaid
+classDiagram
+    ZawodnikSzczegolyView --> SzczegolyZawodnikaService
+    SzczegolyZawodnikaService --> SzczegolyZawodnikaReadRepository
+    SzczegolyZawodnikaSQLAlchemyRepository ..|> SzczegolyZawodnikaReadRepository
+    SzczegolyZawodnikaSQLAlchemyRepository --> SkladSezonowy
+    SzczegolyZawodnikaSQLAlchemyRepository --> Zawodnik
+    SzczegolyZawodnikaSQLAlchemyRepository --> Mecz
+    ZawodnikSzczegolyView --> SzczegolyZawodnikaPresenter
+    SzczegolyZawodnikaPresenter --> MeczPresenter
+```
+
+Repozytorium pobiera historię składów osobno od meczów, bez mnożenia wpisów. EXISTS wybiera różne mecze zawodnika; LIMIT/OFFSET dotyczy meczów, a dodatkowe zapytanie pobiera wszystkie jego wpisy z bieżącej strony. Modal pobiera ten sam HTML co pełna karta. Paginacja dostaje parametry z id_zawodnik i zakladka=mecze; JavaScript przechwytuje wyłącznie nawigację wewnątrz karty, pozostawiając linki do meczów.

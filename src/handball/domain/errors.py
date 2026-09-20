@@ -7,3 +7,7 @@ class NieZnalezionoMeczu(Exception):
 
 class BladOdczytuDanych(Exception):
     pass
+
+
+class NieZnalezionoZawodnika(Exception):
+    pass

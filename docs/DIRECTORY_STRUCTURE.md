@@ -103,3 +103,13 @@ Pozostałe katalogi szablonów zawierające tylko MD są planami, nie działają
 - `tests/integration/`: osobno uruchamiane testy bazowe; nie należą do bezpiecznej regresji bez bazy.
 
 Komendy: [README](../README.md). Refaktoryzację weryfikuje zestaw `pytest --ignore=tests/integration`; integracji z rzeczywistą bazą nie uruchamiano.
+
+## Lista zawodników — 2026-09-20
+
+Działa trasa `/administracja/zawodnicy` z pozycją w sidebarze. `domain/players.py` zawiera filtry, pozycję i stronę danych; `contracts/player_repository.py` kontrakt odczytu. `infrastructure/database/models/players.py` mapuje słownik zawodników, a `infrastructure/repositories/player_repository.py` agreguje wpisy meczowe. `services/player_service.py` obsługuje odczyt listy/pozycji, `player_dictionary_service.py` zbiera istniejące słowniki sezonów i rozgrywek.
+
+Interfejs obejmuje `admin/forms/player_filters.py`, `admin/views/player_views.py`, `presenters/player_presenter.py`, `view_models/players.py`, parę `templates/admin/players/list.html`/`list.md` oraz `static/js/players.js`. Zależności składa istniejąca fabryka. Szczegóły i edycja zawodnika pozostają poza implementacją tej listy.
+
+## Szczegóły zawodnika
+
+`domain/player_details.py`, `contracts/player_detail_repository.py`, `services/player_detail_service.py` oraz `infrastructure/repositories/player_detail_repository.py` obsługują profil, historię i paginowane mecze. `models/rosters.py` mapuje istniejące `sklady` i `pozycje`; model zawodnika zawiera też foto_url. Interfejs: `admin/views/player_detail_views.py`, `admin/forms/player_match_filters.py`, `presenters/player_detail_presenter.py`, `view_models/player_details.py`, para `templates/admin/players/detail.html`/`detail.md` i `static/js/player_details.js`. Fabryka składa osobny kontrakt szczegółów, nie poszerzając kontraktu listy.

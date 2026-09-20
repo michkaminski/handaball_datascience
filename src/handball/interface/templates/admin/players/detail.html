@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block tytul %}{{ szczegoly.nazwa }} — Handball DataScience{% endblock %}
+{% block tresc %}
+<div data-player-detail data-active-tab="{{ aktywna_zakladka }}">
+<section class="pagehead">
+<div class="crumb">Start › Dane › Zawodnicy › Szczegóły</div>
+<h1>{{ szczegoly.nazwa }}</h1><p>Karta zawodnika #{{ szczegoly.id_zawodnik }}</p>
+</section>
+<div class="toolbar" data-player-navigation><a class="btn secondary small" href="{{ url_for('administracja.lista_zawodnikow') }}">← Powrót do listy zawodników</a></div>
+<div class="match-tabs" role="tablist" aria-label="Szczegóły zawodnika" data-player-tabs hidden>
+{% for klucz, etykieta in [('profil', 'Profil'), ('sezony', 'Sezony i drużyny'), ('mecze', 'Mecze')] %}
+<button type="button" role="tab" id="player-tab-{{ klucz }}" data-player-tab="{{ klucz }}" aria-controls="player-panel-{{ klucz }}" aria-selected="{{ 'true' if aktywna_zakladka == klucz else 'false' }}">{{ etykieta }}</button>
+{% endfor %}
+</div>
+<section class="panel" id="player-panel-profil" data-player-panel="profil" aria-labelledby="player-tab-profil">
+<h2>Profil</h2><div class="panel-body player-profile">
+<div class="player-photo">
+{% if szczegoly.foto_url %}<img src="{{ szczegoly.foto_url }}" alt="Zdjęcie: {{ szczegoly.nazwa }}" referrerpolicy="no-referrer" data-player-photo><span class="note" data-player-photo-fallback hidden>Zdjęcie niedostępne</span>
+{% else %}<span class="note">Brak zdjęcia</span>{% endif %}
+</div>
+<dl class="player-profile-data"><dt>ID</dt><dd>{{ szczegoly.id_zawodnik }}</dd><dt>Imię i nazwisko</dt><dd>{{ szczegoly.nazwa }}</dd><dt>Data urodzenia</dt><dd>{{ szczegoly.data_urodzenia }}</dd><dt>Wzrost</dt><dd><span class="player-profile-value">{{ szczegoly.wzrost }}</span>{% if szczegoly.wzrost != '—' %} cm{% endif %}</dd><dt>Waga</dt><dd><span class="player-profile-value">{{ szczegoly.waga }}</span>{% if szczegoly.waga != '—' %} kg{% endif %}</dd></dl>
+</div><p class="note player-note">Wzrost i waga pochodzą z najnowszego dostępnego zapisu składu. Numer i pozycja pozostają danymi historycznymi.</p>
+</section>
+<section class="panel" id="player-panel-sezony" data-player-panel="sezony" aria-labelledby="player-tab-sezony">
+<h2>Sezony i drużyny</h2><div class="panel-body">
+<p class="note">Numer i pozycja pochodzą ze składu sezonowego. Bramki, karne i kary są sumą wpisów meczowych dla danej drużyny i rozgrywek. — Brak danych.</p>
+<div class="table-wrap"><table class="player-season-table">
+<thead><tr><th>Sezon</th><th>Drużyna</th><th>Rozgrywki</th><th>Numer</th><th>Pozycja</th><th>Bramki</th><th>Karne</th><th>Kary</th></tr></thead>
+<tbody>{% for sezon in szczegoly.sezony %}
+<tr><td><span class="season-badge">{{ sezon.sezon }}</span></td><td class="player-teams">{{ sezon.druzyna }}</td><td>{{ sezon.rozgrywki }}</td><td>{{ sezon.nr_koszulki }}</td><td>{{ sezon.pozycja }}</td><td class="player-stat">{{ sezon.bramki }}</td><td class="player-stat">{{ sezon.karne }}</td><td class="player-penalties">{{ sezon.kary }}</td></tr>
+{% else %}<tr><td colspan="8" class="note">Brak danych zawodnika w składach sezonowych.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+</section>
+<section class="panel" id="player-panel-mecze" data-player-panel="mecze" aria-labelledby="player-tab-mecze">
+<h2>Mecze</h2>
+<form class="panel-body filters player-match-filters" method="get" action="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=szczegoly.id_zawodnik) }}" data-player-match-filters>
+<input type="hidden" name="zakladka" value="mecze"><input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}"><input type="hidden" name="rozmiar_strony" value="{{ filtry.rozmiar_strony }}">
+<label>Sezon{{ formularz.id_sezon() }}</label><label>Rozgrywki{{ formularz.rozgrywki() }}</label><label>Przeciwnik{{ formularz.przeciwnik(placeholder="nazwa drużyny...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" data-player-page href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=szczegoly.id_zawodnik, zakladka='mecze') }}">Wyczyść filtry</a></div>
+</form>
+<div class="panel-body">
+<p class="note">Mecze z wpisem w składzie, nie potwierdzone występy. Wynik: gospodarz–gość. Karne: trafione/próby; seria osobno.</p>
+<div class="table-wrap"><table class="player-matches-table">
+<thead><tr>
+<th aria-sort="{{ 'descending' if filtry.sortowanie == '-data' else 'ascending' }}"><a data-player-page href="{{ url_for(request.endpoint, **dict(parametry_paginacji, sortowanie=('data' if filtry.sortowanie == '-data' else '-data'), strona=1)) }}">Data {{ '▼' if filtry.sortowanie == '-data' else '▲' }}</a></th>
+<th>Sezon / rozgrywki</th><th>Drużyna</th><th>Przeciwnik</th><th>Wynik</th><th>Bramki</th><th>Karne</th><th>Kary</th><th>Akcje</th>
+</tr></thead><tbody>
+{% for pozycja in strona.pozycje %}
+<tr>
+<td>{{ pozycja.termin }}</td>
+<td>{{ pozycja.mecz.sezon or '—' }}<br>{{ pozycja.mecz.rozgrywki or '—' }}{% if pozycja.wiele_stron %}<br><span class="note">Kilka stron tego samego meczu — osobne wpisy.</span>{% endif %}</td>
+<td>{% for wpis in pozycja.wpisy %}<div class="player-match-entry">{{ wpis.druzyna }}{% if pozycja.wiele_stron or wpis.strona == 'inne' %} <span class="note">({{ wpis.strona }})</span>{% endif %}<br><span class="note">Nr {{ wpis.nr_koszulki }}, {{ wpis.pozycja }}</span></div>{% endfor %}</td>
+<td>{% for wpis in pozycja.wpisy %}<div class="player-match-entry">{{ wpis.przeciwnik }}</div>{% endfor %}</td>
+<td><span class="score">{{ pozycja.mecz.wynik }}</span><br><span class="note">{{ pozycja.mecz.gospodarz or '—' }} — {{ pozycja.mecz.gosc or '—' }}{% if pozycja.mecz.dopisek_wyniku %}<br>{{ pozycja.mecz.dopisek_wyniku }}{% endif %}</span></td>
+<td>{% for wpis in pozycja.wpisy %}<div class="player-match-entry">{{ wpis.bramki }}</div>{% endfor %}</td>
+<td>{% for wpis in pozycja.wpisy %}<div class="player-match-entry">{{ wpis.karne }}<br><span class="note">Seria: {{ wpis.karne_seria }}</span></div>{% endfor %}</td>
+<td>{% for wpis in pozycja.wpisy %}<div class="player-match-entry">2 min: {{ wpis.dwie_minuty }}<br><span class="note">Upomnienie: {{ wpis.upomnienie }}<br>Dyskwalifikacja: {{ wpis.dyskwalifikacja }}</span></div>{% endfor %}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=pozycja.mecz.id_mecz) }}" target="_blank" rel="noopener">◈ Szczegóły meczu</a></td>
+</tr>
+{% else %}<tr><td colspan="9" class="note">Brak meczów zawodnika spełniających wybrane filtry.</td></tr>{% endfor %}
+</tbody></table></div>
+{% include "partials/pagination.html" %}
+</div></section>
+</div>
+<script src="{{ url_for('static', filename='js/player_details.js') }}" defer></script>
+{% endblock %}

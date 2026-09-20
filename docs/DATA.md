@@ -49,3 +49,17 @@ Na polecenie użytkownika lista meczów uwzględnia `mecze.zamiana=True`: odwrac
 ## Kontrakt odczytu po refaktoryzacji — 2026-09-19
 
 Repozytorium zwraca źródłową kolejność stron, liczby, daty i `None`; `ZawodnikMeczu` nie zawiera pól koloru ani tekstowych ułamków. Presenter stosuje regułę stron dla listy oraz szczegółów (nazwy, wyniki i składy) i przygotowuje modele szablonów. Zachowano istniejące zachowanie; refaktoryzacja nie jest nową weryfikacją semantyki importu ani zgody na zmianę bazy. Maksimum bramek jest wyznaczane osobno w każdym składzie przez regułę domenową; braki pozostają brakami w domenie.
+
+## Podsumowanie sezonów zawodnika — 2026-09-20
+
+Karta zawodnika łączy historię `sklady` z osobną agregacją `mecze_zawodnicy`. Agregacja grupuje wpisy według `mecze.id_sezon`, drużyny wynikającej ze strony `gosp` lub `gosc` oraz `rozgrywki.nazwa`. Dzięki oddzielnemu zapytaniu relacja składów nie mnoży sum. Strona `inne` nie ma jednoznacznej drużyny i nie trafia do podsumowania drużynowego.
+
+Bramki, trafione i wykonywane karne oraz liczba kar dwuminutowych są sumami znanych wartości. Upomnienia i dyskwalifikacje są sumą wartości prawdziwych. Gdy wszystkie wartości danego pola w grupie są `NULL`, wynik pozostaje nieznany. Te statystyki oznaczają dostępne wpisy zawodnik–strona–mecz, a nie potwierdzone minuty lub wejście na boisko. Wzrost i waga w Profilu to najnowsza niepusta wartość każdego pola według kolejności historii składów; mogą pochodzić z różnych zapisów.
+
+## Lista zawodników — 2026-09-20
+
+Lista grupuje po `zawodnicy.id`. Pokazuje najnowszy niepusty wzrost i najnowszą niepustą wagę z `sklady`, wybierane niezależnie według roku rozpoczęcia sezonu, ID sezonu i ID migawki drużyny malejąco. Pomiary mogą pochodzić z różnych rekordów. Brak wartości pozostaje brakiem.
+
+Sezon, nazwa rozgrywek, historyczna tożsamość drużyny i pozycja ograniczają wpisy przed agregacją. Nazwy drużyn pochodzą z unikalnej migawki zespołu i sezonu. Strona `inne` pozostaje bez przypisania drużyny. Wiele historycznych drużyn i pozycji pokazujemy razem; nie wyznaczamy „aktualnego klubu”. Bez filtrów kontekstu pozostają też zawodnicy bez wpisów meczowych.
+
+Mapowanie opiera się na udokumentowanym schemacie i obecnym powiązaniu stron w szczegółach meczu/importerze. Nie jest nową weryfikacją semantyki historycznego importu. Rzeczywiste zapytania agregacji i wydajność wymagają sprawdzenia przy dostępnym połączeniu READ ONLY; w tej sesji brak hasła w środowisku. Pełny kontrakt: [lista zawodników](../src/handball/interface/templates/admin/players/list.md).

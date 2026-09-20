@@ -39,6 +39,7 @@ Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogó
 | `admin/start.html` | [admin/start.md](../src/handball/interface/templates/admin/start.md) | istnieje |
 | `admin/matches/list.html` | [admin/matches/list.md](../src/handball/interface/templates/admin/matches/list.md) | istnieje |
 | `admin/matches/detail.html` | [admin/matches/detail.md](../src/handball/interface/templates/admin/matches/detail.md) | planowany (etap 5) |
+| `admin/players/detail.html` | [admin/players/detail.md](../src/handball/interface/templates/admin/players/detail.md) | istnieje: Profil, Sezony i drużyny, Mecze |
 | `admin/login.html` | [admin/login.md](../src/handball/interface/templates/admin/login.md) | planowany (etap 6) |
 | `errors/400.html` | [errors/400.md](../src/handball/interface/templates/errors/400.md) | planowany (błędy mapowane na HTTP przez interface/errors.py, ale własny wygląd stron błędów jeszcze nie istnieje — używane są domyślne strony Flaska) |
 | `errors/404.html` | [errors/404.md](../src/handball/interface/templates/errors/404.md) | planowany (jw.) |
@@ -53,7 +54,7 @@ Na wyraźne polecenie użytkownika sidebar (patrz base.md) pokazuje pełne menu 
 | Sezony | seasons.html (placeholder) | [admin/seasons/list.md](../src/handball/interface/templates/admin/seasons/list.md) |
 | Rozgrywki | competitions.html (placeholder) | [admin/competitions/list.md](../src/handball/interface/templates/admin/competitions/list.md) |
 | Drużyny | teams.html (placeholder) | [admin/teams/list.md](../src/handball/interface/templates/admin/teams/list.md) |
-| Zawodnicy | players.html (rzeczywista treść) | [admin/players/list.md](../src/handball/interface/templates/admin/players/list.md) |
+| Zawodnicy — wdrożona lista odczytu | players.html (rzeczywista treść) | [admin/players/list.md](../src/handball/interface/templates/admin/players/list.md) |
 | Składy | squads.html (placeholder) | [admin/rosters/list.md](../src/handball/interface/templates/admin/rosters/list.md) |
 | Tabele | standings.html (placeholder) | [admin/standings/list.md](../src/handball/interface/templates/admin/standings/list.md) |
 | Strzelcy | scorers.html (placeholder) | [admin/scorers/list.md](../src/handball/interface/templates/admin/scorers/list.md) |
@@ -65,4 +66,4 @@ Na wyraźne polecenie użytkownika sidebar (patrz base.md) pokazuje pełne menu 
 
 Prototyp v6 sam w sobie jest placeholderem ("Przykładowa strona administracyjna") dla większości tych ekranów — tylko `players.html` i `quality.html` mają rzeczywistą treść (filtry, kolumny, przykładowe dane) do adaptacji. Nazwy plików/katalogów w tabeli są robocze; potwierdź je przy faktycznym projektowaniu.
 
-Przyszłe szablony zespołów, zawodników i diagnostyki otrzymają pełne MD (z ustalonym kontraktem) przy ich konkretnym zaprojektowaniu lub utworzeniu — powyższe notatki to punkt startu, nie gotowy kontrakt. MD nie są szablonami do renderowania ani zasobami publicznymi; nie wystawiaj ich przez routing i nie umieszczaj w publicznym eksporcie.
+Lista zawodników ma już HTML i pełny kontrakt MD (2026-09-20). Przyszłe szablony zespołów i diagnostyki otrzymają pełne MD (z ustalonym kontraktem) przy ich konkretnym zaprojektowaniu lub utworzeniu — powyższe notatki to punkt startu, nie gotowy kontrakt. MD nie są szablonami do renderowania ani zasobami publicznymi; nie wystawiaj ich przez routing i nie umieszczaj w publicznym eksporcie.

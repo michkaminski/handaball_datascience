@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.match_repository import MeczReadRepository
 from handball.contracts.match_stage_repository import EtapMeczowReadRepository
+from handball.contracts.player_detail_repository import SzczegolyZawodnikaReadRepository
+from handball.contracts.player_repository import ZawodnikReadRepository
 from handball.contracts.season_repository import SezonReadRepository
 from handball.contracts.venue_repository import HalaReadRepository
 from handball.domain.match_rules import MeczPolicy
@@ -19,6 +21,10 @@ from handball.infrastructure.repositories.match_repository import MeczSQLAlchemy
 from handball.infrastructure.repositories.match_stage_repository import (
     EtapMeczowSQLAlchemyRepository,
 )
+from handball.infrastructure.repositories.player_detail_repository import (
+    SzczegolyZawodnikaSQLAlchemyRepository,
+)
+from handball.infrastructure.repositories.player_repository import ZawodnikSQLAlchemyRepository
 from handball.infrastructure.repositories.season_repository import SezonSQLAlchemyRepository
 from handball.infrastructure.repositories.venue_repository import HalaSQLAlchemyRepository
 from handball.interface.presenters.match_presenter import (
@@ -26,8 +32,13 @@ from handball.interface.presenters.match_presenter import (
     MeczPresenter,
     SkladMeczuPresenter,
 )
+from handball.interface.presenters.player_detail_presenter import SzczegolyZawodnikaPresenter
+from handball.interface.presenters.player_presenter import ZawodnikPresenter
 from handball.services.match_dictionary_service import SlownikiMeczowService
 from handball.services.match_service import MeczService
+from handball.services.player_detail_service import SzczegolyZawodnikaService
+from handball.services.player_dictionary_service import SlownikiZawodnikowService
+from handball.services.player_service import ZawodnikService
 
 
 class ZaleznosciZadaniaFactory:
@@ -38,7 +49,15 @@ class ZaleznosciZadaniaFactory:
         fabryka_repozytorium_rozgrywek: Callable[[], RozgrywkiReadRepository] | None = None,
         fabryka_repozytorium_hal: Callable[[], HalaReadRepository] | None = None,
         fabryka_repozytorium_etapow: Callable[[], EtapMeczowReadRepository] | None = None,
+        fabryka_repozytorium_zawodnikow: Callable[[], ZawodnikReadRepository] | None = None,
+        fabryka_szczegolow_zawodnika: Callable[[], SzczegolyZawodnikaReadRepository] | None = None,
     ) -> None:
+        self._fabryka_szczegolow_zawodnika = fabryka_szczegolow_zawodnika or (
+            lambda: SzczegolyZawodnikaSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
+        self._fabryka_repozytorium_zawodnikow = fabryka_repozytorium_zawodnikow or (
+            lambda: ZawodnikSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
         self._fabryka_repozytorium_meczow = fabryka_repozytorium_meczow or (
             lambda: MeczSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -71,3 +90,20 @@ class ZaleznosciZadaniaFactory:
         formatowanie = MeczFormat()
         reguly = MeczPolicy()
         return MeczPresenter(reguly, formatowanie, SkladMeczuPresenter(formatowanie, reguly))
+
+    def utworz_serwis_zawodnikow(self) -> ZawodnikService:
+        return ZawodnikService(self._fabryka_repozytorium_zawodnikow())
+
+    def utworz_presenter_zawodnikow(self) -> ZawodnikPresenter:
+        return ZawodnikPresenter()
+
+    def utworz_slowniki_zawodnikow(self) -> SlownikiZawodnikowService:
+        return SlownikiZawodnikowService(
+            self._fabryka_repozytorium_sezonow(), self._fabryka_repozytorium_rozgrywek()
+        )
+
+    def utworz_serwis_szczegolow_zawodnika(self) -> SzczegolyZawodnikaService:
+        return SzczegolyZawodnikaService(self._fabryka_szczegolow_zawodnika())
+
+    def utworz_presenter_szczegolow_zawodnika(self) -> SzczegolyZawodnikaPresenter:
+        return SzczegolyZawodnikaPresenter(MeczFormat(), self.utworz_presenter_meczow())

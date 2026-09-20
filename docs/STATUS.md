@@ -1,8 +1,22 @@
 # Stan projektu
 
-Aktualizacja: 2026-09-19.
+Aktualizacja: 2026-09-20.
 
 Poniższe opisy etapów zachowują wyniki wcześniejszych weryfikacji. Wynik migracji nazw z 2026-09-14 podano osobno; nie ponawiano historycznych kontroli na bazie użytkownika.
+
+## Karta zawodnika — 2026-09-20
+
+Działa `/administracja/zawodnicy/<id>`: Profil, Sezony i drużyny oraz Mecze. Profil pokazuje najnowszy dostępny wzrost i wagę. Historia zachowuje numer i pozycję rekordu sezon–drużyna oraz rozbija podsumowania na rozgrywki: bramki, karne i kary. Mecze mają filtry sezonu, rozgrywek i przeciwnika, sortowanie daty oraz paginację po 20 różnych meczów. Na liście działa „Szczegóły” w nowej karcie oraz dwuklik/Enter w modalu. Filtry i paginacja działają również w modalu. Kontrakt: [detail.md](../src/handball/interface/templates/admin/players/detail.md).
+
+Weryfikacja po rozszerzeniu podsumowań sezonowych: 191 testów Pythona bez integracyjnych testów bazy; 25 testów JavaScript łącznie, w tym 7 nowych dla karty. Mypy oraz Ruff i formatowanie kodu oraz testów jednostkowych, interfejsu i helperów przechodzą. W Edge sprawdzono dwuklik, Enter, zamykanie Escape, fokus, zakładki, dane sezonowe, paginację, filtrowanie i czyszczenie w modalu oraz szerokości 1440 i 390 px. Odświeżono lokalny serwer bez automatycznego przeładowania; lista i karta zwracają 200. Przez GET rzeczywistej aplikacji potwierdzono również strony 1–20 i 21–40 zawodnika z 551 meczami. Nie uruchamiano zapisów do bazy ani pełnego audytu importu.
+
+## Lista zawodników — 2026-09-20
+
+Zaimplementowano `GET /administracja/zawodnicy` i aktywną pozycję menu. Lista na wzór meczów ma filtry sezonu, rozgrywek, drużyny, pozycji, rocznika i imienia/nazwiska; sortowanie w nagłówkach, paginację oraz niezależną pamięć filtrów. Zamiast liczby meczów i bramek pokazuje najnowszy dostępny wzrost oraz wagę, wybierane niezależnie z historii składów. Kontrakt i mapa zmian: [list.md](../src/handball/interface/templates/admin/players/list.md).
+
+Weryfikacja po zmianie kolumn: 192 testy Pythona bez integracji z bazą i 24 testy JavaScript przechodzą. Mypy, formatowanie oraz Ruff dla kodu aplikacji i testów jednostkowych/widoków bez błędów. Pełny `ruff check .` wskazuje istniejący E501 w `tests/integration/test_import_repository.py:98`; tego pliku nie zmieniano. Regresję uruchomiono z pustym `HDS_IMPORT_PASSWORD` w procesie testowym, aby lokalna konfiguracja importu nie zmieniała klucza sesji testów.
+
+Porównano z prototypem v6 w lokalnym Edge. Sprawdzono widok na danych testowych przy 1440 px i emulowanym viewport 390 px: dokument nie przewija się poziomo, tabela przewija się we własnym kontenerze, menu mobilne działa. Po odświeżeniu lokalnego serwera potwierdzono na rzeczywistym odczycie wyszukiwanie zawodnika, obecność wartości wzrostu i wagi oraz brak kolumn meczów i bramek. Bazy nie zmieniano.
 
 ## Warstwy danych i prezentacji — 2026-09-19
 
@@ -93,6 +107,6 @@ Dodano filtry po nazwie rundy i kolejki oraz dwie opcjonalne kolumny włączane 
 
 ## Następny krok
 
-Dostęp administratora i kolejne uzgodnione widoki odczytu z [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md). Lista i szczegóły meczów są zaimplementowane; ich aktualne warstwy opisują DIRECTORY_STRUCTURE i UML.
+Odczyt listy i karty zawodnika potwierdzono przez lokalną aplikację. Do dalszej weryfikacji pozostają pełna kompletność i wydajność archiwum. Następnie dostęp administratora i kolejne uzgodnione widoki z [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md). Lista i szczegóły meczów oraz lista zawodników są zaimplementowane; warstwy opisują DIRECTORY_STRUCTURE i UML.
 
 Nie używać `python ../run.py` jako komendy uruchomienia nowej aplikacji: dotyczy starszego serwisu i jego procesu importu.

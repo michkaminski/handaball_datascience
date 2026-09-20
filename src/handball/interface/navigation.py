@@ -28,7 +28,7 @@ SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
             PozycjaMenu("sezony", "Sezony", None, "◫"),
             PozycjaMenu("rozgrywki", "Rozgrywki", None, "⌘"),
             PozycjaMenu("druzyny", "Drużyny", None, "▣"),
-            PozycjaMenu("zawodnicy", "Zawodnicy", None, "◎"),
+            PozycjaMenu("zawodnicy", "Zawodnicy", "administracja.lista_zawodnikow", "◎"),
             PozycjaMenu("sklady", "Składy", None, "☰"),
             PozycjaMenu("mecze", "Mecze", "administracja.lista_meczow", "◈"),
             PozycjaMenu("tabele", "Tabele", None, "▤"),

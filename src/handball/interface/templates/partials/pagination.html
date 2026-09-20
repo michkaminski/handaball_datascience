@@ -3,10 +3,10 @@
 <span class="note">Wyniki {{ (strona.strona - 1) * strona.rozmiar_strony + 1 }}–{{ [strona.strona * strona.rozmiar_strony, strona.liczba_wszystkich] | min }} z {{ strona.liczba_wszystkich }}</span>
 <div class="right">
 {% if strona.strona > 1 %}
-<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(request.args, strona=strona.strona - 1)) }}">« Poprzednia</a>
+<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry_paginacji|default(request.args), strona=strona.strona - 1)) }}">« Poprzednia</a>
 {% endif %}
 {% if strona.strona * strona.rozmiar_strony < strona.liczba_wszystkich %}
-<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(request.args, strona=strona.strona + 1)) }}">Następna »</a>
+<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry_paginacji|default(request.args), strona=strona.strona + 1)) }}">Następna »</a>
 {% endif %}
 </div>
 </div>
