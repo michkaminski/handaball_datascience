@@ -34,7 +34,7 @@ SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
             PozycjaMenu("tabele", "Tabele", None, "▤"),
             PozycjaMenu("strzelcy", "Strzelcy", None, "★"),
             PozycjaMenu("hale", "Hale", "administracja.lista_hal", "⌂"),
-            PozycjaMenu("sedziowie", "Sędziowie", None, "⚑"),
+            PozycjaMenu("sedziowie", "Sędziowie", "administracja.lista_sedziow", "⚑"),
         ],
     ),
     (

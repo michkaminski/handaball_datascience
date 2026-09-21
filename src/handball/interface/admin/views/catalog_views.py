@@ -78,3 +78,13 @@ class DruzynaListView(KatalogListView):
 
     def pobierz_strone(self, serwis: KatalogService, filtry: FiltryKatalogu) -> StronaKatalogu[Any]:
         return serwis.pobierz_druzyny(filtry)
+
+
+class SedziaListView(KatalogListView):
+    szablon = "admin/referees/list.html"
+    sekcja = "sedziowie"
+    sortowanie = ("id", "nazwisko", "miasto", "liczba_meczow")
+    domyslne_sortowanie = "nazwisko"
+
+    def pobierz_strone(self, serwis: KatalogService, filtry: FiltryKatalogu) -> StronaKatalogu[Any]:
+        return serwis.pobierz_sedziow(filtry)

@@ -22,6 +22,7 @@ def aplikacja_z_katalogiem(repo: KatalogPodstawowyInMemoryRepository) -> Flask:
         ("/administracja/sezony", "2025/2026", "Sezony"),
         ("/administracja/rozgrywki", "Superliga", "Rozgrywki"),
         ("/administracja/druzyny", "Drużyna Testowa", "Drużyny"),
+        ("/administracja/sedziowie", "Kowalski Jan", "Sędziowie"),
     ],
 )
 def test_listy_renderuja_dane_i_aktywne_menu(adres: str, tekst: str, sekcja: str) -> None:
@@ -31,7 +32,8 @@ def test_listy_renderuja_dane_i_aktywne_menu(adres: str, tekst: str, sekcja: str
     tresc = odpowiedz.get_data(as_text=True)
     assert odpowiedz.status_code == 200
     assert tekst in tresc and f">{sekcja}</span>" in tresc
-    assert "Akcje" in tresc and ">Mecze</a>" in tresc
+    if adres != "/administracja/sedziowie":
+        assert "Akcje" in tresc and ">Mecze</a>" in tresc
 
 
 def test_filtry_rozgrywek_docieraja_do_repozytorium() -> None:
@@ -56,6 +58,19 @@ def test_filtry_druzyn_i_link_do_meczow_zachowuja_sezon() -> None:
     assert repo.filtry is not None
     assert repo.filtry.miasto == "Kielce" and repo.filtry.wycofany is False
     assert "/administracja/mecze?id_sezon=195&amp;druzyna=Dru%C5%BCyna+Testowa" in tresc
+
+
+def test_filtry_sedziow_docieraja_do_repozytorium() -> None:
+    repo = KatalogPodstawowyInMemoryRepository()
+    odpowiedz = (
+        aplikacja_z_katalogiem(repo)
+        .test_client()
+        .get("/administracja/sedziowie?szukaj=Kowalski&miasto=P%C5%82ock&sortowanie=-liczba_meczow")
+    )
+    assert odpowiedz.status_code == 200
+    assert repo.filtry == FiltryKatalogu(
+        szukaj="Kowalski", miasto="Płock", sortowanie="-liczba_meczow"
+    )
 
 
 @pytest.mark.parametrize(

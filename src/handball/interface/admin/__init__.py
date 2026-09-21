@@ -3,11 +3,13 @@ from flask import Blueprint
 from handball.interface.admin.views.catalog_views import (
     DruzynaListView,
     RozgrywkiListView,
+    SedziaListView,
     SezonListView,
 )
 from handball.interface.admin.views.match_views import MeczListView, MeczSzczegolyView
 from handball.interface.admin.views.player_detail_views import ZawodnikSzczegolyView
 from handball.interface.admin.views.player_views import ZawodnikListView
+from handball.interface.admin.views.referee_detail_views import SedziaSzczegolyView
 from handball.interface.admin.views.start import StartView
 from handball.interface.admin.views.venue_detail_views import HalaSzczegolyView
 from handball.interface.admin.views.venue_views import HalaListView
@@ -50,5 +52,13 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/hale/<int:id_hala>",
         view_func=HalaSzczegolyView.as_view("szczegoly_hali", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/sedziowie",
+        view_func=SedziaListView.as_view("lista_sedziow", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/sedziowie/<int:id_sedzia>",
+        view_func=SedziaSzczegolyView.as_view("szczegoly_sedziego", fabryka_zaleznosci),
     )
     return blueprint

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block tytul %}Sędziowie — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Dane › Sędziowie</div>
+<h1>Sędziowie</h1>
+<p>Lista sędziów i delegatów z obsady meczów.</p>
+</section>
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body filters catalog-filters compact" method="get">
+<input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}">
+<input type="hidden" name="rozmiar_strony" value="{{ filtry.rozmiar_strony }}">
+<label>Szukaj{{ formularz.szukaj(placeholder="nazwisko lub miasto...") }}</label>
+<label>Miasto{{ formularz.miasto(placeholder="nazwa miasta...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.lista_sedziow') }}">Wyczyść filtry</a></div>
+</form>
+</section>
+<section class="panel">
+<div class="panel-body">
+<div class="table-wrap">
+<table id="referees-table">
+<thead>
+<tr>
+{% for pole, etykieta in [('id', 'ID'), ('nazwisko', 'Nazwisko'), ('miasto', 'Miasto'), ('liczba_meczow', 'Mecze')] %}
+<th scope="col"{% if filtry.sortowanie == pole %} aria-sort="ascending"{% elif filtry.sortowanie == '-' + pole %} aria-sort="descending"{% endif %}>
+<a href="{{ url_for(request.endpoint, **dict(request.args, sortowanie=(pole if filtry.sortowanie == '-' + pole else '-' + pole), strona=1)) }}">{{ etykieta }}{% if filtry.sortowanie == pole %} ▲{% elif filtry.sortowanie == '-' + pole %} ▼{% endif %}</a>
+</th>
+{% endfor %}
+<th scope="col">Akcje</th>
+</tr>
+</thead>
+<tbody>
+{% for sedzia in strona.pozycje %}
+<tr>
+<td>{{ sedzia.id }}</td>
+<td>{{ sedzia.nazwisko or "—" }}</td>
+<td>{{ sedzia.miasto or "—" }}</td>
+<td>{{ sedzia.liczba_meczow }}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_sedziego', id_sedzia=sedzia.id) }}">Szczegóły</a></td>
+</tr>
+{% else %}
+<tr><td colspan="5" class="note">Brak sędziów spełniających wybrane filtry.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<p class="note">Liczba meczów obejmuje różne mecze powiązane z osobą w obsadzie, niezależnie od roli. — Brak danych.</p>
+{% include "partials/pagination.html" %}
+</div>
+</section>
+{% endblock %}

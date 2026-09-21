@@ -18,6 +18,6 @@ if errorlevel 1 (
 
 echo.
 echo Uruchamianie Flaska (Ctrl+C konczy serwer)...
-uv run flask --app handball run
+uv run python -m flask --app "handball:create_app()" run --port 5057
 
 endlocal

@@ -2,6 +2,17 @@
 
 Aktualizacja: 2026-09-21.
 
+## Szczegóły sędziego — 2026-09-21
+
+Zaimplementowano `GET /administracja/sedziowie/<id_sedzia>` z zakładkami Dane, Mecze i Statystyki. Karta zawiera filtrowaną historię meczów, zbiorczo pobieranych partnerów, aktywność sezonową, rankingi rozgrywek i drużyn oraz kompaktowe wykresy HTML/CSS. Filtry sezonu i rozgrywek obejmują tabele i wykresy; filtr drużyny obsługuje stronę gospodarz/gość i zakres dat. Lista sędziów prowadzi do karty. Zapytania są tylko do odczytu i uwzględniają `mecze.zamiana`. Kontrakt: [detail.md](../src/handball/interface/templates/admin/referees/detail.md).
+
+Weryfikacja: 14 testów szczegółów i katalogów przechodzi; Ruff, formatowanie, mypy i kontrola składni JavaScriptu dla zmienionego zakresu przechodzą. Rzeczywista lista i karta sędziego `#365` zwróciły `200` na PostgreSQL w konfiguracji READ ONLY; bazy nie zmieniano.
+## Lista sędziów — 2026-09-21
+
+Zaimplementowano GET /administracja/sedziowie: wyszukiwanie po nazwisku i mieście, filtr miasta, sortowanie w nagłówkach, paginację oraz liczbę różnych meczów powiązanych z osobą w obsadzie przez public.mecze_sedziowie. Pozycja „Sędziowie” w menu prowadzi do aktywnego widoku. Strona jest wyłącznie do odczytu; nie wykonano zmian w bazie. Kontrakt i mapa zmian: [list.md](../src/handball/interface/templates/admin/referees/list.md).
+
+Weryfikacja: 11 testów interfejsu katalogów przechodzi; mypy oraz Ruff dla zmienionych plików przechodzą. Bazy nie odczytywano ani nie zmieniano.
+
 ## Sezony, Rozgrywki i Drużyny — 2026-09-21
 
 Działają listy `/administracja/sezony`, `/administracja/rozgrywki` i `/administracja/druzyny`. Mają zwarte filtry, sortowanie w nagłówkach, paginację, aktywne pozycje menu oraz linki do listy meczów zachowujące sezon. Drużyny są prezentowane jako historyczne migawki sezonowe. Zapytania i liczniki zweryfikowano na istniejącej bazie w transakcji READ ONLY zakończonej ROLLBACK; bazy nie zmieniono. Pełna regresja bez integracji obejmuje 223 przechodzące testy.

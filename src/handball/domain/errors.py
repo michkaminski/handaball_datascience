@@ -15,3 +15,7 @@ class NieZnalezionoZawodnika(Exception):
 
 class NieZnalezionoHali(Exception):
     pass
+
+
+class NieZnalezionoSedziego(Exception):
+    pass

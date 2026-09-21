@@ -1,55 +1,76 @@
 # Sędziowie
 
-Status: projekt szablonu. Katalog `referees/` i ten plik nie mają jeszcze odpowiadającego HTML ani żadnego kodu. Wzorzec: prototyp v6 `referees.html` — placeholder ("Przykładowa strona administracyjna"), bez własnego układu poza wspólnym `base.html`.
-
-Docelowy szablon względem katalogu szablony: `admin/referees/list.html` (nazwa robocza).
+Status: zaimplementowany szablon listy `admin/referees/list.html`.
 
 ## Przeznaczenie
 
-Pozycja "Sędziowie" w sidebarze (grupa "Dane"). Docelowo słownik sędziów (`public.sedziowie`, 1158 wierszy) i ich udział w meczach (`public.mecze_sedziowie`) — patrz [PUBLIC_SCHEMA](../../../../../../docs/database/PUBLIC_SCHEMA.md).
+Widok administracyjny `GET /administracja/sedziowie` pokazuje słownik sędziów i delegatów z `public.sedziowie` oraz liczbę różnych meczów powiązanych przez `public.mecze_sedziowie`.
 
 ## Dane wejściowe
 
-Nieustalone. Prawdopodobnie lista sędziów z liczbą prowadzonych meczów.
+Szablon dziedziczy `base.html` i otrzymuje:
+
+- `sekcja_aktywna="sedziowie"`.
+- `formularz`: `KatalogFilterForm` z polami `szukaj`, `miasto`, `sortowanie`, `strona`, `rozmiar_strony`.
+- `filtry`: `FiltryKatalogu`.
+- `strona`: `StronaKatalogu[PozycjaSedziego]`, gdzie pozycja ma `id`, `nazwisko`, `miasto`, `liczba_meczow`.
+
+## Zachowanie
+
+Filtr `szukaj` działa po nazwisku albo mieście. Filtr `miasto` zawęża po mieście. Sortowanie odbywa się przez nagłówki `ID`, `Nazwisko`, `Miasto` i `Mecze`, zgodnie ze wspólną konwencją list. Paginacja korzysta z `partials/pagination.html` i zachowuje parametry GET.
 
 ## Powiązania
 
-Dziedziczyłby `base.html`. Model `sedziowie`/`mecze_sedziowie` jeszcze nie istnieje w `infrastructure/database/models/`. Pozycja menu w `interface/navigation.py` (`SIDEBAR`, grupa "Dane", klucz `sedziowie`) ma obecnie `punkt_koncowy=None`.
+- Trasa listy: `administracja.lista_sedziow`, `/administracja/sedziowie`.
+- Szczegóły: `administracja.szczegoly_sedziego`, `/administracja/sedziowie/<id_sedzia>`; kontrakt: [detail.md](detail.md).
+- Widok: `SedziaListView` w `interface/admin/views/catalog_views.py`.
+- Serwis: `KatalogService.pobierz_sedziow()`.
+- Repozytorium: `KatalogPodstawowySQLAlchemyRepository.pobierz_sedziow()`.
+- Modele: `Sedzia` i `MeczSedzia` w `infrastructure/database/models/officials.py`.
+- Nawigacja: `PozycjaMenu("sedziowie", "Sędziowie", "administracja.lista_sedziow", "⚑")` w `interface/navigation.py`.
 
 ## Gdzie wprowadzać zmiany
 
-Nie dotyczy — brak implementacji.
+| Zmiana | Plik |
+| --- | --- |
+| Układ listy, kolumny i teksty | `list.html` oraz ten `list.md` |
+| Filtry HTTP i walidacja | `interface/admin/forms/catalog_filters.py` |
+| Logika pobierania listy i agregacji meczów | `infrastructure/repositories/core_catalog_repository.py` |
+| Rejestracja trasy albo aktywne menu | `interface/admin/__init__.py`, `interface/navigation.py` |
 
 ## Sprawdzenie zmiany
 
-Nie dotyczy — brak implementacji.
-
-## Stan implementacji
-
-Nie zaimplementowano. Nie ma przypisanego etapu w [IMPLEMENTATION_PLAN](../../../../../../docs/IMPLEMENTATION_PLAN.md).
+Sprawdź widok testem klienta Flaska z repozytorium in-memory oraz jakość kodu poleceniami właściwymi dla zmiany. Widok jest tylko do odczytu i nie wykonuje zmian w bazie.
 
 ## Układ tekstowy i mapa zmian
 
-Stan: **plan — brak odpowiadającego HTML**. Poniżej tekstowa mapa zakresu z dotychczasowej notatki, nie zatwierdzony projekt rozmieszczenia pól.
-
 ```text
-[planowana wspólna rama: base.html]
+[base.html]
 +------------------------------------------------------------+
-| Sędziowie
-| [miejsce na przegląd sędziów]
-| [filtry / kolumny / akcje: nieustalone]
+| Start › Dane › Sędziowie                                   |
+| Sędziowie                                                  |
+| Lista sędziów i delegatów z obsady meczów.                 |
 +------------------------------------------------------------+
-[planowana stopka wspólnego układu]
+| Filtry                                                     |
+| [Szukaj: nazwisko lub miasto...] [Miasto...] [Filtruj]     |
+| [Wyczyść filtry]                                           |
++------------------------------------------------------------+
+| ID ↕ | Nazwisko ↕ | Miasto ↕ | Mecze ↕ | Akcje             |
+| 11   | Kowalski Jan | Płock | 34      | [Szczegóły]       |
+| ...                                                        |
+| Liczba meczów obejmuje różne mecze powiązane z osobą...    |
+| [paginacja]                                                |
++------------------------------------------------------------+
+[stopka base.html]
 ```
-
-Nie ma ustalonego kontraktu danych ani gotowego HTML tej strony.
-
-Układ mobilny, dokładne etykiety i selektory nie są jeszcze ustalone. Po powstaniu HTML zastąp ten schemat rzeczywistym rozmieszczeniem, opisz warunki widoczności oraz dodaj mapę konkretnych pól i przycisków.
 
 ### Mapa zmian
 
 | Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
 | --- | --- | --- |
-| Zakres i przyszły układ | [list.md](list.md) | Najpierw uzupełnij ten opis; planowany plik `list.html` jeszcze nie istnieje. |
-| Wspólna rama strony | [base.md](../../base.md) | Opis nagłówka, menu, sidebara, miejsca treści i stopki; sposób użycia dla tego ekranu potwierdź przy implementacji. |
-| Pozycja nawigacji | [navigation.py](../../../navigation.py) | Odpowiednia pozycja menu pozostaje bez własnego widoku. Dla szczegółów meczu osobnej pozycji menu nie ma. |
+| Nagłówek i opis strony | `list.html`, bloki `tytul` i `tresc` | Teksty `Sędziowie`, breadcrumb i opis |
+| Panel filtrów | `list.html`, `KatalogFilterForm` | Pola `szukaj`, `miasto`, ukryte `sortowanie`, `rozmiar_strony` |
+| Tabela | `list.html`, pętla po `strona.pozycje` | Kolumny `id`, `nazwisko`, `miasto`, `liczba_meczow` i link do szczegółów |
+| Sortowanie | `list.html`, linki nagłówków; `SedziaListView.sortowanie` | Dozwolone pola i kierunek sortowania |
+| Dane i liczniki | `KatalogPodstawowySQLAlchemyRepository.pobierz_sedziow` | JOIN do `mecze_sedziowie`, `count(distinct id_mecz)` |
+| Nawigacja | `interface/navigation.py` | Aktywna pozycja `sedziowie` i endpoint `administracja.lista_sedziow` |

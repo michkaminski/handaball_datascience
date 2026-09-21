@@ -2,6 +2,7 @@ from handball.domain.catalogs import (
     FiltryKatalogu,
     PozycjaDruzyny,
     PozycjaRozgrywek,
+    PozycjaSedziego,
     PozycjaSezonu,
     StronaKatalogu,
 )
@@ -30,6 +31,10 @@ class KatalogPodstawowyInMemoryRepository:
             1,
             20,
         )
+
+    def pobierz_sedziow(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaSedziego]:
+        self.filtry = filtry
+        return StronaKatalogu([PozycjaSedziego(11, "Kowalski Jan", "Płock", 34)], 1, 1, 20)
 
     def pobierz_opcje_sezonow(self) -> list[OpcjaWyboru]:
         return [OpcjaWyboru(195, "2025/2026")]

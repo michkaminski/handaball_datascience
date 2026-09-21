@@ -10,10 +10,10 @@ W katalogu projektu uruchom `run.bat` albo:
 
 ```powershell
 uv sync
-uv run flask --app handball run
+uv run python -m flask --app "handball:create_app()" run --port 5057
 ```
 
-Panel: `http://127.0.0.1:5000/administracja/`. Lista zawodników: `/administracja/zawodnicy` — filtry, sortowanie i paginacja. Nazwy zmiennych konfiguracji połączenia opisuje `.env.example`.
+Panel: `http://127.0.0.1:5057/administracja/`. Lista zawodników: `/administracja/zawodnicy` — filtry, sortowanie i paginacja. Nazwy zmiennych konfiguracji połączenia opisuje `.env.example`.
 
 ```powershell
 uv run ruff check .

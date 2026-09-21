@@ -4,6 +4,7 @@ from handball.domain.catalogs import (
     FiltryKatalogu,
     PozycjaDruzyny,
     PozycjaRozgrywek,
+    PozycjaSedziego,
     PozycjaSezonu,
     StronaKatalogu,
 )
@@ -16,5 +17,7 @@ class KatalogPodstawowyReadRepository(Protocol):
     def pobierz_rozgrywki(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaRozgrywek]: ...
 
     def pobierz_druzyny(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaDruzyny]: ...
+
+    def pobierz_sedziow(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaSedziego]: ...
 
     def pobierz_opcje_sezonow(self) -> list[OpcjaWyboru]: ...

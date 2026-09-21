@@ -8,12 +8,16 @@ from handball.domain.errors import (
     BladOdczytuDanych,
     NieZnalezionoHali,
     NieZnalezionoMeczu,
+    NieZnalezionoSedziego,
     NieZnalezionoZawodnika,
 )
 
 
 def obsluz_blad_domeny(wyjatek: Exception) -> NoReturn:
-    if isinstance(wyjatek, (NieZnalezionoMeczu, NieZnalezionoZawodnika, NieZnalezionoHali)):
+    if isinstance(
+        wyjatek,
+        (NieZnalezionoMeczu, NieZnalezionoZawodnika, NieZnalezionoHali, NieZnalezionoSedziego),
+    ):
         abort(404)
     if isinstance(wyjatek, BladOdczytuDanych):
         abort(503)

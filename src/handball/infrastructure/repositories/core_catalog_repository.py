@@ -13,6 +13,7 @@ from handball.domain.catalogs import (
     FiltryKatalogu,
     PozycjaDruzyny,
     PozycjaRozgrywek,
+    PozycjaSedziego,
     PozycjaSezonu,
     StronaKatalogu,
 )
@@ -20,6 +21,7 @@ from handball.domain.errors import BladOdczytuDanych
 from handball.domain.options import OpcjaWyboru
 from handball.infrastructure.database.models.competitions import Rozgrywki, Sezon
 from handball.infrastructure.database.models.matches import Mecz
+from handball.infrastructure.database.models.officials import MeczSedzia, Sedzia
 from handball.infrastructure.database.models.teams import ZespolSezon
 
 
@@ -165,6 +167,39 @@ class KatalogPodstawowySQLAlchemyRepository:
                 w["liczba_meczow"],
             ),
             "drużyn",
+        )
+
+    def pobierz_sedziow(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaSedziego]:
+        zapytanie = (
+            select(
+                Sedzia.id.label("id"),
+                Sedzia.nazwisko.label("nazwisko"),
+                Sedzia.miasto.label("miasto"),
+                func.count(distinct(MeczSedzia.id_mecz)).label("liczba_meczow"),
+            )
+            .outerjoin(MeczSedzia, MeczSedzia.id_sedzia == Sedzia.id)
+            .group_by(Sedzia.id, Sedzia.nazwisko, Sedzia.miasto)
+        )
+        if filtry.szukaj:
+            zapytanie = zapytanie.where(
+                or_(
+                    Sedzia.nazwisko.icontains(filtry.szukaj, autoescape=True),
+                    Sedzia.miasto.icontains(filtry.szukaj, autoescape=True),
+                )
+            )
+        if filtry.miasto:
+            zapytanie = zapytanie.where(Sedzia.miasto.icontains(filtry.miasto, autoescape=True))
+        return self._strona(
+            zapytanie,
+            filtry,
+            Sedzia.id,
+            lambda w: PozycjaSedziego(
+                w["id"],
+                w["nazwisko"],
+                w["miasto"],
+                w["liczba_meczow"],
+            ),
+            "sędziów",
         )
 
     def pobierz_opcje_sezonow(self) -> list[OpcjaWyboru]:

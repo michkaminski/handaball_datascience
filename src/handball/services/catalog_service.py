@@ -3,6 +3,7 @@ from handball.domain.catalogs import (
     FiltryKatalogu,
     PozycjaDruzyny,
     PozycjaRozgrywek,
+    PozycjaSedziego,
     PozycjaSezonu,
     StronaKatalogu,
 )
@@ -21,6 +22,9 @@ class KatalogService:
 
     def pobierz_druzyny(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaDruzyny]:
         return self._repozytorium.pobierz_druzyny(filtry)
+
+    def pobierz_sedziow(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaSedziego]:
+        return self._repozytorium.pobierz_sedziow(filtry)
 
     def pobierz_opcje_sezonow(self) -> list[OpcjaWyboru]:
         return self._repozytorium.pobierz_opcje_sezonow()
