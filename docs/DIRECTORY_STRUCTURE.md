@@ -114,6 +114,10 @@ Interfejs obejmuje `admin/forms/player_filters.py`, `admin/views/player_views.py
 
 Warstwy domain/venue_details.py, contracts/venue_detail_repository.py, services/venue_detail_service.py i infrastructure/repositories/venue_detail_repository.py obsługują podsumowanie, zawodników i rankingi. Mecze korzystają z istniejącego kontraktu i presentera meczów. Interfejs obejmuje venue_detail_views.py, venue_detail_filters.py, venue_detail_presenter.py, view_models/venue_details.py, parę venues/detail.html i detail.md oraz venue_details.js.
 
+## Podstawowe katalogi
+
+Listy Sezonów, Rozgrywek i Drużyn korzystają ze wspólnych `domain/catalogs.py`, `contracts/core_catalog_repository.py`, `services/catalog_service.py` i `infrastructure/repositories/core_catalog_repository.py`. Adapter HTTP obejmuje `admin/forms/catalog_filters.py`, `admin/views/catalog_views.py` oraz pary `seasons/list`, `competitions/list` i `teams/list`. Drużyny są migawkami sezonowymi, nie bieżącymi nazwami z `zespoly`.
+
 ## Szczegóły zawodnika
 
 `domain/player_details.py`, `contracts/player_detail_repository.py`, `services/player_detail_service.py` oraz `infrastructure/repositories/player_detail_repository.py` obsługują profil, historię i paginowane mecze. `models/rosters.py` mapuje istniejące `sklady` i `pozycje`; model zawodnika zawiera też foto_url. Interfejs: `admin/views/player_detail_views.py`, `admin/forms/player_match_filters.py`, `presenters/player_detail_presenter.py`, `view_models/player_details.py`, para `templates/admin/players/detail.html`/`detail.md` i `static/js/player_details.js`. Fabryka składa osobny kontrakt szczegółów, nie poszerzając kontraktu listy.

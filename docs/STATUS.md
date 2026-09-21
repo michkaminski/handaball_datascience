@@ -2,6 +2,10 @@
 
 Aktualizacja: 2026-09-21.
 
+## Sezony, Rozgrywki i Drużyny — 2026-09-21
+
+Działają listy `/administracja/sezony`, `/administracja/rozgrywki` i `/administracja/druzyny`. Mają zwarte filtry, sortowanie w nagłówkach, paginację, aktywne pozycje menu oraz linki do listy meczów zachowujące sezon. Drużyny są prezentowane jako historyczne migawki sezonowe. Zapytania i liczniki zweryfikowano na istniejącej bazie w transakcji READ ONLY zakończonej ROLLBACK; bazy nie zmieniono. Pełna regresja bez integracji obejmuje 223 przechodzące testy.
+
 ## Lista hal — 2026-09-21
 
 Zaimplementowano GET /administracja/hale: wyszukiwanie po nazwie i adresie, filtr miasta i minimalnej pojemności, sortowanie w nagłówkach, paginację oraz liczbę meczów powiązanych z halą. Pozycja „Hale” w menu prowadzi do aktywnego widoku. Strona jest wyłącznie do odczytu; nie wykonano zmian w bazie. Kontrakt i mapa zmian: [list.md](../src/handball/interface/templates/admin/venues/list.md).

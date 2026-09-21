@@ -45,15 +45,15 @@ Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogó
 | `errors/404.html` | [errors/404.md](../src/handball/interface/templates/errors/404.md) | planowany (jw.) |
 | `errors/503.html` | [errors/503.md](../src/handball/interface/templates/errors/503.md) | planowany (jw.) |
 
-## Wczesne notatki planistyczne dla pozostałych pozycji sidebara
+## Szablony pozycji sidebara
 
-Na wyraźne polecenie użytkownika sidebar (patrz base.md) pokazuje pełne menu prototypu v6, łącznie z pozycjami bez jeszcze istniejącego widoku. Dla każdej z nich powstała wstępna notatka MD — krótsza niż dokumenty szablonów powyżej, bez ustalonego kontraktu danych, bo żaden kod jeszcze nie istnieje. Nie są to zobowiązania co do kształtu przyszłego HTML, tylko punkt startu przy planowaniu.
+Sidebar pokazuje pełne menu prototypu v6. Tabela rozróżnia działające widoki od nadal planowanych ekranów.
 
 | Pozycja menu | Prototyp v6 | Notatka |
 | --- | --- | --- |
-| Sezony | seasons.html (placeholder) | [admin/seasons/list.md](../src/handball/interface/templates/admin/seasons/list.md) |
-| Rozgrywki | competitions.html (placeholder) | [admin/competitions/list.md](../src/handball/interface/templates/admin/competitions/list.md) |
-| Drużyny | teams.html (placeholder) | [admin/teams/list.md](../src/handball/interface/templates/admin/teams/list.md) |
+| Sezony — wdrożona lista odczytu | seasons.html (placeholder) | [admin/seasons/list.md](../src/handball/interface/templates/admin/seasons/list.md) |
+| Rozgrywki — wdrożona lista odczytu | competitions.html (placeholder) | [admin/competitions/list.md](../src/handball/interface/templates/admin/competitions/list.md) |
+| Drużyny — wdrożona lista odczytu | teams.html (placeholder) | [admin/teams/list.md](../src/handball/interface/templates/admin/teams/list.md) |
 | Zawodnicy — wdrożona lista odczytu | players.html (rzeczywista treść) | [admin/players/list.md](../src/handball/interface/templates/admin/players/list.md) |
 | Składy | squads.html (placeholder) | [admin/rosters/list.md](../src/handball/interface/templates/admin/rosters/list.md) |
 | Tabele | standings.html (placeholder) | [admin/standings/list.md](../src/handball/interface/templates/admin/standings/list.md) |

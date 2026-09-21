@@ -37,26 +37,31 @@ class PozycjaSezonu:
     rok_rozpoczecia: int | None
     liczba_rozgrywek: int
     stan: str | None
+    liczba_meczow: int
 
 
 @dataclass(frozen=True)
 class PozycjaRozgrywek:
     id: int
+    id_sezon: int
     sezon: str
     nazwa: str
     plec: str | None
     liczba_zespolow: int | None
+    liczba_meczow: int
 
 
 @dataclass(frozen=True)
 class PozycjaDruzyny:
     id: int
     id_zespol: int
+    id_sezon: int
     sezon: str
     nazwa: str | None
     plec: str | None
     miasto: str | None
     wycofany: bool | None
+    liczba_meczow: int
 
 
 @dataclass(frozen=True)

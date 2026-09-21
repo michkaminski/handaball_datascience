@@ -142,6 +142,23 @@ classDiagram
 
 Podsumowanie, zawodnicy i rankingi pochodzą z repozytorium szczegółów hali. Paginowane mecze przechodzą przez istniejący kontrakt meczów i presenter. Agregacje używają GROUP BY i COUNT DISTINCT, a nazwy drużyn strony zawodników pobiera jedno zapytanie zbiorcze.
 
+## Podstawowe katalogi
+
+```mermaid
+classDiagram
+    SezonListView --> KatalogService
+    RozgrywkiListView --> KatalogService
+    DruzynaListView --> KatalogService
+    KatalogService --> KatalogPodstawowyReadRepository
+    KatalogPodstawowySQLAlchemyRepository ..|> KatalogPodstawowyReadRepository
+    KatalogPodstawowySQLAlchemyRepository --> Sezon
+    KatalogPodstawowySQLAlchemyRepository --> Rozgrywki
+    KatalogPodstawowySQLAlchemyRepository --> ZespolSezon
+    KatalogPodstawowySQLAlchemyRepository --> Mecz
+```
+
+Wspólny formularz przekazuje tylko typowane filtry katalogowe. Zapytania agregują liczniki przed paginacją; widoki nie znają SQLAlchemy ani sesji.
+
 ## Karta zawodnika
 
 ```mermaid

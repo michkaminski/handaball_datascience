@@ -1,10 +1,8 @@
-from handball.contracts.catalog_repository import KatalogReadRepository
+from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
 from handball.domain.catalogs import (
     FiltryKatalogu,
     PozycjaDruzyny,
-    PozycjaHali,
     PozycjaRozgrywek,
-    PozycjaSedziego,
     PozycjaSezonu,
     StronaKatalogu,
 )
@@ -12,7 +10,7 @@ from handball.domain.options import OpcjaWyboru
 
 
 class KatalogService:
-    def __init__(self, repozytorium: KatalogReadRepository) -> None:
+    def __init__(self, repozytorium: KatalogPodstawowyReadRepository) -> None:
         self._repozytorium = repozytorium
 
     def pobierz_sezony(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaSezonu]:
@@ -23,12 +21,6 @@ class KatalogService:
 
     def pobierz_druzyny(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaDruzyny]:
         return self._repozytorium.pobierz_druzyny(filtry)
-
-    def pobierz_sedziow(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaSedziego]:
-        return self._repozytorium.pobierz_sedziow(filtry)
-
-    def pobierz_hale(self, filtry: FiltryKatalogu) -> StronaKatalogu[PozycjaHali]:
-        return self._repozytorium.pobierz_hale(filtry)
 
     def pobierz_opcje_sezonow(self) -> list[OpcjaWyboru]:
         return self._repozytorium.pobierz_opcje_sezonow()

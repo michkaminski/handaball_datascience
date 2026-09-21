@@ -6,6 +6,7 @@ from typing import cast
 from sqlalchemy.orm import Session
 
 from handball.contracts.competition_repository import RozgrywkiReadRepository
+from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
 from handball.contracts.match_repository import MeczReadRepository
 from handball.contracts.match_stage_repository import EtapMeczowReadRepository
 from handball.contracts.player_detail_repository import SzczegolyZawodnikaReadRepository
@@ -18,6 +19,9 @@ from handball.domain.match_rules import MeczPolicy
 from handball.extensions import baza_danych
 from handball.infrastructure.repositories.competition_repository import (
     RozgrywkiSQLAlchemyRepository,
+)
+from handball.infrastructure.repositories.core_catalog_repository import (
+    KatalogPodstawowySQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.match_repository import MeczSQLAlchemyRepository
 from handball.infrastructure.repositories.match_stage_repository import (
@@ -43,6 +47,7 @@ from handball.interface.presenters.match_presenter import (
 from handball.interface.presenters.player_detail_presenter import SzczegolyZawodnikaPresenter
 from handball.interface.presenters.player_presenter import ZawodnikPresenter
 from handball.interface.presenters.venue_detail_presenter import SzczegolyHaliPresenter
+from handball.services.catalog_service import KatalogService
 from handball.services.match_dictionary_service import SlownikiMeczowService
 from handball.services.match_service import MeczService
 from handball.services.player_detail_service import SzczegolyZawodnikaService
@@ -64,7 +69,11 @@ class ZaleznosciZadaniaFactory:
         fabryka_szczegolow_zawodnika: Callable[[], SzczegolyZawodnikaReadRepository] | None = None,
         fabryka_katalogu_hal: Callable[[], HalaKatalogReadRepository] | None = None,
         fabryka_szczegolow_hali: Callable[[], SzczegolyHaliReadRepository] | None = None,
+        fabryka_katalogu_podstawowego: Callable[[], KatalogPodstawowyReadRepository] | None = None,
     ) -> None:
+        self._fabryka_katalogu_podstawowego = fabryka_katalogu_podstawowego or (
+            lambda: KatalogPodstawowySQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
         self._fabryka_szczegolow_hali = fabryka_szczegolow_hali or (
             lambda: SzczegolyHaliSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -129,6 +138,9 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_serwis_hal(self) -> HalaService:
         return HalaService(self._fabryka_katalogu_hal())
+
+    def utworz_serwis_katalogu(self) -> KatalogService:
+        return KatalogService(self._fabryka_katalogu_podstawowego())
 
     def utworz_serwis_szczegolow_hali(self) -> SzczegolyHaliService:
         return SzczegolyHaliService(self._fabryka_szczegolow_hali())
