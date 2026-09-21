@@ -11,3 +11,7 @@ class BladOdczytuDanych(Exception):
 
 class NieZnalezionoZawodnika(Exception):
     pass
+
+
+class NieZnalezionoHali(Exception):
+    pass

@@ -12,3 +12,6 @@ class Hala(Baza):
     id: Mapped[int] = mapped_column(primary_key=True)
     nazwa: Mapped[str | None]
     miasto: Mapped[str | None]
+    ulica: Mapped[str | None]
+    numer: Mapped[str | None]
+    pojemnosc: Mapped[int | None]

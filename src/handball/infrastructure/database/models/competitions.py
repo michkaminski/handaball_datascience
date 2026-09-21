@@ -15,6 +15,8 @@ class Sezon(Baza):
     id: Mapped[int] = mapped_column(primary_key=True)
     nazwa: Mapped[str]
     rok_rozpoczecia: Mapped[int | None]
+    ile_rozgrywek: Mapped[int | None]
+    stan: Mapped[str | None]
 
 
 class Rozgrywki(Baza):
@@ -25,6 +27,7 @@ class Rozgrywki(Baza):
     id_sezon: Mapped[int] = mapped_column(ForeignKey("public.sezony.id"))
     nazwa: Mapped[str]
     plec: Mapped[str | None]
+    ile_zespolow: Mapped[int | None]
 
 
 class Runda(Baza):

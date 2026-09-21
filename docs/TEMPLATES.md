@@ -58,7 +58,7 @@ Na wyraźne polecenie użytkownika sidebar (patrz base.md) pokazuje pełne menu 
 | Składy | squads.html (placeholder) | [admin/rosters/list.md](../src/handball/interface/templates/admin/rosters/list.md) |
 | Tabele | standings.html (placeholder) | [admin/standings/list.md](../src/handball/interface/templates/admin/standings/list.md) |
 | Strzelcy | scorers.html (placeholder) | [admin/scorers/list.md](../src/handball/interface/templates/admin/scorers/list.md) |
-| Hale | halls.html (placeholder) | [admin/venues/list.md](../src/handball/interface/templates/admin/venues/list.md) |
+| Hale | halls.html (placeholder, rozwinięty w aplikacji) | [lista](../src/handball/interface/templates/admin/venues/list.md), [karta](../src/handball/interface/templates/admin/venues/detail.md) |
 | Sędziowie | referees.html (placeholder) | [admin/referees/list.md](../src/handball/interface/templates/admin/referees/list.md) |
 | Import danych, Historia importów, Eksport danych | imports.html (placeholder, 1 strona dla 3 linków) | [admin/import/panel.md](../src/handball/interface/templates/admin/import/panel.md) |
 | Anomalie danych, Walidacja danych | quality.html (rzeczywista treść, 1 strona dla 2 linków) | [admin/quality/panel.md](../src/handball/interface/templates/admin/quality/panel.md) |

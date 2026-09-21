@@ -89,6 +89,13 @@ class MeczSQLAlchemyRepository:
             zapytanie = zapytanie.where(
                 Mecz.data_faktyczna >= filtry.data_od, Mecz.data_faktyczna < filtry.data_do
             )
+        if filtry.tylko_rozegrane:
+            zapytanie = zapytanie.where(
+                Mecz.wynik_gosp_full.is_not(None),
+                Mecz.wynik_gosc_full.is_not(None),
+                Mecz.wycofany.is_not(True),
+                Mecz.id_zespol_walkower.is_(None),
+            )
 
         liczba_wszystkich = (
             self._sesja.scalar(

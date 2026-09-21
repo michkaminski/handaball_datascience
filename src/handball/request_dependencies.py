@@ -11,6 +11,8 @@ from handball.contracts.match_stage_repository import EtapMeczowReadRepository
 from handball.contracts.player_detail_repository import SzczegolyZawodnikaReadRepository
 from handball.contracts.player_repository import ZawodnikReadRepository
 from handball.contracts.season_repository import SezonReadRepository
+from handball.contracts.venue_catalog_repository import HalaKatalogReadRepository
+from handball.contracts.venue_detail_repository import SzczegolyHaliReadRepository
 from handball.contracts.venue_repository import HalaReadRepository
 from handball.domain.match_rules import MeczPolicy
 from handball.extensions import baza_danych
@@ -26,6 +28,12 @@ from handball.infrastructure.repositories.player_detail_repository import (
 )
 from handball.infrastructure.repositories.player_repository import ZawodnikSQLAlchemyRepository
 from handball.infrastructure.repositories.season_repository import SezonSQLAlchemyRepository
+from handball.infrastructure.repositories.venue_catalog_repository import (
+    HalaKatalogSQLAlchemyRepository,
+)
+from handball.infrastructure.repositories.venue_detail_repository import (
+    SzczegolyHaliSQLAlchemyRepository,
+)
 from handball.infrastructure.repositories.venue_repository import HalaSQLAlchemyRepository
 from handball.interface.presenters.match_presenter import (
     MeczFormat,
@@ -34,11 +42,14 @@ from handball.interface.presenters.match_presenter import (
 )
 from handball.interface.presenters.player_detail_presenter import SzczegolyZawodnikaPresenter
 from handball.interface.presenters.player_presenter import ZawodnikPresenter
+from handball.interface.presenters.venue_detail_presenter import SzczegolyHaliPresenter
 from handball.services.match_dictionary_service import SlownikiMeczowService
 from handball.services.match_service import MeczService
 from handball.services.player_detail_service import SzczegolyZawodnikaService
 from handball.services.player_dictionary_service import SlownikiZawodnikowService
 from handball.services.player_service import ZawodnikService
+from handball.services.venue_detail_service import SzczegolyHaliService
+from handball.services.venue_service import HalaService
 
 
 class ZaleznosciZadaniaFactory:
@@ -51,7 +62,15 @@ class ZaleznosciZadaniaFactory:
         fabryka_repozytorium_etapow: Callable[[], EtapMeczowReadRepository] | None = None,
         fabryka_repozytorium_zawodnikow: Callable[[], ZawodnikReadRepository] | None = None,
         fabryka_szczegolow_zawodnika: Callable[[], SzczegolyZawodnikaReadRepository] | None = None,
+        fabryka_katalogu_hal: Callable[[], HalaKatalogReadRepository] | None = None,
+        fabryka_szczegolow_hali: Callable[[], SzczegolyHaliReadRepository] | None = None,
     ) -> None:
+        self._fabryka_szczegolow_hali = fabryka_szczegolow_hali or (
+            lambda: SzczegolyHaliSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
+        self._fabryka_katalogu_hal = fabryka_katalogu_hal or (
+            lambda: HalaKatalogSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
         self._fabryka_szczegolow_zawodnika = fabryka_szczegolow_zawodnika or (
             lambda: SzczegolyZawodnikaSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -107,3 +126,12 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_presenter_szczegolow_zawodnika(self) -> SzczegolyZawodnikaPresenter:
         return SzczegolyZawodnikaPresenter(MeczFormat(), self.utworz_presenter_meczow())
+
+    def utworz_serwis_hal(self) -> HalaService:
+        return HalaService(self._fabryka_katalogu_hal())
+
+    def utworz_serwis_szczegolow_hali(self) -> SzczegolyHaliService:
+        return SzczegolyHaliService(self._fabryka_szczegolow_hali())
+
+    def utworz_presenter_szczegolow_hali(self) -> SzczegolyHaliPresenter:
+        return SzczegolyHaliPresenter(MeczFormat())

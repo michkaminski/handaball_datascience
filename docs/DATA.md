@@ -63,3 +63,18 @@ Lista grupuje po `zawodnicy.id`. Pokazuje najnowszy niepusty wzrost i najnowszą
 Sezon, nazwa rozgrywek, historyczna tożsamość drużyny i pozycja ograniczają wpisy przed agregacją. Nazwy drużyn pochodzą z unikalnej migawki zespołu i sezonu. Strona `inne` pozostaje bez przypisania drużyny. Wiele historycznych drużyn i pozycji pokazujemy razem; nie wyznaczamy „aktualnego klubu”. Bez filtrów kontekstu pozostają też zawodnicy bez wpisów meczowych.
 
 Mapowanie opiera się na udokumentowanym schemacie i obecnym powiązaniu stron w szczegółach meczu/importerze. Nie jest nową weryfikacją semantyki historycznego importu. Rzeczywiste zapytania agregacji i wydajność wymagają sprawdzenia przy dostępnym połączeniu READ ONLY; w tej sesji brak hasła w środowisku. Pełny kontrakt: [lista zawodników](../src/handball/interface/templates/admin/players/list.md).
+
+## Karta hali — 2026-09-21
+
+Hala łączy się z meczem przez mecze.id_hala. Za rozegrany uznajemy mecz z oboma pełnymi wynikami, bez wycofania i walkoweru. Ten sam zakres zasila mecze, zawodników i rankingi karty; wszystkie zapisane mecze pozostają osobną liczbą podsumowania.
+
+Występ zawodnika oznacza różny mecz z wpisem mecze_zawodnicy, nie minuty gry. Bramki są sumą znanych wartości, a średnia dzieli tę sumę przez liczbę różnych meczów. Ranking średniej wymaga 3 występów. Historyczne nazwy drużyn pochodzą z zespoly_sezony połączonych po zespole i sezonie.
+
+Ranking drużyn grupuje po zespoly.id. Nie wyznaczamy właściciela hali. Rozgrywki grupujemy po nazwie, łącząc rekordy sezonowe. Zapytania sprawdzono w transakcji READ ONLY zakończonej ROLLBACK.
+## Analizy hali
+
+Analizy hali obejmują tylko rozegrane mecze z oboma polami `wynik_gosp_full` i `wynik_gosc_full`, bez `wycofany = true` i bez `id_zespol_walkower`. Suma i różnica bramek korzystają z pełnego wyniku. Rekordy oraz prezentacja drużyn stosują `zamiana`; agregaty symetryczne, takie jak suma i bezwzględna różnica, nie wymagają odwracania stron.
+
+Frekwencja pochodzi z `mecze.widzowie`. Brak wartości nie jest zerem i nie wchodzi do średniej ani mediany. Widok zawsze pokazuje liczbę meczów z frekwencją względem wszystkich rozegranych meczów hali. Średnie wypełnienie to średnia frekwencja podzielona przez `hale.pojemnosc`; przy braku lub zerowej pojemności pozostaje nieznane.
+
+Porównanie hali ze średnią innych hal ma charakter opisowy. Obejmuje hale z co najmniej jednym rozegranym meczem i nie służy do wskazywania najlepszej hali. Liczba meczów na sezon ma mianownik równy liczbie różnych sezonów danej hali.

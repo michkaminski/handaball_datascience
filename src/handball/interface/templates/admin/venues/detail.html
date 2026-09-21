@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block tytul %}{{ szczegoly.nazwa }} — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<div data-venue-detail data-active-tab="{{ aktywna_zakladka }}">
+<section class="pagehead venue-head">
+<div class="crumb">Start › Dane › Hale › Szczegóły</div>
+<div class="venue-title-row">
+<div><h1>{{ szczegoly.nazwa }}</h1><p>{{ szczegoly.miasto }} · {{ szczegoly.adres }} · Pojemność: {{ szczegoly.pojemnosc }}</p></div>
+<a class="btn secondary small" href="{{ url_for('administracja.lista_hal') }}">← Powrót do listy</a>
+</div>
+<div class="stats-strip">
+<span class="stat-pill">Mecze: <b>{{ szczegoly.liczba_meczow }}</b></span>
+<span class="stat-pill">Rozegrane: <b>{{ szczegoly.liczba_rozegranych }}</b></span>
+<span class="stat-pill">Drużyny: <b>{{ szczegoly.liczba_druzyn }}</b></span>
+<span class="stat-pill">Zawodnicy: <b>{{ szczegoly.liczba_zawodnikow }}</b></span>
+<span class="stat-pill">Sezony: <b>{{ szczegoly.liczba_sezonow }}</b></span>
+</div>
+</section>
+
+<div class="match-tabs" role="tablist" data-venue-tabs hidden>
+<button type="button" role="tab" data-venue-tab="dane">Dane</button>
+<button type="button" role="tab" data-venue-tab="mecze">Mecze</button>
+<button type="button" role="tab" data-venue-tab="zawodnicy">Zawodnicy</button>
+<button type="button" role="tab" data-venue-tab="statystyki">Statystyki</button>
+</div>
+
+<section class="panel" data-venue-panel="dane">
+<h2>Dane podstawowe</h2>
+<div class="panel-body">
+<dl class="venue-data-grid">
+<dt>ID</dt><dd>{{ szczegoly.id_hala }}</dd>
+<dt>Nazwa</dt><dd>{{ szczegoly.nazwa }}</dd>
+<dt>Miasto</dt><dd>{{ szczegoly.miasto }}</dd>
+<dt>Adres</dt><dd>{{ szczegoly.adres }}</dd>
+<dt>Pojemność</dt><dd>{{ szczegoly.pojemnosc }}</dd>
+</dl>
+<h3 class="section-heading">Podsumowanie danych</h3>
+<div class="venue-summary">
+<div><span>Pierwszy mecz</span><b>{{ szczegoly.pierwszy_mecz }}</b></div>
+<div><span>Ostatni mecz</span><b>{{ szczegoly.ostatni_mecz }}</b></div>
+<div><span>Wszystkie mecze</span><b>{{ szczegoly.liczba_meczow }}</b></div>
+<div><span>Rozegrane mecze</span><b>{{ szczegoly.liczba_rozegranych }}</b></div>
+<div><span>Rozgrywki</span><b>{{ szczegoly.liczba_rozgrywek }}</b></div>
+<div><span>Sezony</span><b>{{ szczegoly.liczba_sezonow }}</b></div>
+<div><span>Drużyny</span><b>{{ szczegoly.liczba_druzyn }}</b></div>
+<div><span>Zawodnicy</span><b>{{ szczegoly.liczba_zawodnikow }}</b></div>
+</div>
+</div>
+</section>
+
+<section class="panel" data-venue-panel="mecze">
+<h2>Mecze w hali</h2>
+<form class="panel-body filters venue-match-filters" method="get">
+<input type="hidden" name="zakladka" value="mecze">
+<input type="hidden" name="m_sortowanie" value="{{ filtry_meczow.sortowanie }}">
+<input type="hidden" name="m_rozmiar" value="{{ filtry_meczow.rozmiar_strony }}">
+<label>Sezon{{ formularz_meczow.m_sezon() }}</label>
+<label>Rozgrywki{{ formularz_meczow.m_rozgrywki() }}</label>
+<label>Drużyna{{ formularz_meczow.m_druzyna(placeholder="nazwa drużyny...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for(request.endpoint, id_hala=szczegoly.id_hala, zakladka='mecze') }}">Wyczyść filtry</a></div>
+</form>
+<div class="panel-body">
+<div class="table-wrap"><table class="venue-matches-table">
+<thead><tr>
+<th><a href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='mecze', m_sortowanie=('data' if filtry_meczow.sortowanie == '-data' else '-data'), m_strona=1)) }}">Data {{ '▼' if filtry_meczow.sortowanie == '-data' else '▲' }}</a></th>
+<th>Sezon</th><th>Rozgrywki</th><th>Gospodarz</th><th>Wynik</th><th>Gość</th><th>Akcje</th>
+</tr></thead><tbody>
+{% for mecz in mecze.pozycje %}
+<tr>
+<td>{{ mecz.termin.strftime("%d.%m.%Y %H:%M") if mecz.termin else "—" }}</td>
+<td>{{ mecz.sezon or "—" }}</td><td>{{ mecz.rozgrywki or "—" }}</td>
+<td>{{ mecz.gospodarz or "—" }}</td>
+<td><span class="score">{{ mecz.wynik }}</span>{% if mecz.dopisek_wyniku %}<br><span class="note">{{ mecz.dopisek_wyniku }}</span>{% endif %}</td>
+<td>{{ mecz.gosc or "—" }}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=mecz.id_mecz) }}" target="_blank" rel="noopener">◈ Szczegóły</a></td>
+</tr>
+{% else %}<tr><td colspan="7" class="note">Brak meczów hali spełniających wybrane filtry.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if mecze.liczba_wszystkich > 0 %}
+<div class="toolbar paginacja"><span class="note">Wyniki {{ (mecze.strona - 1) * mecze.rozmiar_strony + 1 }}–{{ [mecze.strona * mecze.rozmiar_strony, mecze.liczba_wszystkich] | min }} z {{ mecze.liczba_wszystkich }}</span><div class="right">
+{% if mecze.strona > 1 %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='mecze', m_strona=mecze.strona - 1)) }}">« Poprzednia</a>{% endif %}
+{% if mecze.strona * mecze.rozmiar_strony < mecze.liczba_wszystkich %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='mecze', m_strona=mecze.strona + 1)) }}">Następna »</a>{% endif %}
+</div></div>
+{% endif %}
+</div>
+</section>
+
+<section class="panel" data-venue-panel="zawodnicy">
+<h2>Zawodnicy w hali</h2>
+<form class="panel-body filters venue-player-filters" method="get">
+<input type="hidden" name="zakladka" value="zawodnicy">
+<input type="hidden" name="z_sortowanie" value="{{ filtry_zawodnikow.sortowanie }}">
+<input type="hidden" name="z_rozmiar" value="{{ filtry_zawodnikow.rozmiar_strony }}">
+<label>Szukaj{{ formularz_zawodnikow.z_szukaj(placeholder="imię lub nazwisko...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for(request.endpoint, id_hala=szczegoly.id_hala, zakladka='zawodnicy') }}">Wyczyść filtr</a></div>
+</form>
+<div class="panel-body">
+<div class="table-wrap"><table class="venue-players-table">
+<thead><tr>
+{% for pole, etykieta in [('nazwisko', 'Zawodnik'), ('pierwszy_wystep', 'Pierwszy występ'), ('ostatni_wystep', 'Ostatni występ'), ('wystepy', 'Występy'), ('bramki', 'Bramki'), ('srednia_bramek', 'Śr. bramek')] %}
+<th{% if filtry_zawodnikow.sortowanie == pole %} aria-sort="ascending"{% elif filtry_zawodnikow.sortowanie == '-' + pole %} aria-sort="descending"{% endif %}><a href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='zawodnicy', z_sortowanie=(pole if filtry_zawodnikow.sortowanie == '-' + pole else '-' + pole), z_strona=1)) }}">{{ etykieta }}{% if filtry_zawodnikow.sortowanie == pole %} ▲{% elif filtry_zawodnikow.sortowanie == '-' + pole %} ▼{% endif %}</a></th>
+{% endfor %}
+<th>Drużyny</th><th>Akcje</th>
+</tr></thead><tbody>
+{% for zawodnik in zawodnicy.pozycje %}
+<tr><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pierwszy_wystep }}</td><td>{{ zawodnik.ostatni_wystep }}</td><td>{{ zawodnik.wystepy }}</td><td>{{ zawodnik.bramki }}</td><td>{{ zawodnik.srednia_bramek }}</td><td class="venue-team-list">{{ zawodnik.druzyny }}</td><td><a class="icon-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=zawodnik.id_zawodnik) }}" target="_blank" rel="noopener">◎ Szczegóły</a></td></tr>
+{% else %}<tr><td colspan="8" class="note">Brak zawodników spełniających wybrany filtr.</td></tr>{% endfor %}
+</tbody></table></div>
+<p class="note">Występ oznacza obecność zawodnika we wpisie meczowym; baza nie przechowuje czasu gry.</p>
+{% if zawodnicy.liczba_wszystkich > 0 %}
+<div class="toolbar paginacja"><span class="note">Wyniki {{ (zawodnicy.strona - 1) * zawodnicy.rozmiar_strony + 1 }}–{{ [zawodnicy.strona * zawodnicy.rozmiar_strony, zawodnicy.liczba_wszystkich] | min }} z {{ zawodnicy.liczba_wszystkich }}</span><div class="right">
+{% if zawodnicy.strona > 1 %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='zawodnicy', z_strona=zawodnicy.strona - 1)) }}">« Poprzednia</a>{% endif %}
+{% if zawodnicy.strona * zawodnicy.rozmiar_strony < zawodnicy.liczba_wszystkich %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='zawodnicy', z_strona=zawodnicy.strona + 1)) }}">Następna »</a>{% endif %}
+</div></div>
+{% endif %}
+</div>
+</section>
+
+<section class="panel" data-venue-panel="statystyki">
+<h2>Statystyki hali</h2>
+<div class="panel-body venue-statistics">
+<nav class="venue-analysis-nav" aria-label="Sekcje statystyk">
+<a href="#venue-trends">Trendy</a><a href="#venue-score-profile">Wyniki</a><a href="#venue-calendar">Kalendarz</a><a href="#venue-attendance">Frekwencja</a><a href="#venue-records">Rekordy</a><a href="#venue-rankings">Rankingi</a>
+</nav>
+
+<section id="venue-trends" class="venue-analysis-section"><div class="venue-section-head"><div><h3>Trendy sezonowe</h3><p>Aktywność hali i tempo bramkowe w kolejnych sezonach.</p></div></div>
+<div class="venue-analysis-grid">
+<figure class="venue-chart"><figcaption>Mecze według sezonu</figcaption><div class="venue-bars">
+{% for pasek in statystyki.trendy_mecze %}<div class="venue-bar-row"><span>{{ pasek.etykieta }}</span><div class="venue-bar-track"><i style="--bar-width:{{ pasek.szerokosc }}%"></i></div><b>{{ pasek.wartosc }}</b></div>{% else %}<p class="note">Brak danych sezonowych.</p>{% endfor %}
+</div></figure>
+<figure class="venue-chart"><figcaption>Średnia suma bramek</figcaption><div class="venue-bars">
+{% for pasek in statystyki.trendy_bramki %}<div class="venue-bar-row"><span>{{ pasek.etykieta }}</span><div class="venue-bar-track accent"><i style="--bar-width:{{ pasek.szerokosc }}%"></i></div><b>{{ pasek.wartosc }}</b><small>{{ pasek.opis }}</small></div>{% else %}<p class="note">Brak wyników do analizy.</p>{% endfor %}
+</div></figure>
+</div></section>
+
+<section id="venue-score-profile" class="venue-analysis-section"><div class="venue-section-head"><div><h3>Profil wyników</h3><p>Opis rozkładu sumy i różnicy bramek w rozegranych meczach.</p></div></div>
+<div class="venue-metric-grid">
+<div><span>Średnia bramek</span><b>{{ statystyki.profil_wynikow.srednia_bramek }}</b></div><div><span>Mediana</span><b>{{ statystyki.profil_wynikow.mediana_bramek }}</b></div><div><span>Odchylenie</span><b>{{ statystyki.profil_wynikow.odchylenie_bramek }}</b></div><div><span>Minimum–maksimum</span><b>{{ statystyki.profil_wynikow.zakres_bramek }}</b></div><div><span>Środkowe 50%</span><b>{{ statystyki.profil_wynikow.kwartyle }}</b></div><div><span>Śr. różnica</span><b>{{ statystyki.profil_wynikow.srednia_roznica }}</b></div>
+</div>
+<div class="venue-analysis-grid">
+<figure class="venue-chart"><figcaption>Rozkład sumy bramek</figcaption><div class="venue-bars">
+{% for pasek in statystyki.histogram_bramek %}<div class="venue-bar-row"><span>{{ pasek.etykieta }}</span><div class="venue-bar-track warm"><i style="--bar-width:{{ pasek.szerokosc }}%"></i></div><b>{{ pasek.wartosc }}</b><small>{{ pasek.opis }}</small></div>{% endfor %}
+</div></figure>
+<div class="venue-close-games"><h4>Mecze wyrównane</h4><dl><dt>Różnica do 1 bramki</dt><dd>{{ statystyki.profil_wynikow.mecze_jedna_bramka }}</dd><dt>Różnica do 3 bramek</dt><dd>{{ statystyki.profil_wynikow.mecze_trzy_bramki }}</dd><dt>Różnica do 5 bramek</dt><dd>{{ statystyki.profil_wynikow.mecze_piec_bramek }}</dd></dl></div>
+</div></section>
+
+<section id="venue-calendar" class="venue-analysis-section"><div class="venue-section-head"><div><h3>Kalendarz gry</h3><p>Kiedy hala jest wykorzystywana najczęściej.</p></div></div>
+<div class="venue-analysis-grid venue-calendar-grid">
+<figure class="venue-chart"><figcaption>Mecze według dnia tygodnia</figcaption><div class="venue-bars">
+{% for pasek in statystyki.dni_tygodnia %}<div class="venue-bar-row"><span>{{ pasek.etykieta }}</span><div class="venue-bar-track green"><i style="--bar-width:{{ pasek.szerokosc }}%"></i></div><b>{{ pasek.wartosc }}</b><small>{{ pasek.opis }}</small></div>{% endfor %}
+</div></figure>
+<figure class="venue-chart venue-heatmap"><figcaption>Sezon × miesiąc</figcaption><div class="table-wrap"><table><thead><tr><th>Sezon</th>{% for miesiac in ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"] %}<th>{{ miesiac }}</th>{% endfor %}</tr></thead><tbody>
+{% for sezon in statystyki.sezony_kalendarza %}<tr><th>{{ sezon }}</th>{% for komorka in statystyki.kalendarz if komorka.sezon == sezon %}<td data-level="{{ komorka.intensywnosc }}" title="{{ sezon }}, miesiąc {{ komorka.miesiac }}: {{ komorka.mecze }} meczów">{{ komorka.mecze if komorka.mecze else "·" }}</td>{% endfor %}</tr>{% else %}<tr><td colspan="13" class="note">Brak dat meczów.</td></tr>{% endfor %}
+</tbody></table></div></figure>
+</div></section>
+
+<section id="venue-attendance" class="venue-analysis-section"><div class="venue-section-head"><div><h3>Frekwencja i porównanie</h3><p>Frekwencja jest prezentowana razem z kompletnością danych; porównanie pokazuje średnią dla hal z rozegranymi meczami.</p></div><span class="badge {{ "ok" if statystyki.frekwencja.kompletne else "warn" }}">Dane: {{ statystyki.frekwencja.kompletnosc }}</span></div>
+<div class="venue-analysis-grid">
+<div class="venue-metric-grid compact"><div><span>Średnia widzów</span><b>{{ statystyki.frekwencja.srednia }}</b></div><div><span>Mediana</span><b>{{ statystyki.frekwencja.mediana }}</b></div><div><span>Maksimum</span><b>{{ statystyki.frekwencja.maksimum }}</b></div><div><span>Śr. wypełnienie</span><b>{{ statystyki.frekwencja.wypelnienie }}</b></div></div>
+<div class="table-wrap"><table><thead><tr><th>Metryka</th><th>Ta hala</th><th>Średnia hal</th></tr></thead><tbody>{% for p in statystyki.porownanie %}<tr><td>{{ p.metryka }}</td><td><b>{{ p.hala }}</b></td><td>{{ p.wszystkie_hale }}</td></tr>{% else %}<tr><td colspan="3" class="note">Brak danych do porównania.</td></tr>{% endfor %}</tbody></table></div>
+</div></section>
+
+<section id="venue-records" class="venue-analysis-section"><div class="venue-section-head"><div><h3>Rekordy hali</h3><p>Skrajne wartości w rozegranych meczach.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Rekord</th><th>Data</th><th>Mecz</th><th>Wynik</th><th>Wartość</th><th>Akcje</th></tr></thead><tbody>{% for rekord in statystyki.rekordy %}<tr><td>{{ rekord.rodzaj }}</td><td>{{ rekord.data }}</td><td>{{ rekord.mecz }}</td><td><b>{{ rekord.wynik }}</b></td><td>{{ rekord.wartosc }}</td><td><a class="icon-link" href="{{ url_for("administracja.szczegoly_meczu", id_mecz=rekord.id_mecz) }}" target="_blank" rel="noopener">Szczegóły</a></td></tr>{% else %}<tr><td colspan="6" class="note">Brak rozegranych meczów.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+
+<section id="venue-rankings" class="venue-analysis-section"><h3>Drużyny najczęściej grające</h3>
+<div class="table-wrap"><table><thead><tr><th>Drużyna</th><th>Mecze</th><th>W</th><th>R</th><th>P</th><th>Bramki</th><th>Stracone</th><th>Bilans</th></tr></thead><tbody>
+{% for d in statystyki.druzyny %}<tr><td>{{ d.druzyna }}</td><td>{{ d.mecze }}</td><td>{{ d.zwyciestwa }}</td><td>{{ d.remisy }}</td><td>{{ d.porazki }}</td><td>{{ d.bramki_zdobyte }}</td><td>{{ d.bramki_stracone }}</td><td>{{ d.bilans }}</td></tr>
+{% else %}<tr><td colspan="8" class="note">Brak rozegranych meczów do rankingu.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if statystyki.liczba_druzyn > statystyki.druzyny|length %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='statystyki', wszystkie_druzyny=1)) }}">Pokaż wszystkie</a>{% endif %}
+</section>
+<section><h3>Rozgrywki najczęściej rozgrywane</h3>
+<div class="table-wrap"><table><thead><tr><th>Rozgrywki</th><th>Mecze</th><th>Sezony</th><th>Pierwszy sezon</th><th>Ostatni sezon</th></tr></thead><tbody>
+{% for r in statystyki.rozgrywki %}<tr><td>{{ r.rozgrywki }}</td><td>{{ r.mecze }}</td><td>{{ r.sezony }}</td><td>{{ r.pierwszy_sezon }}</td><td>{{ r.ostatni_sezon }}</td></tr>
+{% else %}<tr><td colspan="5" class="note">Brak rozgrywek do rankingu.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if statystyki.liczba_rozgrywek > statystyki.rozgrywki|length %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='statystyki', wszystkie_rozgrywki=1)) }}">Pokaż wszystkie</a>{% endif %}
+</section>
+<section><h3>Najczęściej grający zawodnicy</h3>
+<div class="table-wrap"><table><thead><tr><th>Zawodnik</th><th>Występy</th><th>Bramki</th><th>Średnia</th><th>Drużyny</th><th></th></tr></thead><tbody>
+{% for z in statystyki.zawodnicy %}<tr><td>{{ z.zawodnik }}</td><td>{{ z.wystepy }}</td><td>{{ z.bramki }}</td><td>{{ z.srednia_bramek }}</td><td class="venue-team-list">{{ z.druzyny }}</td><td><a class="icon-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=z.id_zawodnik) }}">◎ Szczegóły</a></td></tr>
+{% else %}<tr><td colspan="6" class="note">Brak zawodników do rankingu.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if statystyki.liczba_zawodnikow > statystyki.zawodnicy|length %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **dict(parametry, id_hala=szczegoly.id_hala, zakladka='statystyki', wszyscy_zawodnicy=1)) }}">Pokaż wszystkich</a>{% endif %}
+</section>
+<section><h3>Najskuteczniejsi zawodnicy</h3><p class="note">Ranking średniej obejmuje zawodników z co najmniej 3 występami.</p>
+<div class="table-wrap"><table><thead><tr><th>Zawodnik</th><th>Występy</th><th>Bramki</th><th>Średnia</th><th></th></tr></thead><tbody>
+{% for z in statystyki.skuteczni_zawodnicy %}<tr><td>{{ z.zawodnik }}</td><td>{{ z.wystepy }}</td><td>{{ z.bramki }}</td><td>{{ z.srednia_bramek }}</td><td><a class="icon-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=z.id_zawodnik) }}">◎ Szczegóły</a></td></tr>
+{% else %}<tr><td colspan="5" class="note">Brak zawodników spełniających próg występów.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+</div>
+</section>
+</div>
+<script src="{{ url_for('static', filename='js/venue_details.js') }}" defer></script>
+{% endblock %}

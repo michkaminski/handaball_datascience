@@ -13,6 +13,8 @@ class Zespol(Baza):
     id: Mapped[int] = mapped_column(primary_key=True)
     nazwa: Mapped[str | None]
     plec: Mapped[str | None]
+    kategoria: Mapped[str | None]
+    miasto: Mapped[str | None]
     wycofany: Mapped[bool | None]
 
 
@@ -25,4 +27,6 @@ class ZespolSezon(Baza):
     id_sezon: Mapped[int] = mapped_column(ForeignKey("public.sezony.id"))
     nazwa: Mapped[str | None]
     plec: Mapped[str | None]
+    kategoria: Mapped[str | None]
+    miasto: Mapped[str | None]
     wycofany: Mapped[bool | None]

@@ -1,6 +1,20 @@
 # Stan projektu
 
-Aktualizacja: 2026-09-20.
+Aktualizacja: 2026-09-21.
+
+## Lista hal — 2026-09-21
+
+Zaimplementowano GET /administracja/hale: wyszukiwanie po nazwie i adresie, filtr miasta i minimalnej pojemności, sortowanie w nagłówkach, paginację oraz liczbę meczów powiązanych z halą. Pozycja „Hale” w menu prowadzi do aktywnego widoku. Strona jest wyłącznie do odczytu; nie wykonano zmian w bazie. Kontrakt i mapa zmian: [list.md](../src/handball/interface/templates/admin/venues/list.md).
+
+Weryfikacja: 9 testów interfejsu hal przechodzi; mypy i Ruff dla kodu aplikacji oraz nowych testów przechodzą. Pełny zestaw 201 testów bez integracji z bazą przechodzi po odizolowaniu lokalnej zmiennej HDS_IMPORT_PASSWORD w procesie testowym. Bazy nie odczytywano ani nie zmieniano.
+
+## Karta hali — 2026-09-21
+
+Działa GET /administracja/hale/<id>: Dane, Mecze, Zawodnicy i Statystyki. Karta pokazuje pola hali, podsumowanie, filtrowane i paginowane rozegrane mecze, filtrowanych i sortowanych zawodników oraz rankingi TOP 10 drużyn, rozgrywek, najczęściej grających i najskuteczniejszych zawodników. Rankingi można rozszerzyć. Linki prowadzą do kart meczu i zawodnika. Kontrakt: [detail.md](../src/handball/interface/templates/admin/venues/detail.md).
+
+Zakładka Statystyki zawiera również wygodną nawigację sekcji, trendy meczów i średniej bramek według sezonu, profil oraz histogram wyników, mecze wyrównane, heatmapę sezon × miesiąc, rozkład dni tygodnia, frekwencję z kompletnością, opisowe porównanie ze średnią hal i rekordy linkujące do kart meczów. Wykresy są lekkim, responsywnym HTML/CSS bez dodatkowej zależności.
+
+Zapytania agregujące, w tym trendy, percentyle, frekwencję, porównania i rekordy, zweryfikowano na istniejącej bazie w transakcji READ ONLY zakończonej ROLLBACK; bazy nie zmieniono. Przechodzi 214 testów Pythona bez integracji i 25 testów JavaScript. Mypy, Ruff, kontrola formatowania i diffu przechodzą. Testy sprawdzają zakładki, filtry, walidację, linki, wykresy, rekordy, TOP 10 i rozszerzenie rankingów.
 
 Poniższe opisy etapów zachowują wyniki wcześniejszych weryfikacji. Wynik migracji nazw z 2026-09-14 podano osobno; nie ponawiano historycznych kontroli na bazie użytkownika.
 

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block tytul %}Hale — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Dane › Hale</div>
+<h1>Hale</h1>
+<p>Hale sportowe wykorzystywane w danych meczowych.</p>
+</section>
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body filters venue-filters" method="get">
+<input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}">
+<input type="hidden" name="rozmiar_strony" value="{{ filtry.rozmiar_strony }}">
+<label>Szukaj{{ formularz.szukaj(placeholder="nazwa lub adres...") }}</label>
+<label>Miasto{{ formularz.miasto(placeholder="nazwa miasta...") }}</label>
+<label>Pojemność od{{ formularz.pojemnosc_min(min=0) }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.lista_hal') }}">Wyczyść filtry</a></div>
+</form>
+</section>
+<section class="panel">
+<div class="panel-body">
+<div class="table-wrap">
+<table id="venues-table">
+<thead>
+<tr>
+{% for pole, etykieta in [('id', 'ID'), ('nazwa', 'Nazwa'), ('miasto', 'Miasto'), ('adres', 'Adres'), ('pojemnosc', 'Pojemność'), ('liczba_meczow', 'Mecze')] %}
+<th scope="col"{% if filtry.sortowanie == pole %} aria-sort="ascending"{% elif filtry.sortowanie == '-' + pole %} aria-sort="descending"{% endif %}>
+<a href="{{ url_for(request.endpoint, **dict(request.args, sortowanie=(pole if filtry.sortowanie == '-' + pole else '-' + pole), strona=1)) }}">{{ etykieta }}{% if filtry.sortowanie == pole %} ▲{% elif filtry.sortowanie == '-' + pole %} ▼{% endif %}</a>
+</th>
+{% endfor %}
+<th scope="col">Akcje</th>
+</tr>
+</thead>
+<tbody>
+{% for hala in strona.pozycje %}
+<tr>
+<td>{{ hala.id }}</td>
+<td>{{ hala.nazwa or "—" }}</td>
+<td>{{ hala.miasto or "—" }}</td>
+<td>{{ hala.adres or "—" }}</td>
+<td>{{ hala.pojemnosc if hala.pojemnosc is not none else "—" }}</td>
+<td>{{ hala.liczba_meczow }}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_hali', id_hala=hala.id) }}">Szczegóły</a></td>
+</tr>
+{% else %}
+<tr><td colspan="7" class="note">Brak hal spełniających wybrane filtry.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<p class="note">Liczba meczów obejmuje wszystkie spotkania powiązane z halą. — Brak danych.</p>
+{% include "partials/pagination.html" %}
+</div>
+</section>
+{% endblock %}

@@ -51,6 +51,7 @@ class FiltryMeczow:
     sortowanie: str = "data"
     runda: str | None = None
     kolejka: str | None = None
+    tylko_rozegrane: bool = False
 
     def __post_init__(self) -> None:
         if self.strona < 1:

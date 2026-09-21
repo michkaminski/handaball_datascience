@@ -125,6 +125,23 @@ classDiagram
 
 Fabryka przekazuje repozytorium z sesją żądania. GET waliduje filtry, pobiera stronę domenową i prezentuje gotowe teksty. PostgreSQL wykonuje agregację po zawodniku z liczbą różnych meczów i kontrolą wielokrotnych stron. Repozytorium ogranicza paginację do ostatniej strony. Błędy danych wejściowych dają 400, odczytu 503; bez wyników widok zwraca 200.
 
+## Karta hali
+
+~~~mermaid
+classDiagram
+    HalaSzczegolyView --> SzczegolyHaliService
+    SzczegolyHaliService --> SzczegolyHaliReadRepository
+    SzczegolyHaliSQLAlchemyRepository ..|> SzczegolyHaliReadRepository
+    SzczegolyHaliSQLAlchemyRepository --> Hala
+    SzczegolyHaliSQLAlchemyRepository --> Mecz
+    SzczegolyHaliSQLAlchemyRepository --> MeczZawodnik
+    HalaSzczegolyView --> MeczService
+    HalaSzczegolyView --> MeczPresenter
+    HalaSzczegolyView --> SzczegolyHaliPresenter
+~~~
+
+Podsumowanie, zawodnicy i rankingi pochodzą z repozytorium szczegółów hali. Paginowane mecze przechodzą przez istniejący kontrakt meczów i presenter. Agregacje używają GROUP BY i COUNT DISTINCT, a nazwy drużyn strony zawodników pobiera jedno zapytanie zbiorcze.
+
 ## Karta zawodnika
 
 ```mermaid

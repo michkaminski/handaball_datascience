@@ -4,6 +4,8 @@ from handball.interface.admin.views.match_views import MeczListView, MeczSzczego
 from handball.interface.admin.views.player_detail_views import ZawodnikSzczegolyView
 from handball.interface.admin.views.player_views import ZawodnikListView
 from handball.interface.admin.views.start import StartView
+from handball.interface.admin.views.venue_detail_views import HalaSzczegolyView
+from handball.interface.admin.views.venue_views import HalaListView
 from handball.request_dependencies import ZaleznosciZadaniaFactory
 
 
@@ -25,5 +27,13 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/zawodnicy/<int:id_zawodnik>",
         view_func=ZawodnikSzczegolyView.as_view("szczegoly_zawodnika", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/hale",
+        view_func=HalaListView.as_view("lista_hal", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/hale/<int:id_hala>",
+        view_func=HalaSzczegolyView.as_view("szczegoly_hali", fabryka_zaleznosci),
     )
     return blueprint
