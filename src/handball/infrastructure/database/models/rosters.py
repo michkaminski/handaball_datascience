@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import BigInteger, ForeignKey, Numeric, SmallInteger
@@ -27,3 +28,7 @@ class SkladSezonowy(Baza):
     pozycja_nazwa: Mapped[str | None]
     wzrost: Mapped[Decimal | None] = mapped_column(Numeric(5, 1))
     waga: Mapped[Decimal | None] = mapped_column(Numeric(5, 1))
+    foto_url: Mapped[str | None]
+    imie: Mapped[str | None]
+    nazwisko: Mapped[str | None]
+    data_urodzenia: Mapped[date | None]

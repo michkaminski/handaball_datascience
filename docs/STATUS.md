@@ -1,6 +1,40 @@
 # Stan projektu
 
-Aktualizacja: 2026-09-21.
+Aktualizacja: 2026-09-22.
+
+## Podsumowanie analityczne zawodnika — 2026-09-22
+
+Karta zawodnika zachowuje istniejące zakładki Profil, Sezony i drużyny oraz Mecze i dodaje po nich Podsumowanie. Nowa zakładka ma filtry sezonu, rozgrywek i przeciwnika, KPI z liczbą meczów, bramkami, średnią, medianą, dominantami, kwartylami, karnymi, karami i pokryciem danych. Trend bramek i histogram renderuje lokalny Apache ECharts 6.1.0; wykresy mają animacje, punkty, wygaszenie kontekstu, ARIA, tabelę danych i tryb ograniczonego ruchu. Kliknięcie punktu trendu otwiera kartę meczu.
+
+Zapytanie tylko do odczytu agreguje wpisy do poziomu mecz–zawodnik przed obliczeniami. Definicje statystyczne znajdują się w osobnym serwisie, a prezentacja w presenterze. Biblioteka wraz z LICENSE i NOTICE jest przechowywana lokalnie. Pozostałe zakładki projektu Data Science są nadal planem.
+
+Weryfikacja: 248 testów Pythona bez integracyjnych testów bazy i 26 testów JavaScript przechodzi; Ruff dla zmienionego zakresu, formatowanie, mypy, składnia JavaScriptu i kontrola diffu przechodzą. Rzeczywista karta zawodnika i lokalny zasób ECharts zwracają `200`. Edge headless potwierdził dwa wykresy SVG z opisami ARIA na szerokościach 1440 i 390 px. Bazy nie zmieniano.
+
+## Forma i regularność zawodnika — 2026-09-22
+
+Karta zawodnika ma drugą dodatkową zakładkę, Forma i regularność, po Podsumowaniu. Pokazuje statystyki opisowe liczone wyłącznie z meczów ze znaną liczbą bramek w wybranym zakresie: średnią, medianę, wszystkie dominanty, minimum, maksimum, Q1–Q3, IQR, odchylenie standardowe (populacyjne), MAD, współczynnik zmienności (pomijany przy średniej poniżej 0,1 bramki na mecz), P10, P90, średnią uciętą 10% oraz udziały meczów z 0, 1–2, 3–5 i 6+ bramkami.
+
+Wykres formy pokazuje bramki mecz po meczu kolorowane według sezonu, medianę i średnią kroczącą z 5 ostatnich meczów ze znaną liczbą bramek oraz, po osiągnięciu 10 takich meczów, dodatkową medianę kroczącą z 10. Okno liczone jest po kolejności meczów, nie po dniach; nieznana liczba bramek przerywa okno zamiast zamieniać się w zero. Poniżej progu 5 meczów pokazuje się jawne ostrzeżenie zamiast trendu. Drugi wykres to boxplot bramek według sezonu z wąsami ograniczonymi regułą Tukeya i osobno oznaczonymi wartościami odstającymi; sezon z mniej niż 5 znanymi meczami jest oznaczony jako mała próba. Oba wykresy mają tabelaryczny odpowiednik, opis ARIA i lokalny Apache ECharts 6.1.0. Zakładka korzysta z tego samego zapytania analitycznego co Podsumowanie, bez dodatkowego zapytania do bazy.
+
+Przy okazji usunięto z karty cztery zakładki-placeholdery (Bramki i karne, Dyscyplina, Rekordy, Jakość danych), które były widoczne w interfejsie, lecz powielały dane Podsumowania bez własnej logiki ani stylów — niezgodnie z zasadą projektu, by nie przedstawiać planowanych funkcji jako gotowych. Wrócą jako osobno zaimplementowane zakładki w kolejnych etapach [PLAYER_DATA_SCIENCE](PLAYER_DATA_SCIENCE.md).
+
+Na zgłoszenie użytkownika poprawiono czytelność wykresów liniowych (trend bramek w Podsumowaniu i wykres formy w Formie i regularności): przy wielu sezonach były nieczytelne w wąskiej połowie siatki obok drugiego wykresu. Oba wykresy w każdej z tych zakładek są teraz ułożone jeden pod drugim na pełną szerokość panelu (`.player-chart-grid.stacked` w `admin.css`) zamiast obok siebie.
+
+Na kolejne zgłoszenie użytkownika te same wykresy pokazują od razu podział na mecze u siebie i na wyjeździe. Podsumowanie: trend bramek rozdzielono na dwa osobne wykresy (u siebie, na wyjeździe), każdy z własną medianą liczoną tylko z meczów tego miejsca; histogram rozkładu bramek pokazuje dwa słupki obok siebie na każdą liczbę bramek zamiast jednej sumy. Forma i regularność: wykres formy również rozdzielono na dwa, przy czym mediana i średnia krocząca (5, a od 10 meczów też mediana krocząca 10) są liczone niezależnie w obrębie każdego miejsca — piątka meczów u siebie pomija mecze wyjazdowe rozgrywane pomiędzy nimi, więc pokazuje rzeczywistą formę w danym miejscu, a nie ogólną formę przefiltrowaną wizualnie. Boxplot sezonów pozostaje jednym, wspólnym wykresem (podział nie był proszony).
+
+Miejsce meczu jest liczone w `pobierz_analityke()` z `mecze_zawodnicy.strona` (`gosp`→u siebie, `gosc`→na wyjeździe) w tym samym zapytaniu agregującym, bez dodatkowego zapytania do bazy. Mecz z niejednoznaczną lub nieustaloną stroną (np. same wpisy `inne`, albo sprzeczne `gosp`/`gosc` w tym samym meczu przy kilku wpisach) ma miejsce nieustalone i jest pomijany w obu podziałach — zgodnie z zasadą projektu, by nie zgadywać jednej wartości dla niejednoznacznego agregatu, zamiast domyślnie przypisywać go do jednej ze stron.
+
+Weryfikacja: 2 nowe testy repozytorium (jednoznaczne i niejednoznaczne miejsce meczu), 1 nowy test serwisu (niezależne okno kroczące per miejsce) oraz zaktualizowane testy interfejsu i oba testy JavaScript (formy i podsumowania) przechodzą. Pełny zestaw: 255 z 256 testów Pythona bez integracyjnych z bazą (jedyny nieprzechodzący jest środowiskowy, niezwiązany ze zmianą) i 27 testów JavaScript. Mypy i Ruff (check i format) bez błędów. Na rzeczywistej karcie zawodnika #1732 potwierdzono odpowiedzi 200 dla obu zakładek oraz poprawne dane JSON: pole `miejsce`/`miejsce_etykieta` w punktach Podsumowania, `mediana_dom`/`mediana_wyjazd`, słupki `dom`/`wyjazd` w rozkładzie i zagnieżdżone `dom`/`wyjazd` z osobnymi punktami formy w danych zakładki Forma i regularność. Bazy nie zmieniano.
+
+Na dalsze doprecyzowanie użytkownika zakładka Podsumowanie pokazuje teraz trzy wykresy formy zamiast dwóch — „Forma mecz po meczu (wszystkie)” obok wariantów u siebie/na wyjeździe — a histogram „Rozkład bramek” ma trzy słupki na każdą liczbę bramek: Wszystkie, U siebie, Na wyjeździe. Mediana i liczniki wariantu „wszystkie” były już liczone wcześniej (KPI karty), więc zmiana dotyczyła tylko szablonu i `AnalitykaZawodnikaController` w JavaScripcie, bez zmian w repozytorium ani serwisie. Zakładka Forma i regularność pozostaje bez wariantu „wszystkie” — nie był proszony. Testy interfejsu i JavaScript zaktualizowano pod nowy układ; pełny zestaw testów pozostaje zielony poza tymi samymi dwoma wcześniej udokumentowanymi, nieistotnymi wyjątkami. Sprawdzono na rzeczywistej karcie #1732.
+
+Weryfikacja: 5 nowych testów jednostkowych serwisu, 1 nowy test interfejsu i 1 nowy test JavaScript przechodzą. Pełny zestaw: 253 z 254 testów Pythona bez integracyjnych z bazą (jedyny nieprzechodzący jest środowiskowy, niezwiązany ze zmianą — zależy od lokalnej zmiennej `SECRET_KEY`) i 27 testów JavaScript. Mypy i Ruff (check i format) bez błędów dla zmienionego zakresu. Na rzeczywistej karcie zawodnika #1732 (231 meczów, sezony 2008/2009–2025/2026) potwierdzono odpowiedź 200, poprawne dane wykresów, oznaczenie sezonu jako małej próby i realny punkt odstający w rozstępie sezonowym. Bazy nie zmieniano.
+
+## Grupowane tabele i składy — 2026-09-22
+
+Listy `/administracja/tabele` i `/administracja/sklady` prezentują rekordy zbiorcze zamiast płaskich pozycji. Tabele są grupowane według sezonu, rozgrywek, tabeli i grupy. Składy są grupowane według sezonu i drużyny, a przypisane rozgrywki są pokazywane jako lista oddzielona przecinkami. Przycisk „Szczegóły” otwiera pełną kartę w nowej karcie, a dwuklik lub Enter na wierszu otwiera tę samą treść w modalu. Szczegóły tabeli pokazują wybraną grupę źródłowej klasyfikacji. Zawodnicy w szczegółach składu są uporządkowani według pozycji i oznaczeni paletą ze składów meczowych. Bazy nie zmieniano.
+
+Weryfikacja: 15 testów interfejsu klasyfikacji przechodzi; Ruff, formatowanie i mypy przechodzą. Po poprawie kolejności argumentów `string_agg` rzeczywista lista zwróciła 3233 składy w transakcji READ ONLY zakończonej ROLLBACK. Kontrakty: [lista tabel](../src/handball/interface/templates/admin/standings/list.md), [szczegóły tabeli](../src/handball/interface/templates/admin/standings/detail.md), [lista składów](../src/handball/interface/templates/admin/rosters/list.md), [szczegóły składu](../src/handball/interface/templates/admin/rosters/detail.md).
 
 ## Szczegóły sędziego — 2026-09-21
 
@@ -139,3 +173,7 @@ Dodano filtry po nazwie rundy i kolejki oraz dwie opcjonalne kolumny włączane 
 Odczyt listy i karty zawodnika potwierdzono przez lokalną aplikację. Do dalszej weryfikacji pozostają pełna kompletność i wydajność archiwum. Następnie dostęp administratora i kolejne uzgodnione widoki z [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md). Lista i szczegóły meczów oraz lista zawodników są zaimplementowane; warstwy opisują DIRECTORY_STRUCTURE i UML.
 
 Nie używać `python ../run.py` jako komendy uruchomienia nowej aplikacji: dotyczy starszego serwisu i jego procesu importu.
+
+## Składy, Strzelcy i Tabele — 2026-09-21
+
+Zaimplementowano trzy zakładki administracyjne tylko do odczytu: filtry sezonu i rozgrywek, wyszukiwanie, sortowanie, paginację oraz aktywne pozycje menu. Składy opisują zgłoszenia sezonowe, a klasyfikacje zachowują wartości źródłowe bez przeliczania.

@@ -1,55 +1,41 @@
 # Składy
 
-Status: projekt szablonu. Katalog `rosters/` i ten plik nie mają jeszcze odpowiadającego HTML ani żadnego kodu. Wzorzec: prototyp v6 `squads.html` — placeholder ("Przykładowa strona administracyjna"), bez własnego układu poza wspólnym `base.html`.
+Status: zaimplementowano.
 
-Docelowy szablon względem katalogu szablony: `admin/rosters/list.html` (nazwa robocza).
+## Przeznaczenie i zachowanie
 
-## Przeznaczenie
+Widok `GET /administracja/sklady` pokazuje po jednym wierszu dla drużyny w sezonie (`public.zespoly_sezony`) posiadającej skład. Kolumny to sezon, drużyna, alfabetyczna lista unikalnych rozgrywek oddzielona przecinkami oraz akcja. Paginacja dotyczy składów sezonowych, nie zawodników.
 
-Pozycja "Składy" w sidebarze (grupa "Dane"). Docelowo przegląd znormalizowanych składów zespołu (`public.sklady`, 74 731 wierszy) i ich wersji (`public.sklady_wersje`, `public.sklady_wersje_zawodnicy`) — patrz [database/README](../../../../../../docs/database/README.md).
+Filtry sezonu i rozgrywek ograniczają listę drużyn. Wyszukiwanie obejmuje nazwę drużyny oraz zawodnika lub pozycję w jej składzie. Nagłówki sezonu, drużyny i rozgrywek sterują sortowaniem; domyślnie najnowszy sezon jest pierwszy.
 
-## Dane wejściowe
+Przycisk „Szczegóły” otwiera `GET /administracja/sklady/<id_zespol_sezon>` w nowej karcie. Dwuklik lub Enter na wierszu pobiera tę samą kartę do modalu. Kliknięcie przycisku nie uruchamia modalu.
 
-Nieustalone. `public.sklady` to skład zespołu w sezonie z pozycją i migawką zawodnika — "nie jest to lista występów meczowych" (patrz PUBLIC_SCHEMA.md, opis tabeli). Rozróżnienie od `mecze_zawodnicy` (występy meczowe) trzeba jasno pokazać w interfejsie, żeby nie sugerować czegoś innego niż dane zawierają.
+## Dane i powiązania
 
-## Powiązania
-
-Dziedziczyłby `base.html`. Model `sklady`/`sklady_wersje` jeszcze nie istnieje w `infrastructure/database/models/`. Pozycja menu w `interface/navigation.py` (`SIDEBAR`, grupa "Dane", klucz `sklady`) ma obecnie `punkt_koncowy=None`.
-
-## Gdzie wprowadzać zmiany
-
-Nie dotyczy — brak implementacji.
+`SkladListView` korzysta z `KlasyfikacjaService` i `KlasyfikacjaReadRepository`. Rozgrywki są pobierane przez `zespoly_rozgrywki` w kontekście tego samego zespołu i sezonu. Zawodnicy są pobierani dopiero w szczegółach, bez interpretowania zgłoszenia jako występu meczowego.
 
 ## Sprawdzenie zmiany
 
-Nie dotyczy — brak implementacji.
-
-## Stan implementacji
-
-Nie zaimplementowano. Nie ma przypisanego etapu w [IMPLEMENTATION_PLAN](../../../../../../docs/IMPLEMENTATION_PLAN.md); prawdopodobnie razem z Zawodnicy (etap 7) ze względu na wspólne tabele źródłowe.
+Testy tras, listy rozgrywek i szczegółów są w `tests/interface/test_classifications.py`. Interakcję zapewnia `static/js/classification_details.js`.
 
 ## Układ tekstowy i mapa zmian
 
-Stan: **plan — brak odpowiadającego HTML**. Poniżej tekstowa mapa zakresu z dotychczasowej notatki, nie zatwierdzony projekt rozmieszczenia pól.
-
 ```text
-[planowana wspólna rama: base.html]
-+------------------------------------------------------------+
-| Składy
-| [miejsce na skład zespołu w sezonie i jego wersje]
-| [filtry / kolumny / akcje: nieustalone]
-+------------------------------------------------------------+
-[planowana stopka wspólnego układu]
+[base.html: nawigacja]
+Składy
+[szukaj] [sezon] [rozgrywki] [Filtruj] [Wyczyść]
++----------------------------------------------------------------+
+| Sezon ↕ | Drużyna ↕ | Rozgrywki: A, B, C ↕ | Szczegóły       |
++----------------------------------------------------------------+
+[paginacja]
+[dwuklik/Enter: modal Szczegóły składu / ×]
 ```
 
-Skład sezonowy i występy zawodników w konkretnym meczu to odrębne dane; przyszły opis musi je rozróżniać.
-
-Układ mobilny, dokładne etykiety i selektory nie są jeszcze ustalone. Po powstaniu HTML zastąp ten schemat rzeczywistym rozmieszczeniem, opisz warunki widoczności oraz dodaj mapę konkretnych pól i przycisków.
-
-### Mapa zmian
-
-| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
-| --- | --- | --- |
-| Zakres i przyszły układ | [list.md](list.md) | Najpierw uzupełnij ten opis; planowany plik `list.html` jeszcze nie istnieje. |
-| Wspólna rama strony | [base.md](../../base.md) | Opis nagłówka, menu, sidebara, miejsca treści i stopki; sposób użycia dla tego ekranu potwierdź przy implementacji. |
-| Pozycja nawigacji | [navigation.py](../../../navigation.py) | Odpowiednia pozycja menu pozostaje bez własnego widoku. Dla szczegółów meczu osobnej pozycji menu nie ma. |
+| Element | Plik / dane |
+| --- | --- |
+| Nagłówek, filtry, tabela i modal | `list.html`, `KlasyfikacjaFilterForm`, `[data-detail-*]` |
+| Dane listy | `SkladListView` → `KlasyfikacjaService` → `pobierz_sklady` |
+| Lista rozgrywek | `zespoly_rozgrywki` + `rozgrywki`, pole `Sklad.rozgrywki` |
+| Szczegóły | [detail.md](detail.md), `administracja.szczegoly_skladu` |
+| Dwuklik i Enter | `static/js/classification_details.js`, `SzczegolyKlasyfikacjiController` |
+| Paginacja | `partials/pagination.html`, `StronaKlasyfikacji` |

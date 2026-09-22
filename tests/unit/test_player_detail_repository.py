@@ -129,3 +129,37 @@ def test_pusta_strona_nie_pobiera_wpisow() -> None:
     )
     assert wynik.pozycje == [] and wynik.strona == 1
     sesja.scalars.assert_not_called()
+
+
+def test_analityka_agreguje_do_jednego_wiersza_na_mecz() -> None:
+    sesja = Mock(spec=Session)
+    sesja.execute.return_value = [
+        (101, datetime(2026, 9, 20), "2026/2027", "Liga", 7, 2, 3, 1, 0, 0, "dom", 1)
+    ]
+    wynik = SzczegolyZawodnikaSQLAlchemyRepository(sesja).pobierz_analityke(
+        7, FiltryMeczowZawodnika(id_sezon=195, rozgrywki="Liga", przeciwnik="Rywal")
+    )
+    assert len(wynik) == 1
+    assert wynik[0].id_mecz == 101 and wynik[0].bramki == 7
+    assert wynik[0].miejsce == "dom"
+    zapytanie = sesja.execute.call_args.args[0].compile(dialect=postgresql.dialect())
+    sql = str(zapytanie)
+    assert "GROUP BY public.mecze.id" in sql
+    assert "sum(public.mecze_zawodnicy.bramki)" in sql
+    assert "public.mecze.id_sezon" in sql and "public.rozgrywki.nazwa" in sql
+    assert "public.mecze.id_zespol_gosc IN" in sql
+    sesja.commit.assert_not_called()
+    sesja.flush.assert_not_called()
+
+
+def test_analityka_miejsce_jest_none_dla_niejednoznacznych_stron() -> None:
+    sesja = Mock(spec=Session)
+    sesja.execute.return_value = [
+        (101, datetime(2026, 9, 20), "2026/2027", "Liga", 7, 2, 3, 1, 0, 0, "wyjazd", 2),
+        (102, datetime(2026, 9, 21), "2026/2027", "Liga", 3, None, None, 0, 0, 0, "wyjazd", 1),
+    ]
+    wynik = SzczegolyZawodnikaSQLAlchemyRepository(sesja).pobierz_analityke(
+        7, FiltryMeczowZawodnika()
+    )
+    assert wynik[0].miejsce is None
+    assert wynik[1].miejsce == "wyjazd"

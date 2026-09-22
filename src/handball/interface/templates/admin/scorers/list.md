@@ -1,55 +1,35 @@
-# Strzelcy
+﻿# Strzelcy
 
-Status: projekt szablonu. Katalog `scorers/` i ten plik nie mają jeszcze odpowiadającego HTML ani żadnego kodu. Wzorzec: prototyp v6 `scorers.html` — placeholder ("Przykładowa strona administracyjna"), bez własnego układu poza wspólnym `base.html`.
-
-Docelowy szablon względem katalogu szablony: `admin/scorers/list.html` (nazwa robocza).
+Status: zaimplementowano.
 
 ## Przeznaczenie
 
-Pozycja "Strzelcy" w sidebarze (grupa "Dane"). Docelowo klasyfikacja strzelców z `public.strzelcy` — patrz [database/README](../../../../../../docs/database/README.md).
+Widok `GET /administracja/strzelcy` pokazuje źródłową klasyfikację strzelców z `public.strzelcy`. Brak danych pozostaje odróżniony od wartości zero.
 
-## Dane wejściowe
+## Dane i zachowanie
 
-Nieustalone. Prawdopodobnie ranking zawodników po liczbie bramek w wybranym sezonie/rozgrywkach. Podobna uwaga jak przy Zawodnikach: rozróżnić kompletność danych źródłowych od realnej liczby bramek (patrz [DATA.md](../../../../../../docs/DATA.md)).
-
-## Powiązania
-
-Dziedziczyłby `base.html`. Naturalnie powiązane z ekranem Zawodnicy (`admin/players/list.md`) — może współdzielić część logiki agregacji bramek. Model `strzelcy` jeszcze nie istnieje w `infrastructure/database/models/`. Pozycja menu w `interface/navigation.py` (`SIDEBAR`, grupa "Dane", klucz `strzelcy`) ma obecnie `punkt_koncowy=None`.
-
-## Gdzie wprowadzać zmiany
-
-Nie dotyczy — brak implementacji.
+`StrzelecListView` korzysta z `KlasyfikacjaService` i `KlasyfikacjaReadRepository`. Dostępne są wyszukiwanie po zawodniku, drużynie lub rozgrywkach, filtry sezonu i rozgrywek, sortowanie oraz paginacja. Widok prezentuje miejsce, mecze, bramki, średnią, rzuty karne i kary dwuminutowe. Nazwisko prowadzi do szczegółów zawodnika.
 
 ## Sprawdzenie zmiany
 
-Nie dotyczy — brak implementacji.
-
-## Stan implementacji
-
-Nie zaimplementowano. Nie ma przypisanego etapu w [IMPLEMENTATION_PLAN](../../../../../../docs/IMPLEMENTATION_PLAN.md); rozważyć razem z Zawodnicy (etap 7).
+Testy interfejsu są w `tests/interface/test_classifications.py`. Kontrole jakości obejmują Ruff, mypy i testy tras.
 
 ## Układ tekstowy i mapa zmian
 
-Stan: **plan — brak odpowiadającego HTML**. Poniżej tekstowa mapa zakresu z dotychczasowej notatki, nie zatwierdzony projekt rozmieszczenia pól.
-
 ```text
-[planowana wspólna rama: base.html]
-+------------------------------------------------------------+
-| Strzelcy
-| [miejsce na klasyfikację strzelców]
-| [filtry / kolumny / zakres danych: nieustalone]
-+------------------------------------------------------------+
-[planowana stopka wspólnego układu]
+[base.html: nawigacja]
+Strzelcy
+[szukaj] [sezon] [rozgrywki] [Filtruj] [Wyczyść]
++----------------------------------------------------------------+
+| M. | Zawodnik | Drużyna | Sezon | Rozgrywki | Mecze | Bramki |
+| Śr./mecz | Karne | 2 min                                      |
++----------------------------------------------------------------+
+[uwaga o brakach danych] [paginacja]
 ```
 
-Przy projektowaniu trzeba odróżnić brak danych od zerowej liczby bramek.
-
-Układ mobilny, dokładne etykiety i selektory nie są jeszcze ustalone. Po powstaniu HTML zastąp ten schemat rzeczywistym rozmieszczeniem, opisz warunki widoczności oraz dodaj mapę konkretnych pól i przycisków.
-
-### Mapa zmian
-
-| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
-| --- | --- | --- |
-| Zakres i przyszły układ | [list.md](list.md) | Najpierw uzupełnij ten opis; planowany plik `list.html` jeszcze nie istnieje. |
-| Wspólna rama strony | [base.md](../../base.md) | Opis nagłówka, menu, sidebara, miejsca treści i stopki; sposób użycia dla tego ekranu potwierdź przy implementacji. |
-| Pozycja nawigacji | [navigation.py](../../../navigation.py) | Odpowiednia pozycja menu pozostaje bez własnego widoku. Dla szczegółów meczu osobnej pozycji menu nie ma. |
+| Element | Plik / dane |
+| --- | --- |
+| Nagłówek, filtry i tabela | `list.html`, `KlasyfikacjaFilterForm` |
+| Dane | `StrzelecListView` → `KlasyfikacjaService` → `KlasyfikacjaSQLAlchemyRepository.pobierz_strzelcow` |
+| Menu | `interface/navigation.py`, klucz `strzelcy` |
+| Paginacja | `partials/pagination.html`, `StronaKlasyfikacji` |

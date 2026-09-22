@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block tytul %}Szczegóły składu — Handball DataScience{% endblock %}
+{% block tresc %}
+<article data-classification-detail>
+<section class="pagehead"><div class="crumb">Start › Dane › Składy › Szczegóły</div><h1>{{ szczegoly.sklad.druzyna or 'Skład' }}</h1><p>{{ szczegoly.sklad.sezon }} · {{ szczegoly.sklad.rozgrywki or 'Brak przypisanych rozgrywek' }}</p></section>
+<div class="toolbar" data-detail-navigation><a class="btn secondary small" href="{{ url_for('administracja.lista_skladow') }}">Powrót do listy</a></div>
+<section class="panel"><div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Pozycja</th><th>Nr</th><th>Zawodnik</th><th>Wzrost</th><th>Waga</th><th>Akcje</th></tr></thead><tbody>{% for pozycja in szczegoly.zawodnicy %}<tr class="roster-player"{% if pozycja.kolor_pozycji is not none %} style="--position-hue: {{ pozycja.kolor_pozycji }}"{% endif %}><td>{{ pozycja.pozycja or '—' }}</td><td>{{ pozycja.nr_koszulki if pozycja.nr_koszulki is not none else '—' }}</td><td><b>{{ pozycja.zawodnik or '—' }}</b></td><td>{{ pozycja.wzrost if pozycja.wzrost is not none else '—' }}</td><td>{{ pozycja.waga if pozycja.waga is not none else '—' }}</td><td><a class="icon-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=pozycja.id_zawodnik) }}" target="_blank" rel="noopener">Szczegóły zawodnika</a></td></tr>{% else %}<tr><td colspan="6" class="note">Skład nie zawiera zawodników.</td></tr>{% endfor %}</tbody></table></div><p class="roster-legend">Skład pogrupowany według pozycji; kolory odpowiadają oznaczeniom w składach meczowych. Zgłoszenie sezonowe nie oznacza występu zawodnika w meczu.</p></div></section>
+</article>
+{% endblock %}

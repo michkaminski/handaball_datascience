@@ -36,6 +36,7 @@ Ostatnia komenda sprawdza logikę i widoki bez bazy. Testy w `tests/integration`
 | [CODING_STANDARDS](docs/CODING_STANDARDS.md) | Obiektowy Python, SOLID, typowanie i kryteria review |
 | [IMPORTS](docs/IMPORTS.md) | Aktualizacja ZPRP krok po kroku, tekstowy UML, statusy i zapis danych |
 | [DATA](docs/DATA.md) | Źródła i pułapki interpretacji danych |
+| [PLAYER_DATA_SCIENCE](docs/PLAYER_DATA_SCIENCE.md) | Projekt profesjonalnej analityki i wizualizacji karty zawodnika |
 | [Baza danych](docs/database/README.md) | Zweryfikowane połączenie, rzeczywisty schemat, relacje i historia zmian |
 | [AI_WORKFLOW](docs/AI_WORKFLOW.md) | Role agentów i dobór skillsów |
 | [DIRECTORY_STRUCTURE](docs/DIRECTORY_STRUCTURE.md) | Projekt katalogów, plików i odpowiedzialności warstw |

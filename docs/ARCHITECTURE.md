@@ -69,3 +69,9 @@ Repozytorium odczytu meczów zwraca typowane obiekty domeny z wartościami liczb
 `interface/presenters/match_presenter.py` przygotowuje listę i szczegóły do renderowania, używając reguł domenowych. `interface/view_models/matches.py` zawiera odrębne dataclass z tekstami i wyróżnieniami. `kolor_pozycji` i `najlepszy_strzelec` nie są już polami danych zawodnika w domenie. Presentery otrzymują zależności przez konstruktor; składa je `ZaleznosciZadaniaFactory`.
 
 Nie zmieniono zapytań, tras, normalizacji importu ani zasad prezentacji meczów. Repozytorium zwraca teraz strony źródłowe; regułę `zamiana` stosuje presenter przez `MeczPolicy` dokładnie raz. Typowane dane pozwalają innym odbiorcom korzystać z liczb i dat bez parsowania tekstów ekranu. Import pozostaje osobną ścieżką. Aktualne diagramy: [UML](UML.md).
+
+## Interaktywne wykresy — 2026-09-22
+
+Standardem interaktywnych wykresów jest Apache ECharts 6.x dostarczany lokalnie z aplikacją na licencji Apache-2.0. Produkcja nie zależy od CDN. Domyślnie używamy SVG; Canvas wymaga potrzeby wynikającej z liczby elementów lub pomiaru wydajności. Jeden współdzielony moduł ma utrzymywać motyw, format tooltipów, animacje i zachowanie responsywne.
+
+Repozytoria zwracają typowane dane i agregują fakty do wymaganej jednostki analizy. Serwisy Pythona definiują statystyki, mianowniki i obsługę braków. Presenter tworzy gotowy model JSON, a ECharts wyłącznie go wizualizuje. Każdy wykres ma opis ARIA i tabelaryczny lub tekstowy odpowiednik; animacje respektują `prefers-reduced-motion`.

@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import replace
 from datetime import date, datetime
 from decimal import Decimal
@@ -5,6 +6,7 @@ from decimal import Decimal
 from handball.domain.errors import NieZnalezionoZawodnika
 from handball.domain.matches import DaneMeczu, PozycjaListyMeczow, ZawodnikMeczu
 from handball.domain.player_details import (
+    AnalitykaMeczuZawodnika,
     DaneSezonoweZawodnika,
     FiltryMeczowZawodnika,
     MeczZawodnika,
@@ -117,3 +119,56 @@ class SzczegolyZawodnikaInMemoryRepository:
             strona,
             filtry.rozmiar_strony,
         )
+
+    def pobierz_analityke(
+        self, id_zawodnik: int, filtry: FiltryMeczowZawodnika
+    ) -> tuple[AnalitykaMeczuZawodnika, ...]:
+        if id_zawodnik != self.szczegoly.id_zawodnik:
+            raise NieZnalezionoZawodnika(id_zawodnik)
+        mecze = [
+            mecz
+            for mecz in self.mecze
+            if (filtry.id_sezon is None or filtry.id_sezon == 195)
+            and (not filtry.rozgrywki or mecz.mecz.rozgrywki == filtry.rozgrywki)
+            and (
+                not filtry.przeciwnik
+                or filtry.przeciwnik.casefold() in (mecz.mecz.gosc or "").casefold()
+            )
+        ]
+        return tuple(
+            AnalitykaMeczuZawodnika(
+                id_mecz=mecz.mecz.id_mecz,
+                termin=mecz.mecz.termin,
+                sezon=mecz.mecz.sezon or "—",
+                rozgrywki=mecz.mecz.rozgrywki or "—",
+                bramki=self._suma(wpis.statystyki.bramki for wpis in mecz.wpisy),
+                karne_bramki=self._suma(wpis.statystyki.karne_bramki for wpis in mecz.wpisy),
+                karne_liczba=self._suma(wpis.statystyki.karne_liczba for wpis in mecz.wpisy),
+                dwie_minuty=self._suma(wpis.statystyki.dwie_minuty for wpis in mecz.wpisy),
+                upomnienia=self._suma(
+                    int(wpis.statystyki.upomnienie)
+                    if wpis.statystyki.upomnienie is not None
+                    else None
+                    for wpis in mecz.wpisy
+                ),
+                dyskwalifikacje=self._suma(
+                    int(wpis.statystyki.dyskwalifikacja)
+                    if wpis.statystyki.dyskwalifikacja is not None
+                    else None
+                    for wpis in mecz.wpisy
+                ),
+                miejsce=self._miejsce(mecz.wpisy),
+            )
+            for mecz in mecze
+        )
+
+    @staticmethod
+    def _suma(wartosci: Iterable[int | None]) -> int | None:
+        znane = [wartosc for wartosc in wartosci if wartosc is not None]
+        return sum(znane) if znane else None
+
+    @staticmethod
+    def _miejsce(wpisy: tuple[WpisMeczowyZawodnika, ...]) -> str | None:
+        mapa = {"gosp": "dom", "gosc": "wyjazd"}
+        miejsca = {mapa[wpis.strona] for wpis in wpisy if wpis.strona in mapa}
+        return miejsca.pop() if len(miejsca) == 1 else None

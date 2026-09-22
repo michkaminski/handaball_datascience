@@ -6,6 +6,13 @@ from handball.interface.admin.views.catalog_views import (
     SedziaListView,
     SezonListView,
 )
+from handball.interface.admin.views.classification_views import (
+    SkladListView,
+    SkladSzczegolyView,
+    StrzelecListView,
+    TabelaListView,
+    TabelaSzczegolyView,
+)
 from handball.interface.admin.views.match_views import MeczListView, MeczSzczegolyView
 from handball.interface.admin.views.player_detail_views import ZawodnikSzczegolyView
 from handball.interface.admin.views.player_views import ZawodnikListView
@@ -60,5 +67,23 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/sedziowie/<int:id_sedzia>",
         view_func=SedziaSzczegolyView.as_view("szczegoly_sedziego", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/sklady", view_func=SkladListView.as_view("lista_skladow", fabryka_zaleznosci)
+    )
+    blueprint.add_url_rule(
+        "/sklady/<int:id_zespol_sezon>",
+        view_func=SkladSzczegolyView.as_view("szczegoly_skladu", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/strzelcy",
+        view_func=StrzelecListView.as_view("lista_strzelcow", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/tabele", view_func=TabelaListView.as_view("lista_tabel", fabryka_zaleznosci)
+    )
+    blueprint.add_url_rule(
+        "/tabele/<int:id_tabela_grupa>",
+        view_func=TabelaSzczegolyView.as_view("szczegoly_tabeli", fabryka_zaleznosci),
     )
     return blueprint

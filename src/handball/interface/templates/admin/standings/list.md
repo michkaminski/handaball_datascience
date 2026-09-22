@@ -1,55 +1,40 @@
 # Tabele
 
-Status: projekt szablonu. Katalog `standings/` i ten plik nie mają jeszcze odpowiadającego HTML ani żadnego kodu. Wzorzec: prototyp v6 `standings.html` — placeholder ("Przykładowa strona administracyjna"), bez własnego układu poza wspólnym `base.html`.
+Status: zaimplementowano.
 
-Docelowy szablon względem katalogu szablony: `admin/standings/list.html` (nazwa robocza).
+## Przeznaczenie i zachowanie
 
-## Przeznaczenie
+Widok `GET /administracja/tabele` pokazuje po jednym wierszu dla rekordu `public.tabele_grupy`, pogrupowanego przez sezon, rozgrywki, tabelę i grupę. Filtry sezonu i rozgrywek oraz wyszukiwanie działają przed paginacją. Nagłówki czterech kolumn sterują sortowaniem, domyślnie od najnowszego sezonu.
 
-Pozycja "Tabele" w sidebarze (grupa "Dane"). Docelowo tabela klasyfikacji rozgrywek z `public.tabele`, `public.tabele_grupy`, `public.tabele_wiersze` — patrz [database/README](../../../../../../docs/database/README.md).
+Przycisk „Szczegóły” otwiera `GET /administracja/tabele/<id_tabela_grupa>` w nowej karcie. Dwuklik lub Enter na wierszu pobiera tę samą kartę do modalu. Szczegóły obejmują wyłącznie wybraną grupę. Kliknięcie przycisku nie otwiera dodatkowo modalu. Brak wyników jest osobnym wierszem tabeli.
 
-## Dane wejściowe
+## Dane i powiązania
 
-Nieustalone. Prawdopodobnie klasyfikacja dla wybranego sezonu/rozgrywek/grupy, z pozycją, punktami, bilansem bramek. Zasady punktacji do potwierdzenia w danych, nie do zgadnięcia z nazw rozgrywek (patrz [DATA.md](../../../../../../docs/DATA.md)).
+`TabelaListView` korzysta z `KlasyfikacjaService` i `KlasyfikacjaReadRepository`. Lista odczytuje `tabele_grupy`, `tabele`, `rozgrywki` i `sezony`; pozycje drużyn są pobierane dopiero przez szczegóły. Paginacja dotyczy grup tabel, nie wierszy klasyfikacji.
 
-## Powiązania
-
-Dziedziczyłby `base.html`. Wspomniane pośrednio w [IMPLEMENTATION_PLAN](../../../../../../docs/IMPLEMENTATION_PLAN.md) (etap 7: "standings.py"). Model `tabele` jeszcze nie istnieje w `infrastructure/database/models/`. Pozycja menu w `interface/navigation.py` (`SIDEBAR`, grupa "Dane", klucz `tabele`) ma obecnie `punkt_koncowy=None`.
-
-## Gdzie wprowadzać zmiany
-
-Nie dotyczy — brak implementacji.
+Obsługę modalu zapewnia `static/js/classification_details.js`. Wygląd tabeli, dialogu i klikalnego wiersza pochodzi z `static/css/admin.css`.
 
 ## Sprawdzenie zmiany
 
-Nie dotyczy — brak implementacji.
-
-## Stan implementacji
-
-Nie zaimplementowano. Planowane na etap 7 (jako `standings.py`).
+Testy tras, grupowania kontraktu i szczegółów są w `tests/interface/test_classifications.py`. Interakcja ma zachowanie zgodne z listami meczów i zawodników: dwuklik, Enter, Escape, przywrócenie fokusu oraz zapasowy link nowej karty.
 
 ## Układ tekstowy i mapa zmian
 
-Stan: **plan — brak odpowiadającego HTML**. Poniżej tekstowa mapa zakresu z dotychczasowej notatki, nie zatwierdzony projekt rozmieszczenia pól.
-
 ```text
-[planowana wspólna rama: base.html]
-+------------------------------------------------------------+
-| Tabele
-| [miejsce na klasyfikację rozgrywek]
-| [wybór kontekstu / kolumny / punktacja: nieustalone]
-+------------------------------------------------------------+
-[planowana stopka wspólnego układu]
+[base.html: nawigacja]
+Tabele
+[szukaj] [sezon] [rozgrywki] [Filtruj] [Wyczyść]
++-----------------------------------------------------------+
+| Sezon ↕ | Rozgrywki ↕ | Tabela ↕ | Grupa ↕ | Szczegóły |
++-----------------------------------------------------------+
+[paginacja]
+[dwuklik/Enter: modal Szczegóły tabeli / ×]
 ```
 
-Punktacji nie należy wyprowadzać z samej nazwy rozgrywek. Układ i interpretacja danych wymagają potwierdzenia.
-
-Układ mobilny, dokładne etykiety i selektory nie są jeszcze ustalone. Po powstaniu HTML zastąp ten schemat rzeczywistym rozmieszczeniem, opisz warunki widoczności oraz dodaj mapę konkretnych pól i przycisków.
-
-### Mapa zmian
-
-| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
-| --- | --- | --- |
-| Zakres i przyszły układ | [list.md](list.md) | Najpierw uzupełnij ten opis; planowany plik `list.html` jeszcze nie istnieje. |
-| Wspólna rama strony | [base.md](../../base.md) | Opis nagłówka, menu, sidebara, miejsca treści i stopki; sposób użycia dla tego ekranu potwierdź przy implementacji. |
-| Pozycja nawigacji | [navigation.py](../../../navigation.py) | Odpowiednia pozycja menu pozostaje bez własnego widoku. Dla szczegółów meczu osobnej pozycji menu nie ma. |
+| Element | Plik / dane |
+| --- | --- |
+| Nagłówek, filtry, tabela i modal | `list.html`, `KlasyfikacjaFilterForm`, `[data-detail-*]` |
+| Dane listy | `TabelaListView` → `KlasyfikacjaService` → `pobierz_tabele` |
+| Szczegóły | [detail.md](detail.md), `administracja.szczegoly_tabeli` |
+| Dwuklik i Enter | `static/js/classification_details.js`, `SzczegolyKlasyfikacjiController` |
+| Paginacja | `partials/pagination.html`, `StronaKlasyfikacji` |

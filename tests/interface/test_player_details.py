@@ -59,6 +59,36 @@ def test_karta_pokazuje_historie_bez_nadpisywania_danych() -> None:
     assert "Wyniki 1–20 z 23" in tresc
 
 
+def test_karta_ma_dodatkowe_podsumowanie_analityczne() -> None:
+    klient = aplikacja_z_karta(SzczegolyZawodnikaInMemoryRepository()).test_client()
+    odpowiedz = klient.get("/administracja/zawodnicy/7?zakladka=podsumowanie")
+    tresc = odpowiedz.get_data(as_text=True)
+    assert odpowiedz.status_code == 200
+    assert 'data-active-tab="podsumowanie"' in tresc
+    assert "Podsumowanie analityczne" in tresc
+    assert "Mecze z wpisem" in tresc and ">23<" in tresc
+    assert "Pokrycie danych o bramkach" in tresc and "23/23" in tresc
+    assert "data-player-trend-wszystkie" in tresc
+    assert "data-player-trend-dom" in tresc and "data-player-trend-wyjazd" in tresc
+    assert "data-player-distribution" in tresc
+    assert "wszystkie" in tresc.lower()
+    assert "U siebie" in tresc and "Na wyjeździe" in tresc
+    assert "vendor/echarts/echarts.min.js" in tresc
+
+
+def test_karta_ma_zakladke_formy_i_regularnosci() -> None:
+    klient = aplikacja_z_karta(SzczegolyZawodnikaInMemoryRepository()).test_client()
+    odpowiedz = klient.get("/administracja/zawodnicy/7?zakladka=forma")
+    tresc = odpowiedz.get_data(as_text=True)
+    assert odpowiedz.status_code == 200
+    assert 'data-active-tab="forma"' in tresc
+    assert "Forma i regularność" in tresc
+    assert "Bramki i karne" not in tresc and "Jakość danych" not in tresc
+    assert "data-player-form-dom" in tresc and "data-player-form-wyjazd" in tresc
+    assert "data-player-boxplot" in tresc
+    assert "Współczynnik zmienności" in tresc and "Średnia ucięta 10%" in tresc
+
+
 def test_paginacja_i_filtry_meczow_zachowuja_zawodnika_i_zakladke() -> None:
     repo = SzczegolyZawodnikaInMemoryRepository()
     klient = aplikacja_z_karta(repo).test_client()

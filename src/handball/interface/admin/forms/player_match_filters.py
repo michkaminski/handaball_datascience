@@ -12,7 +12,13 @@ class MeczeZawodnikaFilterForm(Form):
     rozmiar_strony = IntegerField(default=20, validators=[validators.NumberRange(min=1, max=100)])
     sortowanie = SelectField(choices=[("data", "data"), ("-data", "-data")], default="-data")
     zakladka = SelectField(
-        choices=[("profil", "Profil"), ("sezony", "Sezony i drużyny"), ("mecze", "Mecze")],
+        choices=[
+            ("profil", "Profil"),
+            ("sezony", "Sezony i drużyny"),
+            ("mecze", "Mecze"),
+            ("podsumowanie", "Podsumowanie"),
+            ("forma", "Forma i regularność"),
+        ],
         default="profil",
     )
 

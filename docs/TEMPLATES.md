@@ -55,9 +55,9 @@ Sidebar pokazuje pełne menu prototypu v6. Tabela rozróżnia działające widok
 | Rozgrywki — wdrożona lista odczytu | competitions.html (placeholder) | [admin/competitions/list.md](../src/handball/interface/templates/admin/competitions/list.md) |
 | Drużyny — wdrożona lista odczytu | teams.html (placeholder) | [admin/teams/list.md](../src/handball/interface/templates/admin/teams/list.md) |
 | Zawodnicy — wdrożona lista odczytu | players.html (rzeczywista treść) | [admin/players/list.md](../src/handball/interface/templates/admin/players/list.md) |
-| Składy | squads.html (placeholder) | [admin/rosters/list.md](../src/handball/interface/templates/admin/rosters/list.md) |
-| Tabele | standings.html (placeholder) | [admin/standings/list.md](../src/handball/interface/templates/admin/standings/list.md) |
-| Strzelcy | scorers.html (placeholder) | [admin/scorers/list.md](../src/handball/interface/templates/admin/scorers/list.md) |
+| Składy — wdrożona lista odczytu | squads.html (placeholder) | [admin/rosters/list.md](../src/handball/interface/templates/admin/rosters/list.md) |
+| Tabele — wdrożona lista odczytu | standings.html (placeholder) | [admin/standings/list.md](../src/handball/interface/templates/admin/standings/list.md) |
+| Strzelcy — wdrożona lista odczytu | scorers.html (placeholder) | [admin/scorers/list.md](../src/handball/interface/templates/admin/scorers/list.md) |
 | Hale | halls.html (placeholder, rozwinięty w aplikacji) | [lista](../src/handball/interface/templates/admin/venues/list.md), [karta](../src/handball/interface/templates/admin/venues/detail.md) |
 | Sędziowie | referees.html (placeholder) | [lista](../src/handball/interface/templates/admin/referees/list.md), [szczegóły](../src/handball/interface/templates/admin/referees/detail.md) |
 | Import danych, Historia importów, Eksport danych | imports.html (placeholder, 1 strona dla 3 linków) | [admin/import/panel.md](../src/handball/interface/templates/admin/import/panel.md) |

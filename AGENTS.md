@@ -25,6 +25,16 @@ Wybrany rdzeń: Python 3.13, Flask 3.1, SQLAlchemy 2.0, Flask-SQLAlchemy 3.1 i p
 
 Modele ORM odwzorowują istniejącą bazę. Wybór SQLAlchemy nie upoważnia do create_all(), drop_all(), migracji ani zapisów.
 
+## Standard wykresów
+
+- Do wszystkich nowych interaktywnych wykresów używaj Apache ECharts 6.x na licencji Apache-2.0. Nie wprowadzaj równolegle Chart.js, Plotly, D3 ani innej biblioteki wykresów bez jawnej decyzji architektonicznej.
+- Bibliotekę dostarczaj lokalnie z zasobów aplikacji, bez zależności produkcyjnej od CDN. Zachowaj wymagane informacje licencyjne i pliki NOTICE dystrybucji.
+- Statystyki, mediany, kwartyle, dominanty, percentyle i przedziały ufności obliczaj po stronie Pythona. ECharts odpowiada za prezentację gotowego, typowanego modelu danych, a nie za definicje miar domenowych.
+- Domyślnie używaj renderera SVG. Canvas wybieraj dla dużych heatmap, scatterów lub po potwierdzonym pomiarze wydajności.
+- Każdy wykres musi mieć polski opis ARIA oraz tabelaryczny albo tekstowy odpowiednik. Tooltip nie może być jedynym nośnikiem danych, a serie muszą dać się odróżnić także bez polegania wyłącznie na kolorze.
+- Animacje i efekty mają wspierać odczyt: płynne wejście, przejście po zmianie filtrów, podświetlenie aktywnego punktu i wygaszenie kontekstu. Bez ciągłego migania, automatycznego odtwarzania i dekoracyjnych efektów niezwiązanych z informacją. Respektuj `prefers-reduced-motion`.
+- Utrzymuj wspólny motyw, paletę, format tooltipów, czasy animacji i zachowanie responsywne w jednym module konfiguracyjnym. Nie definiuj ich osobno w każdym szablonie.
+
 ## Zasady pracy
 
 - Odpowiadaj po polsku. Pliki, katalogi, moduły i pakiety nazywaj po angielsku. Pojęcia domenowe w kodzie, metody, atrybuty i zmienne pozostają polskie, bez znaków diakrytycznych. W klasach stosuj angielską rolę techniczną po nazwie domenowej, np. MeczService, MeczRepository i MeczListView. Zachowuj rzeczywiste nazwy tabel i kolumn oraz oryginalne API bibliotek, np. MethodView, mapped_column, get() i create_app(). Szczegóły i zasady przejścia istniejącego kodu: [CODING_STANDARDS](docs/CODING_STANDARDS.md#język-i-nazewnictwo).

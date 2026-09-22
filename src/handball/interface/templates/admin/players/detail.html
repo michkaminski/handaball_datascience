@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block tytul %}{{ szczegoly.nazwa }} — Handball DataScience{% endblock %}
 {% block tresc %}
-<div data-player-detail data-active-tab="{{ aktywna_zakladka }}">
+<div data-player-detail data-active-tab="{{ aktywna_zakladka }}" data-echarts-url="{{ url_for('static', filename='vendor/echarts/echarts.min.js') }}" data-player-match-url="{{ url_for('administracja.szczegoly_meczu', id_mecz=0) }}">
 <section class="pagehead">
 <div class="crumb">Start › Dane › Zawodnicy › Szczegóły</div>
 <h1>{{ szczegoly.nazwa }}</h1><p>Karta zawodnika #{{ szczegoly.id_zawodnik }}</p>
 </section>
 <div class="toolbar" data-player-navigation><a class="btn secondary small" href="{{ url_for('administracja.lista_zawodnikow') }}">← Powrót do listy zawodników</a></div>
 <div class="match-tabs" role="tablist" aria-label="Szczegóły zawodnika" data-player-tabs hidden>
-{% for klucz, etykieta in [('profil', 'Profil'), ('sezony', 'Sezony i drużyny'), ('mecze', 'Mecze')] %}
+{% for klucz, etykieta in [('profil', 'Profil'), ('sezony', 'Sezony i drużyny'), ('mecze', 'Mecze'), ('podsumowanie', 'Podsumowanie'), ('forma', 'Forma i regularność')] %}
 <button type="button" role="tab" id="player-tab-{{ klucz }}" data-player-tab="{{ klucz }}" aria-controls="player-panel-{{ klucz }}" aria-selected="{{ 'true' if aktywna_zakladka == klucz else 'false' }}">{{ etykieta }}</button>
 {% endfor %}
 </div>
@@ -61,6 +61,64 @@
 {% else %}<tr><td colspan="9" class="note">Brak meczów zawodnika spełniających wybrane filtry.</td></tr>{% endfor %}
 </tbody></table></div>
 {% include "partials/pagination.html" %}
+</div></section>
+<section class="panel" id="player-panel-podsumowanie" data-player-panel="podsumowanie" aria-labelledby="player-tab-podsumowanie">
+<h2>Podsumowanie analityczne</h2>
+<form class="panel-body filters player-analytics-filters" method="get" action="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=szczegoly.id_zawodnik) }}">
+<input type="hidden" name="zakladka" value="podsumowanie"><input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}"><input type="hidden" name="rozmiar_strony" value="{{ filtry.rozmiar_strony }}">
+<label>Sezon{{ formularz.id_sezon() }}</label><label>Rozgrywki{{ formularz.rozgrywki() }}</label><label>Przeciwnik{{ formularz.przeciwnik(placeholder="nazwa drużyny...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj analizy</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=szczegoly.id_zawodnik, zakladka='podsumowanie') }}">Wyczyść filtry</a></div>
+</form>
+<div class="panel-body player-analytics">
+<p class="note">Mecze oznaczają różne spotkania z wpisem zawodnika. Średnia i rozkład obejmują tylko wpisy ze znaną liczbą bramek; braki nie są zerami.</p>
+<div class="player-kpi-grid">
+<div><span>Mecze z wpisem</span><b>{{ podsumowanie.liczba_meczow }}</b></div><div><span>Bramki</span><b>{{ podsumowanie.bramki }}</b></div><div><span>Średnia</span><b>{{ podsumowanie.srednia }}</b></div><div><span>Mediana</span><b>{{ podsumowanie.mediana }}</b></div><div><span>Dominanta</span><b>{{ podsumowanie.dominanta }}</b></div><div><span>Q1–Q3</span><b>{{ podsumowanie.kwartyle }}</b></div>
+<div><span>Mecze z bramką</span><b>{{ podsumowanie.mecze_z_bramka }}</b></div><div><span>Karne</span><b>{{ podsumowanie.karne }}</b></div><div><span>Skuteczność karnych</span><b>{{ podsumowanie.skutecznosc_karnych }}</b></div><div><span>Kary 2 min</span><b>{{ podsumowanie.dwie_minuty }}</b></div><div><span>Upomnienia</span><b>{{ podsumowanie.upomnienia }}</b></div><div><span>Dyskwalifikacje</span><b>{{ podsumowanie.dyskwalifikacje }}</b></div>
+</div>
+<div class="player-coverage"><span>Pokrycie danych o bramkach</span><b>{{ podsumowanie.pokrycie_bramek }}</b></div>
+{% if podsumowanie.punkty %}
+<div class="player-chart-grid stacked">
+<figure><figcaption>Forma mecz po meczu (wszystkie)</figcaption><div class="player-chart player-chart-wide" data-player-trend-wszystkie role="img" aria-label="Bramki zawodnika w kolejnych meczach"></div></figure>
+<figure><figcaption>Forma mecz po meczu — u siebie</figcaption><div class="player-chart player-chart-wide" data-player-trend-dom role="img" aria-label="Bramki zawodnika w kolejnych meczach rozgrywanych u siebie"></div></figure>
+<figure><figcaption>Forma mecz po meczu — na wyjeździe</figcaption><div class="player-chart player-chart-wide" data-player-trend-wyjazd role="img" aria-label="Bramki zawodnika w kolejnych meczach rozgrywanych na wyjeździe"></div></figure>
+<figure><figcaption>Rozkład bramek: wszystkie, u siebie i na wyjeździe</figcaption><div class="player-chart player-chart-wide" data-player-distribution role="img" aria-label="Liczba meczów według liczby zdobytych bramek: wszystkie, u siebie i na wyjeździe"></div></figure>
+</div>
+<details class="player-chart-data"><summary>Dane wykresów</summary><div class="table-wrap"><table><thead><tr><th>Data</th><th>Sezon</th><th>Rozgrywki</th><th>Miejsce</th><th>Bramki</th></tr></thead><tbody>{% for punkt in podsumowanie.punkty %}<tr><td>{{ punkt.etykieta }}</td><td>{{ punkt.sezon }}</td><td>{{ punkt.rozgrywki }}</td><td>{{ punkt.miejsce_etykieta }}</td><td>{{ punkt.bramki if punkt.bramki is not none else '—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+{% else %}<p class="notice">Brak meczów w wybranym zakresie analizy.</p>{% endif %}
+<script type="application/json" data-player-analytics-data>{{ {'punkty': podsumowanie.punkty, 'rozklad': podsumowanie.rozklad, 'mediana': podsumowanie.mediana_wartosc, 'mediana_dom': podsumowanie.mediana_dom_wartosc, 'mediana_wyjazd': podsumowanie.mediana_wyjazd_wartosc}|tojson }}</script>
+</div></section>
+<section class="panel" id="player-panel-forma" data-player-panel="forma" aria-labelledby="player-tab-forma">
+<h2>Forma i regularność</h2>
+<form class="panel-body filters player-analytics-filters" method="get" action="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=szczegoly.id_zawodnik) }}">
+<input type="hidden" name="zakladka" value="forma"><input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}"><input type="hidden" name="rozmiar_strony" value="{{ filtry.rozmiar_strony }}">
+<label>Sezon{{ formularz.id_sezon() }}</label><label>Rozgrywki{{ formularz.rozgrywki() }}</label><label>Przeciwnik{{ formularz.przeciwnik(placeholder="nazwa drużyny...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj analizy</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=szczegoly.id_zawodnik, zakladka='forma') }}">Wyczyść filtry</a></div>
+</form>
+<div class="panel-body player-analytics">
+<p class="note">Statystyki opisowe korzystają wyłącznie z meczów ze znaną liczbą bramek w wybranym zakresie; braki nie są zerami. Mecze z wpisem: {{ forma.liczba_meczow }}, ze znaną liczbą bramek: {{ forma.liczba_znanych }}.</p>
+<div class="player-kpi-grid">
+<div><span>Średnia</span><b>{{ forma.srednia }}</b></div><div><span>Mediana</span><b>{{ forma.mediana }}</b></div><div><span>Dominanta</span><b>{{ forma.dominanta }}</b></div>
+<div><span>Minimum</span><b>{{ forma.minimum }}</b></div><div><span>Maksimum</span><b>{{ forma.maksimum }}</b></div><div><span>Q1–Q3</span><b>{{ forma.kwartyle }}</b></div>
+<div><span>IQR</span><b>{{ forma.iqr }}</b></div><div><span>Odchylenie standardowe</span><b>{{ forma.odchylenie_standardowe }}</b></div><div><span>MAD</span><b>{{ forma.mad }}</b></div>
+<div><span>Współczynnik zmienności</span><b>{{ forma.wspolczynnik_zmiennosci }}</b></div><div><span>P10</span><b>{{ forma.percentyl_10 }}</b></div><div><span>P90</span><b>{{ forma.percentyl_90 }}</b></div>
+<div><span>Średnia ucięta 10%</span><b>{{ forma.srednia_ucieta }}</b></div><div><span>Udział 0 bramek</span><b>{{ forma.udzial_0_bramek }}</b></div><div><span>Udział 1–2 bramki</span><b>{{ forma.udzial_1_2_bramki }}</b></div>
+<div><span>Udział 3–5 bramek</span><b>{{ forma.udzial_3_5_bramek }}</b></div><div><span>Udział 6+ bramek</span><b>{{ forma.udzial_6_plus_bramek }}</b></div>
+</div>
+{% if forma.dom.punkty or forma.wyjazd.punkty %}
+{% if not forma.dom.wystarczajaco_na_trend_5 %}<p class="notice">U siebie: za mało meczów ze znaną liczbą bramek (mniej niż 5), aby pokazać wiarygodny trend pięciomeczowy.</p>{% endif %}
+{% if not forma.wyjazd.wystarczajaco_na_trend_5 %}<p class="notice">Na wyjeździe: za mało meczów ze znaną liczbą bramek (mniej niż 5), aby pokazać wiarygodny trend pięciomeczowy.</p>{% endif %}
+<div class="player-chart-grid stacked">
+<figure><figcaption>Przebieg formy u siebie: mediana i średnia krocząca (5 meczów){% if forma.dom.wystarczajaco_na_trend_10 %}, mediana krocząca (10 meczów){% endif %}</figcaption><div class="player-chart player-chart-wide" data-player-form-dom role="img" aria-label="Bramki zawodnika w kolejnych meczach u siebie z medianą i średnią kroczącą"></div></figure>
+<figure><figcaption>Przebieg formy na wyjeździe: mediana i średnia krocząca (5 meczów){% if forma.wyjazd.wystarczajaco_na_trend_10 %}, mediana krocząca (10 meczów){% endif %}</figcaption><div class="player-chart player-chart-wide" data-player-form-wyjazd role="img" aria-label="Bramki zawodnika w kolejnych meczach na wyjeździe z medianą i średnią kroczącą"></div></figure>
+<figure><figcaption>Regularność wyników według sezonu</figcaption><div class="player-chart player-chart-wide" data-player-boxplot role="img" aria-label="Rozstęp ćwiartkowy bramek na mecz według sezonu"></div></figure>
+</div>
+<details class="player-chart-data"><summary>Dane wykresu formy: u siebie</summary><div class="table-wrap"><table><thead><tr><th>Data</th><th>Sezon</th><th>Bramki</th><th>Mediana 5</th><th>Średnia 5</th><th>Mediana 10</th></tr></thead><tbody>{% for punkt in forma.dom.punkty %}<tr><td>{{ punkt.etykieta }}</td><td>{{ punkt.sezon }}</td><td>{{ punkt.bramki if punkt.bramki is not none else '—' }}</td><td>{{ '%.1f'|format(punkt.mediana_5) if punkt.mediana_5 is not none else '—' }}</td><td>{{ '%.1f'|format(punkt.srednia_5) if punkt.srednia_5 is not none else '—' }}</td><td>{{ '%.1f'|format(punkt.mediana_10) if punkt.mediana_10 is not none else '—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+<details class="player-chart-data"><summary>Dane wykresu formy: na wyjeździe</summary><div class="table-wrap"><table><thead><tr><th>Data</th><th>Sezon</th><th>Bramki</th><th>Mediana 5</th><th>Średnia 5</th><th>Mediana 10</th></tr></thead><tbody>{% for punkt in forma.wyjazd.punkty %}<tr><td>{{ punkt.etykieta }}</td><td>{{ punkt.sezon }}</td><td>{{ punkt.bramki if punkt.bramki is not none else '—' }}</td><td>{{ '%.1f'|format(punkt.mediana_5) if punkt.mediana_5 is not none else '—' }}</td><td>{{ '%.1f'|format(punkt.srednia_5) if punkt.srednia_5 is not none else '—' }}</td><td>{{ '%.1f'|format(punkt.mediana_10) if punkt.mediana_10 is not none else '—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+<details class="player-chart-data"><summary>Dane rozstępu sezonów</summary><div class="table-wrap"><table><thead><tr><th>Sezon</th><th>n</th><th>Mediana</th><th>Q1</th><th>Q3</th><th>Min</th><th>Maks</th><th>Odstające</th></tr></thead><tbody>{% for sezon in forma.sezony %}<tr><td>{{ sezon.sezon }}{% if sezon.mala_proba %} <span class="note">(mała próba)</span>{% endif %}</td><td>{{ sezon.n }}</td><td>{{ '%.1f'|format(sezon.mediana) }}</td><td>{{ '%.1f'|format(sezon.q1) }}</td><td>{{ '%.1f'|format(sezon.q3) }}</td><td>{{ sezon.minimum }}</td><td>{{ sezon.maksimum }}</td><td>{{ sezon.odstajace|join(', ') or '—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+<script type="application/json" data-player-forma-data>{{ {'dom': {'punkty': forma.dom.punkty}, 'wyjazd': {'punkty': forma.wyjazd.punkty}, 'sezony': forma.sezony}|tojson }}</script>
+{% else %}<p class="notice">Brak meczów w wybranym zakresie analizy.</p>{% endif %}
 </div></section>
 </div>
 <script src="{{ url_for('static', filename='js/player_details.js') }}" defer></script>

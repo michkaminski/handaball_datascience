@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, aliased
 from handball.domain.errors import BladOdczytuDanych, NieZnalezionoZawodnika
 from handball.domain.matches import DaneMeczu, PozycjaListyMeczow, ZawodnikMeczu
 from handball.domain.player_details import (
+    AnalitykaMeczuZawodnika,
     DaneSezonoweZawodnika,
     FiltryMeczowZawodnika,
     MeczZawodnika,
@@ -193,6 +194,58 @@ class SzczegolyZawodnikaSQLAlchemyRepository:
             return StronaMeczowZawodnika(pozycje, liczba, numer, filtry.rozmiar_strony)
         except SQLAlchemyError as wyjatek:
             raise BladOdczytuDanych("Nie udało się odczytać meczów zawodnika.") from wyjatek
+
+    def pobierz_analityke(
+        self, id_zawodnik: int, filtry: FiltryMeczowZawodnika
+    ) -> tuple[AnalitykaMeczuZawodnika, ...]:
+        try:
+            termin = func.coalesce(Mecz.data_faktyczna, Mecz.data_propozycji)
+            miejsce = case(
+                (MeczZawodnik.strona == "gosp", "dom"), (MeczZawodnik.strona == "gosc", "wyjazd")
+            )
+            zapytanie = (
+                select(
+                    Mecz.id,
+                    termin,
+                    Sezon.nazwa,
+                    Rozgrywki.nazwa,
+                    func.sum(MeczZawodnik.bramki),
+                    func.sum(MeczZawodnik.karne_bramki),
+                    func.sum(MeczZawodnik.karne_liczba),
+                    func.sum(MeczZawodnik.dwie_minuty),
+                    func.sum(func.cast(MeczZawodnik.upomnienie, Integer)),
+                    func.sum(func.cast(MeczZawodnik.dyskwalifikacja, Integer)),
+                    func.max(miejsce),
+                    func.count(func.distinct(miejsce)),
+                )
+                .join(Mecz, Mecz.id == MeczZawodnik.id_mecz)
+                .join(Sezon, Sezon.id == Mecz.id_sezon)
+                .join(Rozgrywki, Rozgrywki.id == Mecz.id_rozgrywki)
+                .where(MeczZawodnik.id_zawodnik == id_zawodnik)
+                .group_by(Mecz.id, termin, Sezon.nazwa, Rozgrywki.nazwa)
+                .order_by(termin.asc().nulls_last(), Mecz.id)
+            )
+            if filtry.id_sezon is not None:
+                zapytanie = zapytanie.where(Mecz.id_sezon == filtry.id_sezon)
+            if filtry.rozgrywki:
+                zapytanie = zapytanie.where(Rozgrywki.nazwa == filtry.rozgrywki)
+            if filtry.przeciwnik:
+                zespoly = select(ZespolSezon.id_zespol).where(
+                    ZespolSezon.nazwa.icontains(filtry.przeciwnik, autoescape=True)
+                )
+                zapytanie = zapytanie.where(
+                    or_(
+                        and_(MeczZawodnik.strona == "gosp", Mecz.id_zespol_gosc.in_(zespoly)),
+                        and_(MeczZawodnik.strona == "gosc", Mecz.id_zespol_gosp.in_(zespoly)),
+                    )
+                )
+            wynik = []
+            for *podstawowe, miejsce_wartosc, liczba_miejsc in self._sesja.execute(zapytanie):
+                podstawowe.append(miejsce_wartosc if liczba_miejsc == 1 else None)
+                wynik.append(AnalitykaMeczuZawodnika(*podstawowe))
+            return tuple(wynik)
+        except SQLAlchemyError as wyjatek:
+            raise BladOdczytuDanych("Nie udało się odczytać analityki zawodnika.") from wyjatek
 
     def _zapytanie_meczow(
         self, id_zawodnik: int, filtry: FiltryMeczowZawodnika

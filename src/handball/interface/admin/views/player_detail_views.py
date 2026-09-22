@@ -14,6 +14,7 @@ class ZawodnikSzczegolyView(MethodView):
 
     def get(self, id_zawodnik: int) -> str:
         serwis = self._fabryka.utworz_serwis_szczegolow_zawodnika()
+        analityka_serwis = self._fabryka.utworz_analityke_szczegolow_zawodnika()
         formularz = MeczeZawodnikaFilterForm(request.args)
         try:
             szczegoly = serwis.pobierz_szczegoly(id_zawodnik)
@@ -29,6 +30,8 @@ class ZawodnikSzczegolyView(MethodView):
             except ValueError as wyjatek:
                 abort(400, description=str(wyjatek))
             mecze = serwis.pobierz_mecze(id_zawodnik, filtry)
+            podsumowanie = analityka_serwis.pobierz_podsumowanie(id_zawodnik, filtry)
+            forma = analityka_serwis.pobierz_forme(id_zawodnik, filtry)
         except (NieZnalezionoZawodnika, BladOdczytuDanych) as wyjatek:
             obsluz_blad_domeny(wyjatek)
         zakladka = formularz.zakladka.data
@@ -39,6 +42,8 @@ class ZawodnikSzczegolyView(MethodView):
             sekcja_aktywna="zawodnicy",
             szczegoly=self._presenter.przygotuj_szczegoly(szczegoly),
             strona=self._presenter.przygotuj_mecze(mecze),
+            podsumowanie=self._presenter.przygotuj_podsumowanie(podsumowanie),
+            forma=self._presenter.przygotuj_forme(forma),
             filtry=filtry,
             formularz=formularz,
             aktywna_zakladka=zakladka,
