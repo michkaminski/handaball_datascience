@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block tytul %}Bramki zawodnika a poziom defensywy rywali — {{ analiza.nazwa_zawodnika }} — Handball DataScience{% endblock %}
+{% block tresc %}
+<div data-defense-report data-echarts-url="{{ url_for('static', filename='vendor/echarts/echarts.min.js') }}" data-player-match-url="{{ url_for('administracja.szczegoly_meczu', id_mecz=0) }}">
+<section class="pagehead">
+<div class="crumb">Start › Dane › Zawodnicy › Szczegóły › Bramki a defensywa rywali</div>
+<h1>Bramki zawodnika a poziom defensywy rywali — szczegóły analizy</h1>
+<p>{{ analiza.nazwa_zawodnika }} · {{ analiza.liczba_meczow }} analizowanych meczów · sezony: {{ analiza.zakres_sezonow }} · rozgrywki: {{ analiza.zakres_rozgrywek }} · filtry: {{ analiza.opis_filtrow }}</p>
+</section>
+<div class="toolbar"><a class="btn secondary small" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=analiza.id_zawodnik, zakladka='forma') }}#player-forma-defensywa">← Powrót do karty zawodnika</a></div>
+<form class="panel filters defense-filters" method="get" action="{{ url_for('administracja.defensywa_rywala_zawodnika', id_zawodnik=analiza.id_zawodnik) }}">
+<label>Sezon{{ formularz.id_sezon() }}</label><label>Rozgrywki{{ formularz.rozgrywki() }}</label><label>Miejsce{{ formularz.miejsce() }}</label><label>Przeciwnik{{ formularz.przeciwnik(placeholder="nazwa drużyny...") }}</label>
+<label>Ostatnie N sezonów{{ formularz.liczba_ostatnich_sezonow(placeholder="wszystkie") }}</label>
+<label class="defense-checkbox">{{ formularz.wszystkie_mecze() }} Wszystkie mecze (także bez pełnych danych)</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.defensywa_rywala_zawodnika', id_zawodnik=analiza.id_zawodnik) }}">Wyczyść filtry</a></div>
+</form>
+<nav class="panel defense-toc" aria-label="Spis treści analizy">
+<ol>
+<li><a href="#wynik">Wynik analizy</a></li>
+<li><a href="#wykres-glowny">Główny wykres</a></li>
+<li><a href="#dane-zrodlowe">Dane źródłowe</a></li>
+<li><a href="#jak-liczona">Jak liczona jest defensywa</a></li>
+<li><a href="#shrinkage">Shrinkage</a></li>
+<li><a href="#defense-factor">Defense Factor</a></li>
+<li><a href="#klasy-defensywy">Klasy defensywy</a></li>
+<li><a href="#statystyki-opisowe">Statystyki opisowe</a></li>
+<li><a href="#prawdopodobienstwa">Prawdopodobieństwa</a></li>
+<li><a href="#korelacja">Korelacja</a></li>
+<li><a href="#regresja">Regresja</a></li>
+<li><a href="#przyklad">Przykład jednego meczu</a></li>
+<li><a href="#interpretacja">Interpretacja matematyczna</a></li>
+<li><a href="#ograniczenia">Ograniczenia</a></li>
+</ol>
+</nav>
+
+<section class="panel" id="wynik"><h2>1. Wynik analizy</h2><div class="panel-body">
+<p class="note">Analiza sprawdza, jak zmieniała się liczba bramek zdobywanych przez zawodnika w zależności od jakości defensywy przeciwnika. Jakość defensywy nie jest określana przez nazwę klubu ani jego miejsce w tabeli — wynika z liczby bramek traconych przez rywala względem średniej ligowej, w sposób zgodny czasowo z każdym analizowanym meczem (dane sprzed meczu, bez data leakage).</p>
+{% if analiza.mala_proba_ostrzezenie %}<p class="notice">Mała próba ({{ analiza.liczba_z_defense_factor }} meczów z wyznaczonym Defense Factor) — interpretuj ostrożnie.</p>{% endif %}
+<p><b>{{ analiza.komentarz_automatyczny }}</b></p>
+</div></section>
+
+<section class="panel" id="wykres-glowny"><h2>2. Główny wykres</h2><div class="panel-body">
+<figure class="player-chart-single"><figcaption>Bramki zawodnika a poziom defensywy rywali</figcaption><div class="player-chart player-chart-wide" data-defense-klasy role="img" aria-label="Średnia liczba bramek zawodnika według pięciu klas jakości defensywy rywala"></div></figure>
+<script type="application/json" data-defense-klasy-data>{{ analiza.wykres_klas|tojson }}</script>
+</div></section>
+
+<section class="panel" id="dane-zrodlowe"><h2>3. Dane źródłowe</h2><div class="panel-body">
+<p class="note">Tabela meczów użytych w analizie. Kliknij nagłówek kolumny, aby posortować.</p>
+<div class="table-wrap"><table class="defense-table" data-defense-sortable>
+<thead><tr><th data-sort="data">Data</th><th data-sort="sezon">Sezon</th><th data-sort="rozgrywki">Rozgrywki</th><th data-sort="druzyna_zawodnika">Drużyna</th><th data-sort="przeciwnik">Przeciwnik</th><th data-sort="wynik">Wynik</th><th data-sort="bramki_zawodnika" data-sort-num>Gole</th><th data-sort="ga_team" data-sort-num>GA_team</th><th data-sort="ga_smoothed" data-sort-num>GA_smoothed</th><th data-sort="ga_league" data-sort-num>GA_league</th><th data-sort="defense_factor_wartosc" data-sort-num>Defense Factor</th><th data-sort="klasa">Klasa</th><th data-sort="n_rywala" data-sort-num>n rywala</th></tr></thead>
+<tbody>{% for m in analiza.mecze %}<tr><td>{{ m.data }}</td><td>{{ m.sezon }}</td><td>{{ m.rozgrywki }}</td><td>{{ m.druzyna_zawodnika }}</td><td>{{ m.przeciwnik }}</td><td>{{ m.wynik }}</td><td>{{ m.bramki_zawodnika if m.bramki_zawodnika is not none else '—' }}</td><td>{{ m.ga_team }}</td><td>{{ m.ga_smoothed }}</td><td>{{ m.ga_league }}</td><td>{{ m.defense_factor }}</td><td>{{ m.klasa }}</td><td>{{ m.n_rywala }}</td></tr>{% else %}<tr><td colspan="13" class="note">Brak meczów spełniających wybrane filtry.</td></tr>{% endfor %}</tbody>
+</table></div>
+</div></section>
+
+<section class="panel" id="jak-liczona"><h2>4. Jak liczona jest defensywa</h2><div class="panel-body">
+<p>Dla przeciwnika, przed danym meczem, liczymy średnią bramek traconych w jego wcześniejszych meczach tych samych rozgrywek:</p>
+<pre class="defense-formula">GA_team = SUMA(bramek straconych) / LICZBA(meczów)</pre>
+<p class="note">Przykład: rywal rozegrał wcześniej 10 meczów i stracił 310 bramek → GA_team = 310 / 10 = 31,0. Niższa wartość oznacza mocniejszą defensywę, wyższa — słabszą. Używane są wyłącznie mecze rozegrane <b>przed</b> analizowanym meczem — to zapobiega wyciekowi danych z przyszłości (data leakage).</p>
+</div></section>
+
+<section class="panel" id="shrinkage"><h2>5. Shrinkage</h2><div class="panel-body">
+<p>Na początku sezonu surowa średnia rywala opiera się na małej próbie, więc jest wygładzana w stronę średniej ligowej:</p>
+<pre class="defense-formula">GA_smoothed = (n × GA_team + k × GA_league) / (n + k)</pre>
+<p class="note">n — liczba wcześniejszych meczów rywala, k — siła wygładzania (obecnie k = {{ analiza.konfiguracja.k_shrinkage }}). Przykład z tymi samymi liczbami co w dokumentacji: n=2, GA_team=35, GA_league=30, k=5 → GA_smoothed = (2×35 + 5×30) / 7 ≈ 31,43. Przy małej liczbie meczów wynik jest przesuwany w kierunku średniej ligi, żeby uniknąć skrajnych ocen po jednym lub dwóch spotkaniach. Jeśli rywal nie rozegrał jeszcze żadnego meczu w tych rozgrywkach (n=0), GA_smoothed = GA_league, czyli Defense Factor = 1,00 (neutralny).</p>
+{% if analiza.poprzedni_sezon_uzyty %}<p>Zastosowano także dane z poprzedniego sezonu jako dodatkowy prior: GA_smoothed = (n×GA_current + w×GA_previous + k×GA_league) / (n+w+k), w = {{ analiza.konfiguracja.w_poprzedni_sezon }}.</p>{% else %}<p>Dane z poprzedniego sezonu nie były wykorzystane.</p>{% endif %}
+</div></section>
+
+<section class="panel" id="defense-factor"><h2>6. Defense Factor</h2><div class="panel-body">
+<pre class="defense-formula">DefenseFactor = GA_smoothed / GA_league</pre>
+<p class="note">DefenseFactor = 1,00 → defensywa przeciętna. Poniżej 1,00 → mocniejsza od średniej (np. 0,90 → rywal traci około 10% mniej niż przeciętna drużyna). Powyżej 1,00 → słabsza od średniej (np. 1,10 → rywal traci około 10% więcej niż średnia ligi).</p>
+</div></section>
+
+<section class="panel" id="klasy-defensywy"><h2>7. Klasy defensywy</h2><div class="panel-body">
+<div class="table-wrap"><table><thead><tr><th>Zakres Defense Factor</th><th>Klasa</th></tr></thead><tbody>
+<tr><td>&lt; {{ analiza.konfiguracja.granica_bardzo_mocna }}</td><td>Bardzo mocna</td></tr>
+<tr><td>{{ analiza.konfiguracja.granica_bardzo_mocna }} – {{ analiza.konfiguracja.granica_mocna }}</td><td>Mocna</td></tr>
+<tr><td>{{ analiza.konfiguracja.granica_mocna }} – {{ analiza.konfiguracja.granica_slaba }}</td><td>Przeciętna</td></tr>
+<tr><td>{{ analiza.konfiguracja.granica_slaba }} – {{ analiza.konfiguracja.granica_bardzo_slaba }}</td><td>Słaba</td></tr>
+<tr><td>&gt; {{ analiza.konfiguracja.granica_bardzo_slaba }}</td><td>Bardzo słaba</td></tr>
+</tbody></table></div>
+<p class="note">Granice są parametrami konfiguracyjnymi.</p>
+</div></section>
+
+<section class="panel" id="statystyki-opisowe"><h2>8. Statystyki opisowe</h2><div class="panel-body">
+<pre class="defense-formula">Średnia: x̄ = Σx / n
+Wariancja próbki: s² = Σ(xᵢ − x̄)² / (n − 1)
+Odchylenie standardowe: s = √s²</pre>
+<p class="note">Mediana to środkowa wartość uporządkowanego zbioru (średnia dwóch środkowych przy parzystej liczbie obserwacji). Q25 i Q75 to 25. i 75. percentyl, pokazujące typowy zakres środkowych 50% meczów.</p>
+<div class="table-wrap"><table><thead><tr><th>Klasa</th><th>n</th><th>Suma</th><th>Średnia</th><th>Mediana</th><th>Min</th><th>Q25</th><th>Q75</th><th>Maks</th><th>Wariancja</th><th>Odch. std.</th></tr></thead><tbody>
+{% for k in analiza.klasy %}<tr><td>{{ k.klasa }}{% if k.mala_proba %} <span class="note">(mała próba)</span>{% endif %}</td><td>{{ k.n }}</td><td>{{ k.suma_bramek }}</td><td>{{ k.srednia }}</td><td>{{ k.mediana }}</td><td>{{ k.minimum }}</td><td>{{ k.kwartyl_pierwszy }}</td><td>{{ k.kwartyl_trzeci }}</td><td>{{ k.maksimum }}</td><td>{{ k.wariancja }}</td><td>{{ k.odchylenie_standardowe }}</td></tr>{% endfor %}
+</tbody></table></div>
+<figure class="player-chart-single"><figcaption>Rozkład bramek według klasy defensywy (boxplot)</figcaption><div class="player-chart" data-defense-boxplot role="img" aria-label="Rozstęp ćwiartkowy bramek zawodnika według klasy defensywy rywala"></div></figure>
+<script type="application/json" data-defense-boxplot-data>{{ analiza.boxplot_klas|tojson }}</script>
+</div></section>
+
+<section class="panel" id="prawdopodobienstwa"><h2>9. Prawdopodobieństwa</h2><div class="panel-body">
+<p class="note">Prawdopodobieństwo empiryczne z danych historycznych: P(Bramki ≥ próg | klasa defensywy) = liczba meczów z progiem / liczba wszystkich meczów w klasie.</p>
+<figure class="player-chart-single"><figcaption>Prawdopodobieństwo wysokiego wyniku vs poziom defensywy</figcaption><div class="player-chart" data-defense-prawdopodobienstwa role="img" aria-label="Prawdopodobieństwo zdobycia co najmniej progowej liczby bramek według klasy defensywy"></div></figure>
+<script type="application/json" data-defense-prawdopodobienstwa-data>{{ analiza.wykres_prawdopodobienstw|tojson }}</script>
+<div class="table-wrap"><table><thead><tr><th>Klasa</th>{% for prog in analiza.konfiguracja.progi.split(', ') %}<th>P({{ prog }})</th>{% endfor %}</tr></thead><tbody>
+{% for k in analiza.klasy %}<tr><td>{{ k.klasa }}</td>{% for u in k.udzialy_progowe %}<td>{{ u.udzial }}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div>
+</div></section>
+
+<section class="panel" id="korelacja"><h2>10. Korelacja</h2><div class="panel-body">
+<pre class="defense-formula">r = Σ[(xᵢ−x̄)(yᵢ−ȳ)] / √(Σ(xᵢ−x̄)² × Σ(yᵢ−ȳ)²)</pre>
+<p>Pearson r = <b>{{ analiza.r_pearson }}</b> ({{ analiza.interpretacja_pearson }}). Spearman rho = <b>{{ analiza.rho_spearman }}</b> (zależność monotoniczna oparta na rangach, nie tylko liniowa).</p>
+{% if analiza.roznica_pearson_spearman %}<p class="note">{{ analiza.roznica_pearson_spearman }}</p>{% endif %}
+<p class="note">Pomocnicza interpretacja siły: |r| &lt; 0,10 brak zależności; 0,10–0,30 słaba; 0,30–0,50 umiarkowana; 0,50–0,70 wyraźna; &gt; 0,70 silna. To tylko pomoc interpretacyjna, nie dowód przyczynowości.</p>
+<figure class="player-chart-single"><figcaption>Bramki w meczu vs Defense Factor</figcaption><div class="player-chart player-chart-wide" data-defense-scatter role="img" aria-label="Rozrzut liczby bramek zawodnika względem Defense Factor rywala w poszczególnych meczach"></div></figure>
+<script type="application/json" data-defense-scatter-data>{{ analiza.punkty_scatter|tojson }}</script>
+</div></section>
+
+<section class="panel" id="regresja"><h2>11. Regresja</h2><div class="panel-body">
+<pre class="defense-formula">Goals = β0 + β1 × DefenseFactor + ε</pre>
+<p>β0 = <b>{{ analiza.wyraz_wolny }}</b>, β1 = <b>{{ analiza.wspolczynnik_kierunkowy }}</b>, R² = <b>{{ analiza.r_kwadrat }}</b> (n = {{ analiza.liczba_z_defense_factor }}). Przybliżony 95% przedział ufności dla β1: {{ analiza.przedzial_ufnosci }}.</p>
+<p class="note">Wzrost Defense Factor o 0,10 odpowiada w modelu zmianie o {{ analiza.delta_10 }} bramki (β1 × 0,10). R² pokazuje, jaka część zmienności obserwowanej liczby bramek jest opisana przez ten model liniowy — nie oznacza, że jakość defensywy odpowiada za tyle procent samych bramek. To zależność statystyczna, nie dowód przyczynowości.</p>
+</div></section>
+
+<section class="panel" id="przyklad"><h2>12. Przykład jednego meczu — krok po kroku</h2><div class="panel-body">
+{% if analiza.opcje_przykladu %}
+<form method="get" action="{{ url_for('administracja.defensywa_rywala_zawodnika', id_zawodnik=analiza.id_zawodnik) }}" class="defense-przyklad-form">
+{% for pole in ['id_sezon', 'rozgrywki', 'miejsce', 'liczba_ostatnich_sezonow'] %}<input type="hidden" name="{{ pole }}" value="{{ request.args.get(pole, '') }}">{% endfor %}
+{% if request.args.get('wszystkie_mecze') %}<input type="hidden" name="wszystkie_mecze" value="{{ request.args.get('wszystkie_mecze') }}">{% endif %}
+<label>Wybierz mecz<select name="id_mecz_przykladu" onchange="this.form.submit()">{% for opcja in analiza.opcje_przykladu %}<option value="{{ opcja.id_mecz }}" {{ 'selected' if analiza.przyklad and analiza.przyklad.id_mecz == opcja.id_mecz|int else '' }}>{{ opcja.etykieta }}</option>{% endfor %}</select></label>
+<noscript><button class="btn small" type="submit">Pokaż</button></noscript>
+</form>
+{% if analiza.przyklad %}<h3>{{ analiza.przyklad.etykieta }}</h3>
+<ol class="defense-kroki">{% for krok in analiza.przyklad.kroki %}<li><span>{{ krok.opis }}</span><b>{{ krok.wartosc }}</b></li>{% endfor %}</ol>
+{% endif %}
+{% else %}<p class="notice">Brak meczu z wyznaczonym Defense Factor, dla którego można pokazać przykład.</p>{% endif %}
+</div></section>
+
+<section class="panel" id="interpretacja"><h2>13. Interpretacja matematyczna</h2><div class="panel-body">
+<p>{{ analiza.interpretacja_koncowa }}</p>
+</div></section>
+
+<section class="panel" id="ograniczenia"><h2>14. Ograniczenia analizy</h2><div class="panel-body">
+<p class="note">Model opiera się wyłącznie na bramkach traconych przez cały zespół rywala. Nie uwzględnia minut gry, liczby rzutów, skuteczności rzutowej, kontuzji, zmian składu, tempa meczu, liczby posiadań, roli taktycznej, indywidualnych obrońców ani siły ofensywnej drużyny zawodnika — tych danych nie ma w bazie, więc nie są szacowane. Przedział ufności dla β1 jest przybliżeniem opartym na rozkładzie normalnym (bez biblioteki statystycznej z dokładnym rozkładem t-Studenta) i ma charakter orientacyjny. Dopasowanie poprzedniego sezonu do bieżących rozgrywek opiera się na zgodności nazwy rozgrywek i nie wykrywa automatycznie awansu, spadku ani zmiany poziomu ligi.</p>
+</div></section>
+</div>
+<script src="{{ url_for('static', filename='js/opponent_defense.js') }}" defer></script>
+{% endblock %}

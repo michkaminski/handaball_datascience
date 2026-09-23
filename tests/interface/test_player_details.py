@@ -5,6 +5,7 @@ import pytest
 from flask import Flask
 from tests.conftest import ustawienia_testowe
 from tests.helpers.competition_repository import RozgrywkiInMemoryRepository
+from tests.helpers.opponent_defense import DefensywaRywalaPustyRepozytorium
 from tests.helpers.player_details import (
     MECZ_ZAWODNIKA,
     SzczegolyZawodnikaInMemoryRepository,
@@ -28,6 +29,7 @@ def aplikacja_z_karta(repo: SzczegolyZawodnikaInMemoryRepository) -> Flask:
         fabryka_repozytorium_rozgrywek=lambda: RozgrywkiInMemoryRepository(["Liga"]),
         fabryka_repozytorium_zawodnikow=lambda: ZawodnikStubRepository([ZAWODNIK]),
         fabryka_szczegolow_zawodnika=lambda: repo,
+        fabryka_defensywy_rywala=lambda: DefensywaRywalaPustyRepozytorium(),
     )
     return AplikacjaFactory(
         ustawienia_testowe(), rejestrator_widokow=WidokiRegistrar(zaleznosci)
@@ -68,10 +70,14 @@ def test_karta_ma_dodatkowe_podsumowanie_analityczne() -> None:
     assert "Podsumowanie analityczne" in tresc
     assert "Mecze z wpisem" in tresc and ">23<" in tresc
     assert "Pokrycie danych o bramkach" in tresc and "23/23" in tresc
-    assert "data-player-trend-wszystkie" in tresc
-    assert "data-player-trend-dom" in tresc and "data-player-trend-wyjazd" in tresc
-    assert "data-player-distribution" in tresc
-    assert "wszystkie" in tresc.lower()
+    panel = tresc.split('id="player-panel-podsumowanie"')[1].split('id="player-panel-forma"')[0]
+    assert "data-player-distribution" in panel and "data-player-distribution-data" in panel
+    assert "data-player-season-stats" in panel and "data-player-season-stats-data" in panel
+    assert panel.index("data-player-season-stats") < panel.index("data-player-distribution")
+    assert "Dane statystyk według sezonu i rozgrywek" in panel
+    assert "Histogram pokazuje, w ilu meczach" in panel
+    assert "Dane rozkładu bramek" in panel
+    assert "data-player-trend" not in panel and "data-player-form" not in panel
     assert "U siebie" in tresc and "Na wyjeździe" in tresc
     assert "vendor/echarts/echarts.min.js" in tresc
 
@@ -84,8 +90,24 @@ def test_karta_ma_zakladke_formy_i_regularnosci() -> None:
     assert 'data-active-tab="forma"' in tresc
     assert "Forma i regularność" in tresc
     assert "Bramki i karne" not in tresc and "Jakość danych" not in tresc
-    assert "data-player-form-dom" in tresc and "data-player-form-wyjazd" in tresc
-    assert "data-player-boxplot" in tresc
+    panel = tresc.split('id="player-panel-forma"')[1]
+    assert "data-player-toc" in panel
+    for kotwica in ("statystyki", "mecze", "kroczaca", "sezony", "defensywa"):
+        assert f'href="#player-forma-{kotwica}"' in panel
+        assert f'id="player-forma-{kotwica}"' in panel
+    assert panel.count('class="player-section-head"') == 5
+    assert panel.count('href="#player-forma-spis" data-player-scroll') == 5
+    for grupa in ("Poziom", "Zakres", "Rozrzut", "Udziały meczów"):
+        assert f"<h4>{grupa}</h4>" in panel
+    assert "data-player-trend-wszystkie" in panel
+    assert "data-player-trend-dom" in panel and "data-player-trend-wyjazd" in panel
+    assert "data-player-trend-data" in panel
+    assert "data-player-form-dom" in panel and "data-player-form-wyjazd" in panel
+    assert panel.index("data-player-form-wszystkie") < panel.index("data-player-form-dom")
+    assert "Dane wykresu formy: wszystkie mecze" in panel
+    assert "data-player-boxplot" in panel
+    assert "data-player-distribution" not in panel
+    assert 'data-player-tab="statystyki"' not in tresc
     assert "Współczynnik zmienności" in tresc and "Średnia ucięta 10%" in tresc
 
 

@@ -150,86 +150,7 @@ test('paginacja pobiera karte w tym samym modalu', async () => {
   assert.equal(adresy[1], '/administracja/zawodnicy/7?zakladka=mecze&strona=2');
 });
 
-test('podsumowanie inicjalizuje wykresy formy u siebie/na wyjezdzie i rozklad', async () => {
-  const klucze = ['profil', 'sezony', 'mecze', 'podsumowanie'];
-  const przyciski = klucze.map(klucz => {
-    const element = new ElementFixture();
-    element.dataset = {playerTab: klucz};
-    return element;
-  });
-  const panele = klucze.map(klucz => {
-    const element = new ElementFixture();
-    element.dataset = {playerPanel: klucz};
-    return element;
-  });
-  const trendWszystkie = new ElementFixture();
-  trendWszystkie.dataset = {};
-  const trendDom = new ElementFixture();
-  trendDom.dataset = {};
-  const trendWyjazd = new ElementFixture();
-  trendWyjazd.dataset = {};
-  const rozklad = new ElementFixture();
-  rozklad.dataset = {};
-  const zrodlo = new ElementFixture();
-  zrodlo.textContent = JSON.stringify({
-    mediana: 3,
-    mediana_dom: 4,
-    mediana_wyjazd: 2,
-    punkty: [
-      {id_mecz: 9, etykieta: '01.09.2026', sezon: '2026/2027', rozgrywki: 'Liga', bramki: 4, miejsce: 'dom'},
-      {id_mecz: 10, etykieta: '08.09.2026', sezon: '2026/2027', rozgrywki: 'Liga', bramki: 2, miejsce: 'wyjazd'},
-    ],
-    rozklad: [{bramki: 2, mecze: 1, dom: 0, wyjazd: 1}, {bramki: 4, mecze: 1, dom: 1, wyjazd: 0}],
-  });
-  const pasek = {hidden: true, querySelectorAll: () => przyciski};
-  const korzen = {
-    dataset: {activeTab: 'podsumowanie', echartsUrl: '/echarts.js', playerMatchUrl: '/mecze/0'},
-    querySelector: selektor => ({
-      '[data-player-tabs]': pasek,
-      '[data-player-trend-wszystkie]': trendWszystkie,
-      '[data-player-trend-dom]': trendDom,
-      '[data-player-trend-wyjazd]': trendWyjazd,
-      '[data-player-distribution]': rozklad,
-      '[data-player-analytics-data]': zrodlo,
-    })[selektor] ?? null,
-    querySelectorAll: () => panele,
-  };
-  const opcje = [];
-  const echarts = {
-    init: (element, motyw, ustawienia) => ({
-      setOption: opcja => opcje.push({opcja, ustawienia}),
-      on() {},
-      resize() {},
-    }),
-  };
-  runInNewContext(kod, {
-    window: {echarts, matchMedia: () => ({matches: false})},
-    document: {
-      querySelector: selektor => selektor === '[data-player-detail]' ? korzen : null,
-      getElementById: () => null,
-    },
-  });
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(opcje.length, 4);
-  assert.deepEqual(opcje.map(wpis => wpis.ustawienia.renderer), ['svg', 'svg', 'svg', 'svg']);
-  assert.equal(opcje[0].opcja.series[0].markLine.data[0].yAxis, 3);
-  assert.equal(opcje[0].opcja.series[0].data.length, 2);
-  assert.equal(opcje[1].opcja.series[0].markLine.data[0].yAxis, 4);
-  assert.equal(opcje[1].opcja.series[0].data.length, 1);
-  assert.equal(opcje[2].opcja.series[0].markLine.data[0].yAxis, 2);
-  assert.equal(opcje[0].opcja.aria.show, true);
-  assert.equal(opcje[3].opcja.series[0].name, 'Wszystkie');
-  assert.equal(opcje[3].opcja.series[1].name, 'U siebie');
-  assert.equal(opcje[3].opcja.series[2].name, 'Na wyjeździe');
-  assert.equal(opcje[3].opcja.series[0].data[0], 1);
-  assert.equal(opcje[3].opcja.series[0].data[1], 1);
-  assert.equal(opcje[3].opcja.series[1].data[0], 0);
-  assert.equal(opcje[3].opcja.series[1].data[1], 1);
-  assert.equal(opcje[3].opcja.series[2].data[0], 1);
-  assert.equal(opcje[3].opcja.series[2].data[1], 0);
-});
-
-test('forma inicjalizuje wykresy formy u siebie/na wyjezdzie i boxplot z granicami sezonow', async () => {
+const przygotujKarte = (aktywna, elementy) => {
   const klucze = ['profil', 'sezony', 'mecze', 'podsumowanie', 'forma'];
   const przyciski = klucze.map(klucz => {
     const element = new ElementFixture();
@@ -241,62 +162,199 @@ test('forma inicjalizuje wykresy formy u siebie/na wyjezdzie i boxplot z granica
     element.dataset = {playerPanel: klucz};
     return element;
   });
-  const formaDom = new ElementFixture();
-  formaDom.dataset = {};
-  const formaWyjazd = new ElementFixture();
-  formaWyjazd.dataset = {};
-  const boxplot = new ElementFixture();
-  boxplot.dataset = {};
-  const zrodlo = new ElementFixture();
-  zrodlo.textContent = JSON.stringify({
-    dom: {
-      punkty: [
-        {id_mecz: 1, etykieta: '01.09.2025', sezon: '2024/2025', bramki: 1, mediana_5: null, srednia_5: null, mediana_10: null},
-        {id_mecz: 2, etykieta: '02.09.2026', sezon: '2025/2026', bramki: 2, mediana_5: null, srednia_5: null, mediana_10: null},
-      ],
-    },
-    wyjazd: {punkty: []},
-    sezony: [
-      {sezon: '2024/2025', n: 1, mala_proba: true, mediana: 1, q1: 1, q3: 1, minimum: 1, maksimum: 1, odstajace: []},
-      {sezon: '2025/2026', n: 1, mala_proba: true, mediana: 2, q1: 2, q3: 2, minimum: 2, maksimum: 2, odstajace: [5]},
-    ],
-  });
   const pasek = {hidden: true, querySelectorAll: () => przyciski};
   const korzen = {
-    dataset: {activeTab: 'forma', echartsUrl: '/echarts.js', playerMatchUrl: '/mecze/0'},
-    querySelector: selektor => ({
-      '[data-player-tabs]': pasek,
-      '[data-player-form-dom]': formaDom,
-      '[data-player-form-wyjazd]': formaWyjazd,
-      '[data-player-boxplot]': boxplot,
-      '[data-player-forma-data]': zrodlo,
-    })[selektor] ?? null,
-    querySelectorAll: () => panele,
+    dataset: {activeTab: aktywna, echartsUrl: '/echarts.js', playerMatchUrl: '/mecze/0'},
+    querySelector: selektor => ({'[data-player-tabs]': pasek, ...elementy})[selektor] ?? null,
+    querySelectorAll: selektor => selektor === 'a[data-player-scroll]' ? (elementy.linki ?? []) : panele,
   };
   const opcje = [];
   const echarts = {
     init: (element, motyw, ustawienia) => ({
-      setOption: opcja => opcje.push({opcja, ustawienia}),
+      setOption: opcja => opcje.push({element, opcja, ustawienia}),
       on() {},
       resize() {},
     }),
   };
+  return {korzen, opcje, echarts, przyciski, panele};
+};
+
+const uruchomKarte = (korzen, echarts, window = {}) => {
   runInNewContext(kod, {
-    window: {echarts, matchMedia: () => ({matches: false})},
+    window: {echarts, matchMedia: () => ({matches: false}), ...window},
     document: {
       querySelector: selektor => selektor === '[data-player-detail]' ? korzen : null,
       getElementById: () => null,
     },
   });
+};
+
+const pustyElement = () => {
+  const element = new ElementFixture();
+  element.dataset = {};
+  return element;
+};
+
+const zrodloDanych = dane => {
+  const element = pustyElement();
+  element.textContent = JSON.stringify(dane);
+  return element;
+};
+
+test('podsumowanie inicjalizuje tylko wykres rozkladu bramek', async () => {
+  const rozklad = pustyElement();
+  const trend = pustyElement();
+  const {korzen, opcje, echarts} = przygotujKarte('podsumowanie', {
+    '[data-player-distribution]': rozklad,
+    '[data-player-distribution-data]': zrodloDanych([
+      {bramki: 2, mecze: 1, dom: 0, wyjazd: 1},
+      {bramki: 4, mecze: 1, dom: 1, wyjazd: 0},
+    ]),
+    '[data-player-trend-wszystkie]': trend,
+  });
+  uruchomKarte(korzen, echarts);
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(opcje.length, 2);
-  assert.deepEqual(opcje.map(wpis => wpis.ustawienia.renderer), ['svg', 'svg']);
-  assert.equal(opcje[0].opcja.series[0].markLine.data[0].xAxis, 1);
+  assert.equal(opcje.length, 1);
+  assert.equal(opcje[0].element, rozklad);
+  assert.equal(opcje[0].ustawienia.renderer, 'svg');
   assert.equal(opcje[0].opcja.aria.show, true);
+  assert.deepEqual(Array.from(opcje[0].opcja.series, seria => seria.name), ['Wszystkie', 'U siebie', 'Na wyjeździe']);
+  assert.deepEqual(Array.from(opcje[0].opcja.series[0].data), [1, 1]);
+  assert.deepEqual(Array.from(opcje[0].opcja.series[1].data), [0, 1]);
+  assert.deepEqual(Array.from(opcje[0].opcja.series[2].data), [1, 0]);
+  assert.equal(trend.dataset.chartReady, undefined);
+});
+
+test('podsumowanie rysuje srednia, mediane i dominanty wedlug sezonu i rozgrywek z tooltipem', async () => {
+  const sezony = pustyElement();
+  const {korzen, opcje, echarts} = przygotujKarte('podsumowanie', {
+    '[data-player-season-stats]': sezony,
+    '[data-player-season-stats-data]': zrodloDanych([
+      {sezon: '2024/2025', rozgrywki: 'Liga <b>A</b>', mecze: 4, znane: 3, suma: 10, srednia: 3.3333, mediana: 4, dominanty: [4], q1: 3, q3: 4, minimum: 2, maksimum: 4},
+      {sezon: '2025/2026', rozgrywki: 'Puchar', mecze: 2, znane: 2, suma: 4, srednia: 2, mediana: 2, dominanty: [1, 3], q1: 1.5, q3: 2.5, minimum: 1, maksimum: 3},
+    ]),
+  });
+  uruchomKarte(korzen, echarts);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(opcje.length, 1);
+  const opcja = opcje[0].opcja;
+  assert.equal(opcje[0].ustawienia.renderer, 'svg');
+  assert.equal(opcja.aria.show, true);
+  assert.deepEqual(Array.from(opcja.series, seria => seria.name), ['Średnia', 'Mediana', 'Dominanta']);
+  assert.equal(opcja.series[0].data[0].value, 3.3333);
+  assert.equal(opcja.series[0].data[0].itemStyle.color, '#ffffff');
+  assert.equal(opcja.series[1].data[1].value, 2);
+  assert.equal(opcja.dataZoom, undefined);
+  assert.deepEqual(Array.from(opcja.series[2].data, punkt => Array.from(punkt)), [[0, 4], [1, 1], [1, 3]]);
+  assert.match(opcja.xAxis.data[0], /^2024\/2025\n/);
+  const tooltip = opcja.tooltip.formatter([{seriesType: 'line', dataIndex: 0}]);
+  assert.match(tooltip, /2024\/2025/);
+  assert.match(tooltip, /Liga &lt;b&gt;A&lt;\/b&gt;/);
+  assert.match(tooltip, /3,33/);
+  assert.match(tooltip, /3 z 4/);
+  assert.match(tooltip, /mała próba/);
+  const tooltipDominanty = opcja.tooltip.formatter({seriesType: 'scatter', value: [1, 3]});
+  assert.match(tooltipDominanty, /Puchar/);
+  assert.match(tooltipDominanty, /1, 3/);
+});
+
+test('forma inicjalizuje trendy, forme krocząca, boxplot i defensywe rywali', async () => {
+  const trendWszystkie = pustyElement();
+  const trendDom = pustyElement();
+  const trendWyjazd = pustyElement();
+  const formaWszystkie = pustyElement();
+  const formaDom = pustyElement();
+  const formaWyjazd = pustyElement();
+  const boxplot = pustyElement();
+  const defensywa = pustyElement();
+  const {korzen, opcje, echarts} = przygotujKarte('forma', {
+    '[data-player-trend-wszystkie]': trendWszystkie,
+    '[data-player-trend-dom]': trendDom,
+    '[data-player-trend-wyjazd]': trendWyjazd,
+    '[data-player-trend-data]': zrodloDanych({
+      mediana: 3,
+      mediana_dom: 4,
+      mediana_wyjazd: 2,
+      punkty: [
+        {id_mecz: 9, etykieta: '01.09.2026', sezon: '2026/2027', rozgrywki: 'Liga', bramki: 4, miejsce: 'dom'},
+        {id_mecz: 10, etykieta: '08.09.2026', sezon: '2026/2027', rozgrywki: 'Liga', bramki: 2, miejsce: 'wyjazd'},
+      ],
+    }),
+    '[data-player-form-wszystkie]': formaWszystkie,
+    '[data-player-form-dom]': formaDom,
+    '[data-player-form-wyjazd]': formaWyjazd,
+    '[data-player-boxplot]': boxplot,
+    '[data-player-forma-data]': zrodloDanych({
+      dom: {
+        punkty: [
+          {id_mecz: 1, etykieta: '01.09.2025', sezon: '2024/2025', bramki: 1, mediana_5: null, srednia_5: null, mediana_10: null},
+          {id_mecz: 2, etykieta: '02.09.2026', sezon: '2025/2026', bramki: 2, mediana_5: null, srednia_5: null, mediana_10: null},
+        ],
+      },
+      wszystkie: {
+        punkty: [
+          {id_mecz: 1, etykieta: '01.09.2025', sezon: '2024/2025', bramki: 1, mediana_5: null, srednia_5: null, mediana_10: null},
+          {id_mecz: 3, etykieta: '01.09.2026', sezon: '2025/2026', bramki: 7, mediana_5: null, srednia_5: null, mediana_10: null},
+          {id_mecz: 2, etykieta: '02.09.2026', sezon: '2025/2026', bramki: 2, mediana_5: null, srednia_5: null, mediana_10: null},
+        ],
+      },
+      wyjazd: {punkty: []},
+      sezony: [
+        {sezon: '2024/2025', n: 1, mala_proba: true, mediana: 1, q1: 1, q3: 1, minimum: 1, maksimum: 1, odstajace: []},
+        {sezon: '2025/2026', n: 1, mala_proba: true, mediana: 2, q1: 2, q3: 2, minimum: 2, maksimum: 2, odstajace: [5]},
+      ],
+    }),
+    '[data-defense-summary]': defensywa,
+    '[data-defense-summary-data]': zrodloDanych([
+      {klasa: 'Bardzo mocna', srednia: 2.9, n: 22},
+      {klasa: 'Bardzo słaba', srednia: 6.1, n: 19},
+    ]),
+  });
+  uruchomKarte(korzen, echarts);
+  await new Promise(resolve => setImmediate(resolve));
+  const wykres = element => opcje.find(wpis => wpis.element === element).opcja;
+  assert.equal(opcje.length, 7);
+  assert.ok(opcje.every(wpis => wpis.ustawienia.renderer === 'svg'));
+  assert.equal(wykres(trendWszystkie).series[0].markLine.data[0].yAxis, 3);
+  assert.equal(wykres(trendWszystkie).series[0].data.length, 2);
+  assert.equal(wykres(trendDom).series[0].markLine.data[0].yAxis, 4);
+  assert.equal(wykres(trendDom).series[0].data.length, 1);
+  assert.equal(wykres(trendWyjazd).series[0].markLine.data[0].yAxis, 2);
+  assert.equal(wykres(formaWszystkie).series[0].data.length, 3);
+  assert.equal(wykres(formaWszystkie).series[0].markLine.data[0].xAxis, 1);
+  assert.equal(wykres(formaDom).series[0].markLine.data[0].xAxis, 1);
+  assert.equal(wykres(formaDom).aria.show, true);
   assert.match(formaWyjazd.textContent, /Brak meczów na wyjeździe/);
-  assert.equal(opcje[1].opcja.series[0].type, 'boxplot');
-  const odstajace = opcje[1].opcja.series[1].data;
-  assert.equal(odstajace.length, 1);
-  assert.equal(odstajace[0][0], 1);
-  assert.equal(odstajace[0][1], 5);
+  assert.equal(wykres(boxplot).series[0].type, 'boxplot');
+  assert.deepEqual(Array.from(wykres(boxplot).series[1].data, punkt => Array.from(punkt)), [[1, 5]]);
+  assert.deepEqual(Array.from(wykres(defensywa).series[0].data), [2.9, 6.1]);
+  assert.equal(wykres(defensywa).xAxis.data[0], 'Bardzo mocna');
+});
+
+test('spis tresci i powrot do spisu przewijaja bez zmiany adresu', () => {
+  const sekcja = pustyElement();
+  let przewiniecie;
+  sekcja.scrollIntoView = opcje => { przewiniecie = opcje; };
+  const link = pustyElement();
+  link.getAttribute = () => '#player-forma-sezony';
+  const spis = pustyElement();
+  spis.scrollIntoView = () => { spis.przewiniety = true; };
+  const powrot = pustyElement();
+  powrot.getAttribute = () => '#player-forma-spis';
+  const {korzen, echarts} = przygotujKarte('profil', {
+    '[data-player-toc]': spis,
+    '#player-forma-sezony': sekcja,
+    '#player-forma-spis': spis,
+    linki: [link, powrot],
+  });
+  uruchomKarte(korzen, echarts, {matchMedia: () => ({matches: true})});
+  let zatrzymano = false;
+  link.zdarzenia.click({preventDefault: () => { zatrzymano = true; }});
+  assert.equal(zatrzymano, true);
+  assert.equal(przewiniecie.behavior, 'auto');
+  assert.equal(przewiniecie.block, 'start');
+  assert.equal(sekcja.fokus, true);
+  powrot.zdarzenia.click({preventDefault() {}});
+  assert.equal(spis.przewiniety, true);
+  assert.equal(spis.fokus, true);
 });

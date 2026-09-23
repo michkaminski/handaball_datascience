@@ -12,10 +12,12 @@ class AnalitykaRepository:
         bramki: tuple[int | None, ...],
         sezony: tuple[str, ...] | None = None,
         miejsca: tuple[str | None, ...] | None = None,
+        rozgrywki: tuple[str, ...] | None = None,
     ) -> None:
         self.bramki = bramki
         self.sezony = sezony or tuple("2025/2026" for _ in bramki)
         self.miejsca = miejsca or tuple(None for _ in bramki)
+        self.rozgrywki = rozgrywki or tuple("Liga" for _ in bramki)
 
     def pobierz_analityke(
         self, id_zawodnik: int, filtry: FiltryMeczowZawodnika
@@ -25,7 +27,7 @@ class AnalitykaRepository:
                 id_mecz=indeks,
                 termin=datetime(2026, 1, indeks),
                 sezon=self.sezony[indeks - 1],
-                rozgrywki="Liga",
+                rozgrywki=self.rozgrywki[indeks - 1],
                 bramki=bramki,
                 karne_bramki=1 if indeks == 1 else None,
                 karne_liczba=2 if indeks == 1 else None,
@@ -58,6 +60,29 @@ def test_podsumowanie_liczy_mediane_kwartyle_i_wiele_dominant() -> None:
     assert wynik.mecze_z_bramka == 4
     assert wynik.karne_bramki == 1 and wynik.karne_liczba == 2
     assert wynik.dwie_minuty == 0
+
+
+def test_podsumowanie_liczy_statystyki_osobno_dla_sezonu_i_rozgrywek() -> None:
+    wynik = SzczegolyZawodnikaAnalyticsService(
+        AnalitykaRepository(
+            (2, 4, 4, None, 7, 1, 3),
+            sezony=("2024/2025",) * 5 + ("2025/2026",) * 2,
+            rozgrywki=("Liga", "Liga", "Liga", "Liga", "Puchar", "Liga", "Liga"),
+        )
+    ).pobierz_podsumowanie(7, FiltryMeczowZawodnika())
+    grupy = wynik.sezony_rozgrywki
+    assert [(g.sezon, g.rozgrywki) for g in grupy] == [
+        ("2024/2025", "Liga"),
+        ("2024/2025", "Puchar"),
+        ("2025/2026", "Liga"),
+    ]
+    liga = grupy[0]
+    assert liga.liczba_meczow == 4 and liga.liczba_znanych == 3
+    assert liga.suma == 10
+    assert liga.srednia == pytest.approx(10 / 3)
+    assert liga.mediana == 4.0 and liga.dominanty == (4,)
+    assert liga.minimum == 2 and liga.maksimum == 4
+    assert grupy[2].dominanty == (1, 3) and grupy[2].mediana == 2.0
 
 
 def test_podsumowanie_nie_zamienia_brakow_na_zera() -> None:
@@ -111,6 +136,21 @@ def test_forma_liczy_okno_kroczace_osobno_dla_domu_i_wyjazdu() -> None:
     assert [p.bramki for p in wynik.wyjazd.punkty] == [10, 11, 12, 13, 14]
     assert wynik.dom.punkty[4].mediana_kroczaca_5 == 3
     assert wynik.wyjazd.punkty[4].mediana_kroczaca_5 == 12
+
+
+def test_forma_liczy_okno_kroczace_ze_wszystkich_meczow_niezaleznie_od_miejsca() -> None:
+    wynik = SzczegolyZawodnikaAnalyticsService(
+        AnalitykaRepository(
+            (1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6),
+            miejsca=("dom", "wyjazd") * 5 + (None,),
+        )
+    ).pobierz_forme(7, FiltryMeczowZawodnika())
+    assert wynik.wszystkie.liczba_znanych == 11
+    assert wynik.wszystkie.wystarczajaco_na_trend_10 is True
+    assert [p.bramki for p in wynik.wszystkie.punkty] == [1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6]
+    assert wynik.wszystkie.punkty[4].mediana_kroczaca_5 == 3
+    assert wynik.wszystkie.punkty[4].srednia_kroczaca_5 == pytest.approx(27 / 5)
+    assert wynik.wszystkie.punkty[10].mediana_kroczaca_10 == 8
 
 
 def test_forma_statystyki_opisowe_nie_zamieniaja_brakow_na_zera() -> None:

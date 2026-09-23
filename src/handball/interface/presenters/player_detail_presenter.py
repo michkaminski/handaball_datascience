@@ -176,6 +176,23 @@ class SzczegolyZawodnikaPresenter:
                 }
                 for wartosc in sorted(rozklad)
             ],
+            sezony_rozgrywki=[
+                {
+                    "sezon": grupa.sezon,
+                    "rozgrywki": grupa.rozgrywki,
+                    "mecze": grupa.liczba_meczow,
+                    "znane": grupa.liczba_znanych,
+                    "suma": grupa.suma,
+                    "srednia": grupa.srednia,
+                    "mediana": grupa.mediana,
+                    "dominanty": list(grupa.dominanty),
+                    "q1": grupa.kwartyl_pierwszy,
+                    "q3": grupa.kwartyl_trzeci,
+                    "minimum": grupa.minimum,
+                    "maksimum": grupa.maksimum,
+                }
+                for grupa in dane.sezony_rozgrywki
+            ],
             mediana_wartosc=dane.mediana_bramek,
             mediana_dom_wartosc=dane.mediana_bramek_dom,
             mediana_wyjazd_wartosc=dane.mediana_bramek_wyjazd,
@@ -229,6 +246,7 @@ class SzczegolyZawodnikaPresenter:
             udzial_1_2_bramki=self._procent(dane.udzial_1_2_bramki),
             udzial_3_5_bramek=self._procent(dane.udzial_3_5_bramek),
             udzial_6_plus_bramek=self._procent(dane.udzial_6_plus_bramek),
+            wszystkie=self._przygotuj_forme_wedlug_miejsca(dane.wszystkie),
             dom=self._przygotuj_forme_wedlug_miejsca(dane.dom),
             wyjazd=self._przygotuj_forme_wedlug_miejsca(dane.wyjazd),
             sezony=[

@@ -14,6 +14,7 @@ from handball.interface.admin.views.classification_views import (
     TabelaSzczegolyView,
 )
 from handball.interface.admin.views.match_views import MeczListView, MeczSzczegolyView
+from handball.interface.admin.views.opponent_defense_views import DefensywaRywalaZawodnikaView
 from handball.interface.admin.views.player_detail_views import ZawodnikSzczegolyView
 from handball.interface.admin.views.player_views import ZawodnikListView
 from handball.interface.admin.views.referee_detail_views import SedziaSzczegolyView
@@ -51,6 +52,12 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/zawodnicy/<int:id_zawodnik>",
         view_func=ZawodnikSzczegolyView.as_view("szczegoly_zawodnika", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/zawodnicy/<int:id_zawodnik>/defensywa-rywali",
+        view_func=DefensywaRywalaZawodnikaView.as_view(
+            "defensywa_rywala_zawodnika", fabryka_zaleznosci
+        ),
     )
     blueprint.add_url_rule(
         "/hale",

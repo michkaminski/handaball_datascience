@@ -2,6 +2,7 @@ from flask import abort, render_template, request
 from flask.views import MethodView
 
 from handball.domain.errors import BladOdczytuDanych, NieZnalezionoZawodnika
+from handball.domain.opponent_defense import FiltryDefensywyRywala
 from handball.interface.admin.forms.player_match_filters import MeczeZawodnikaFilterForm
 from handball.interface.errors import obsluz_blad_domeny
 from handball.request_dependencies import ZaleznosciZadaniaFactory
@@ -15,6 +16,8 @@ class ZawodnikSzczegolyView(MethodView):
     def get(self, id_zawodnik: int) -> str:
         serwis = self._fabryka.utworz_serwis_szczegolow_zawodnika()
         analityka_serwis = self._fabryka.utworz_analityke_szczegolow_zawodnika()
+        defensywa_serwis = self._fabryka.utworz_serwis_defensywy_rywala()
+        defensywa_presenter = self._fabryka.utworz_presenter_defensywy_rywala()
         formularz = MeczeZawodnikaFilterForm(request.args)
         try:
             szczegoly = serwis.pobierz_szczegoly(id_zawodnik)
@@ -32,6 +35,14 @@ class ZawodnikSzczegolyView(MethodView):
             mecze = serwis.pobierz_mecze(id_zawodnik, filtry)
             podsumowanie = analityka_serwis.pobierz_podsumowanie(id_zawodnik, filtry)
             forma = analityka_serwis.pobierz_forme(id_zawodnik, filtry)
+            defensywa_rywali = defensywa_serwis.pobierz_analize(
+                id_zawodnik,
+                FiltryDefensywyRywala(
+                    id_sezon=filtry.id_sezon,
+                    rozgrywki=filtry.rozgrywki,
+                    przeciwnik=filtry.przeciwnik,
+                ),
+            )
         except (NieZnalezionoZawodnika, BladOdczytuDanych) as wyjatek:
             obsluz_blad_domeny(wyjatek)
         zakladka = formularz.zakladka.data
@@ -44,6 +55,7 @@ class ZawodnikSzczegolyView(MethodView):
             strona=self._presenter.przygotuj_mecze(mecze),
             podsumowanie=self._presenter.przygotuj_podsumowanie(podsumowanie),
             forma=self._presenter.przygotuj_forme(forma),
+            defensywa_rywali=defensywa_presenter.przygotuj_karte(defensywa_rywali),
             filtry=filtry,
             formularz=formularz,
             aktywna_zakladka=zakladka,

@@ -39,7 +39,8 @@ Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogó
 | `admin/start.html` | [admin/start.md](../src/handball/interface/templates/admin/start.md) | istnieje |
 | `admin/matches/list.html` | [admin/matches/list.md](../src/handball/interface/templates/admin/matches/list.md) | istnieje |
 | `admin/matches/detail.html` | [admin/matches/detail.md](../src/handball/interface/templates/admin/matches/detail.md) | planowany (etap 5) |
-| `admin/players/detail.html` | [admin/players/detail.md](../src/handball/interface/templates/admin/players/detail.md) | istnieje: Profil, Sezony i drużyny, Mecze |
+| `admin/players/detail.html` | [admin/players/detail.md](../src/handball/interface/templates/admin/players/detail.md) | istnieje: Profil, Sezony i drużyny, Mecze, Podsumowanie, Forma i regularność (ze spisem treści i sekcją defensywy rywali) |
+| `admin/players/defensywa_rywali.html` | [admin/players/defensywa_rywali.md](../src/handball/interface/templates/admin/players/defensywa_rywali.md) | istnieje: szczegółowy raport „Bramki zawodnika a poziom defensywy rywali” |
 | `admin/login.html` | [admin/login.md](../src/handball/interface/templates/admin/login.md) | planowany (etap 6) |
 | `errors/400.html` | [errors/400.md](../src/handball/interface/templates/errors/400.md) | planowany (błędy mapowane na HTTP przez interface/errors.py, ale własny wygląd stron błędów jeszcze nie istnieje — używane są domyślne strony Flaska) |
 | `errors/404.html` | [errors/404.md](../src/handball/interface/templates/errors/404.md) | planowany (jw.) |

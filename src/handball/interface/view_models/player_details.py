@@ -86,6 +86,7 @@ class FormaIRegularnoscZawodnikaViewModel:
     udzial_1_2_bramki: str
     udzial_3_5_bramek: str
     udzial_6_plus_bramek: str
+    wszystkie: FormaWedlugMiejscaZawodnikaViewModel
     dom: FormaWedlugMiejscaZawodnikaViewModel
     wyjazd: FormaWedlugMiejscaZawodnikaViewModel
     sezony: list[dict[str, int | str | float | bool | list[int]]]
@@ -108,6 +109,7 @@ class PodsumowanieAnalityczneZawodnikaViewModel:
     pokrycie_bramek: str
     punkty: list[dict[str, int | str | None]]
     rozklad: list[dict[str, int]]
+    sezony_rozgrywki: list[dict[str, int | str | float | list[int] | None]]
     mediana_wartosc: float | None
     mediana_dom_wartosc: float | None
     mediana_wyjazd_wartosc: float | None

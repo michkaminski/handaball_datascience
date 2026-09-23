@@ -38,7 +38,9 @@ Dodatkowa zakładka ma niezależny kontekst sezonu, rozgrywek i przeciwnika. Pok
 
 Miejsce meczu (u siebie / na wyjeździe) jest wyznaczane w tym samym zapytaniu z `mecze_zawodnicy.strona`: `gosp` → u siebie, `gosc` → na wyjeździe. Jeżeli wszystkie wpisy zawodnika w danym meczu zgadzają się co do strony, miejsce jest jednoznaczne; jeżeli mecz ma tylko wpisy `inne` albo sprzeczne strony (np. `gosp` i `gosc` w tym samym meczu), miejsce pozostaje nieustalone i mecz jest pomijany w podziale na u siebie/na wyjeździe — zgodnie z regułą projektu, by nie zgadywać jednej wartości dla niejednoznacznego agregatu.
 
-Wykres formy występuje w trzech wariantach: wszystkie mecze, tylko u siebie i tylko na wyjeździe, każdy z własną medianą (linia przerywana) — wariant „wszystkie” liczy medianę z całego zakresu, warianty miejsca tylko z meczów danego miejsca. Punkty meczów są pokazane bez zamiany braku miejsca (mecz z niejednoznaczną lub nieustaloną stroną, np. wpis `inne`, nie trafia do wariantu u siebie ani na wyjeździe, ale pozostaje w wariancie wszystkie); kliknięcie punktu otwiera mecz. Histogram pokazuje liczbę meczów dla każdej liczby bramek jako trzy słupki obok siebie — wszystkie, u siebie i na wyjeździe — zamiast jednej sumy. Wszystkie cztery wykresy są ułożone jeden pod drugim na pełną szerokość panelu, żeby wykres formy pozostawał czytelny także przy wyborze wielu sezonów i setek meczów. Wykresy używają lokalnego Apache ECharts 6.1.0 w SVG, mają ARIA, tabelę danych i respektują `prefers-reduced-motion`.
+Nad histogramem jest wykres „Średnia, mediana i dominanta bramek na mecz według sezonu i rozgrywek”. Serwis grupuje mecze zakresu po parze sezon × rozgrywki (kolejność pierwszego meczu) i dla każdej grupy liczy w Pythonie liczbę meczów, liczbę meczów ze znaną liczbą bramek, sumę, średnią, medianę, wszystkie dominanty, Q1, Q3, minimum i maksimum (`StatystykiSezonuRozgrywekZawodnika`, `PodsumowanieAnalityczneZawodnika.sezony_rozgrywki`). Średnia i mediana są liniami z punktami, dominanta punktami w kształcie rombu (przy kilku dominantach kilka rombów w tej samej kategorii). Grupa z mniej niż 5 meczami ze znaną liczbą bramek ma pusty punkt i znacznik „mała próba”. Po najechaniu HTML-owy tooltip pokazuje sezon, rozgrywki, liczbę meczów, sumę, średnią, medianę, dominantę, Q1–Q3 i min–maks; nazwy z bazy są escapowane. Pod wykresem jest jednozdaniowy opis, tabela „Dane statystyk według sezonu i rozgrywek” jest jego odpowiednikiem tekstowym, a suwak przybliżania pojawia się dopiero przy ponad 20 grupach.
+
+Histogram „Rozkład bramek: wszystkie, u siebie i na wyjeździe” ma jednozdaniowy opis pod tytułem — liczba meczów dla każdej liczby bramek jako trzy słupki obok siebie, na pełną szerokość panelu, z tabelą „Dane rozkładu bramek” jako odpowiednikiem tekstowym. Dane histogramu trafiają do `data-player-distribution-data`. Pozostałe wykresy analityczne karty, w tym trzy wykresy „Forma mecz po meczu” przeniesione stąd na prośbę użytkownika, są w zakładce Forma i regularność. Wykres używa lokalnego Apache ECharts 6.1.0 w SVG, ma ARIA i respektuje `prefers-reduced-motion`.
 
 Zapytanie wybiera mecze przez EXISTS, zlicza je i paginuje przed pobraniem wpisów. Wpisy zawodnika są pobierane jednym dodatkowym zapytaniem dla bieżącej strony, bez N+1. Kilka stron jednego meczu pozostaje jednym meczem w paginacji; źródłowe statystyki pokazane są osobno z komunikatem o kilku stronach. Nie są sumowane. „Szczegóły meczu” prowadzą do istniejącej karty meczu w nowej karcie przeglądarki.
 
@@ -46,13 +48,23 @@ Zapytanie wybiera mecze przez EXISTS, zlicza je i paginuje przed pobraniem wpis�
 
 Dodatkowa zakładka z niezależnym kontekstem sezonu, rozgrywek i przeciwnika (ten sam formularz filtrów co Podsumowanie). Korzysta z tego samego zapytania `pobierz_analityke()` co Podsumowanie — bez dodatkowego zapytania do bazy.
 
+Zakładka gromadzi wszystkie wykresy analityczne karty poza histogramem rozkładu bramek, który pozostaje w Podsumowaniu. Pod filtrami jest spis treści (`nav.player-toc[data-player-toc]`) z kotwicami do pięciu sekcji `section.player-section`: Statystyki opisowe (`#player-forma-statystyki`), Bramki mecz po meczu (`#player-forma-mecze`), Forma krocząca (`#player-forma-kroczaca`), Regularność według sezonu (`#player-forma-sezony`) i Defensywa rywali (`#player-forma-defensywa`). Bez JavaScript linki działają jak zwykłe kotwice; z JavaScript `ZakladkiZawodnikaController.podlaczSpisTresci()` przewija do sekcji (płynnie, a przy `prefers-reduced-motion` natychmiast), przenosi na nią fokus i nie zmienia adresu strony, co ma znaczenie także w modalu listy zawodników. Sekcja bez danych pokazuje komunikat, więc spis treści zawsze prowadzi do istniejącego celu.
+
+Wygląd: lista sekcji jest zdefiniowana raz w szablonie (`sekcje_formy`: klucz kotwicy, tytuł, podtytuł, liczba wykresów lub miar) i zasila zarówno spis treści, jak i nagłówki sekcji (lokalne makro `naglowek_sekcji(nr)` w `detail.html`). Spis treści to siatka kafelków: numer w kolorowym kwadracie, tytuł, jednozdaniowy opis i znacznik liczby wykresów; kafelek unosi się lekko po najechaniu (bez ruchu przy `prefers-reduced-motion`), a na telefonie opis jest ukryty, żeby spis był zwarty. Każda sekcja jest osobną kartą z nagłówkiem (numer, tytuł, podtytuł, przycisk „↑ Spis treści”) i akcentem kolorystycznym z palety strony (`--acc`, `--good`, `--warn`, `--n3`, `--danger`) w tej samej kolejności co kafelki. Linki spisu i powrotu mają `data-player-scroll`. Statystyki opisowe są pogrupowane w cztery bloki: Poziom (średnia, mediana, dominanta, średnia ucięta), Zakres (min, maks, Q1–Q3, P10, P90), Rozrzut (IQR, odchylenie standardowe, MAD, współczynnik zmienności) i Udziały meczów (0, 1–2, 3–5, 6+) — na desktopie po dwa bloki w rzędzie, każdy z kafelkami w jednym wierszu, na węższych ekranach jeden pod drugim.
+
+Sekcja Bramki mecz po meczu zawiera trzy wykresy przeniesione z Podsumowania: wszystkie mecze, tylko u siebie i tylko na wyjeździe, każdy z własną medianą (linia przerywana) — wariant „wszystkie” liczy medianę z całego zakresu, warianty miejsca tylko z meczów danego miejsca. Mecz z niejednoznaczną lub nieustaloną stroną (np. wpis `inne`) nie trafia do wariantu u siebie ani na wyjeździe, ale pozostaje w wariancie wszystkie; kliknięcie punktu otwiera mecz, a najwyższy wynik jest wyróżniony. Dane pochodzą z `podsumowanie.punkty` i median Podsumowania (`data-player-trend-data`), a tabela „Dane wykresów mecz po meczu” jest ich odpowiednikiem tekstowym.
+
 KPI: średnia, mediana, wszystkie dominanty, minimum, maksimum, Q1–Q3, IQR, odchylenie standardowe (populacyjne), MAD (mediana bezwzględnych odchyleń od mediany), współczynnik zmienności, P10, P90, średnia ucięta 10% oraz udział meczów z 0, 1–2, 3–5 i 6+ bramkami. Wszystkie miary liczone są tylko z meczów ze znaną liczbą bramek w wybranym zakresie; braki nie stają się zerami. Współczynnik zmienności jest pomijany („—”), gdy średnia jest mniejsza niż 0,1 bramki na mecz.
 
-Wykres formy jest rozdzielony na dwa osobne wykresy — u siebie i na wyjeździe — z niezależnie liczonym oknem kroczącym: każdy pokazuje punkty meczów tego miejsca (kolor według sezonu), medianę kroczącą i średnią kroczącą z 5 ostatnich takich meczów ze znaną liczbą bramek oraz — po osiągnięciu 10 — dodatkową medianę kroczącą z 10. Rozdzielenie okna kroczącego (a nie tylko podział wykresu) ma znaczenie: krocząca piątka meczów u siebie pomija mecze wyjazdowe rozgrywane między nimi, więc pokazuje rzeczywistą formę w danym miejscu, nie formę ogólną przefiltrowaną wizualnie. Kolejność w każdym z wykresów jest ustalana po kolejności meczów danego miejsca (termin, potem ID), nie po dniach kalendarzowych; nieznana liczba bramek przerywa okno kroczące zamiast zamieniać się w zero. Mecz z niejednoznacznym lub nieustalonym miejscem (np. wpis `inne`) nie trafia do żadnego z dwóch wykresów. Poniżej 5 takich meczów zamiast trendu pokazuje się osobne, jawne ostrzeżenie dla tego miejsca; przy zerze meczów wykres pokazuje krótki komunikat zamiast pustego obszaru. Kliknięcie punktu otwiera szczegóły meczu w nowej karcie. Pionowe linie oznaczają granice sezonów w obrębie danego miejsca.
+Sekcja Forma krocząca ma trzy wykresy. Pierwszy, „Przebieg formy (wszystkie mecze)”, liczy okno kroczące ze wszystkich meczów zakresu w kolejności rozgrywania, łącznie z meczami o nieustalonym miejscu (`forma.wszystkie`, liczone w `_forma_meczow()` tą samą metodą co warianty miejsca). Pod nim są dwa wykresy według miejsca — u siebie i na wyjeździe — z niezależnie liczonym oknem kroczącym: każdy pokazuje punkty meczów tego miejsca (kolor według sezonu), medianę kroczącą i średnią kroczącą z 5 ostatnich takich meczów ze znaną liczbą bramek oraz — po osiągnięciu 10 — dodatkową medianę kroczącą z 10. Rozdzielenie okna kroczącego (a nie tylko podział wykresu) ma znaczenie: krocząca piątka meczów u siebie pomija mecze wyjazdowe rozgrywane między nimi, więc pokazuje rzeczywistą formę w danym miejscu, nie formę ogólną przefiltrowaną wizualnie. Kolejność w każdym z wykresów jest ustalana po kolejności meczów danego miejsca (termin, potem ID), nie po dniach kalendarzowych; nieznana liczba bramek przerywa okno kroczące zamiast zamieniać się w zero. Mecz z niejednoznacznym lub nieustalonym miejscem (np. wpis `inne`) nie trafia do żadnego z dwóch wykresów. Poniżej 5 takich meczów zamiast trendu pokazuje się osobne, jawne ostrzeżenie dla danego wariantu (wszystkie, u siebie, na wyjeździe); przy zerze meczów wykres pokazuje krótki komunikat zamiast pustego obszaru. Kliknięcie punktu otwiera szczegóły meczu w nowej karcie. Pionowe linie oznaczają granice sezonów w obrębie danego miejsca.
 
 Wykres regularności to jeden, wspólny (nie rozdzielony na miejsca) boxplot bramek na mecz według sezonu: mediana, Q1, Q3 oraz wąsy ograniczone regułą Tukeya (`Q1 − 1,5×IQR` … `Q3 + 1,5×IQR`); wartości poza tym zakresem są oznaczone osobno jako punkty odstające, nie ukrywane. Sezon z mniej niż 5 znanymi meczami jest oznaczony jako mała próba w tabeli danych i na osi kategorii (etykieta `n=`).
 
-Wszystkie trzy wykresy są ułożone jeden pod drugim na pełną szerokość panelu (`.player-chart-grid.stacked`), żeby wykres formy pozostawał czytelny przy wielu sezonach i setkach meczów. Mają też tabelaryczny odpowiednik w rozwijanych sekcjach pod wykresami (osobno dla miejsca u siebie i na wyjeździe), opis ARIA i respektują `prefers-reduced-motion`.
+Wszystkie wykresy zakładki są ułożone jeden pod drugim na pełną szerokość panelu (`.player-chart-grid.stacked`), żeby pozostawały czytelne przy wielu sezonach i setkach meczów. Każda sekcja ma tabelaryczny odpowiednik w rozwijanych blokach pod wykresami, wykresy mają opis ARIA i respektują `prefers-reduced-motion`.
+
+#### Defensywa rywali (sekcja Formy i regularności)
+
+Ostatnia sekcja zakładki, przeniesiona z usuniętej zakładki Statystyki na prośbę użytkownika, aby wszystkie wykresy były w jednym miejscu. Zawiera nagłówek „Bramki zawodnika a poziom defensywy rywali”, opis, jeden wykres słupkowy (średnia bramek zawodnika w pięciu klasach jakości defensywy rywala, z liczbą meczów n przy każdym słupku), tabelę „Dane wykresu defensywy rywali” (klasa, średnia, n) i przycisk „Pokaż szczegóły” otwierający pełny raport w nowej karcie (`target="_blank"`, nie modal). Bez wzorów, regresji, Pearsona, Spearmana, R², shrinkage ani tabel matematycznych — te trafiają wyłącznie na osobną stronę [defensywa_rywali.md](defensywa_rywali.md), pod trasą `GET /administracja/zawodnicy/<id_zawodnik>/defensywa-rywali` (endpoint `administracja.defensywa_rywala_zawodnika`). Jakość defensywy rywala jest liczona ze stanu **przed** każdym analizowanym meczem (bez data leakage), względem średniej ligowej tych samych rozgrywek, z shrinkage przy małej liczbie wcześniejszych meczów rywala — pełny opis metody jest w dokumencie strony szczegółowej. Przy braku meczów z wyznaczoną jakością defensywy pokazuje się jawny komunikat zamiast pustego wykresu. Sekcja uwzględnia filtry zakładki: widok przekazuje sezon, rozgrywki i przeciwnika do `FiltryDefensywyRywala`, a link „Pokaż szczegóły” przenosi je na stronę szczegółową. Filtry zawężają tylko analizowane mecze zawodnika; jakość defensywy rywala jest zawsze liczona z pełnych danych ligowych sprzed meczu. Tak jak na stronie szczegółowej domyślnie liczone są tylko mecze z pełnymi danymi, co opisuje notatka w sekcji. Parametr `zakladka=statystyki` nie jest już akceptowany.
 
 ## Kontrakt i powiązania
 
@@ -60,8 +72,9 @@ Wszystkie trzy wykresy są ułożone jeden pod drugim na pełną szerokość pan
 - `strona`: `StronaMeczowZawodnikaViewModel`: pozycje, liczba_wszystkich, strona i rozmiar_strony. Każda pozycja zawiera model meczu, termin, wpisy i flagę wiele_stron.
 - `formularz`: `MeczeZawodnikaFilterForm`; `filtry`: `FiltryMeczowZawodnika`.
 - `aktywna_zakladka`: profil / sezony / mecze / podsumowanie / forma. Bez parametrów profil; przy parametrach bez jawnej zakładki — mecze.
+- `defensywa_rywali`: `DefensywaRywalaKartaViewModel` (sekcja Defensywa rywali w Formie i regularności): klasy z n i średnią, `wykres` gotowy do `tojson`, flaga wystarczającej liczby danych.
 - `podsumowanie`: `PodsumowanieAnalityczneZawodnikaViewModel`; KPI, punkty trendu z miejscem meczu, rozkład bramek podzielony na wszystkie/u siebie/na wyjeździe i mediana każdego wariantu.
-- `forma`: `FormaIRegularnoscZawodnikaViewModel`; statystyki opisowe (całościowe), zagnieżdżone `dom`/`wyjazd` (`FormaWedlugMiejscaZawodnikaViewModel`: własne punkty formy z medianą/średnią kroczącą i próg trendu) oraz wspólne rozstępy sezonów do boxplota.
+- `forma`: `FormaIRegularnoscZawodnikaViewModel`; statystyki opisowe (całościowe), zagnieżdżone `wszystkie`/`dom`/`wyjazd` (`FormaWedlugMiejscaZawodnikaViewModel`: własne punkty formy z medianą/średnią kroczącą i próg trendu) oraz wspólne rozstępy sezonów do boxplota.
 - `parametry_paginacji`: bieżące parametry GET z nadpisanym prawidłowym id_zawodnik i zakladka=mecze, używane przez wspólną paginację.
 - `sekcja_aktywna="zawodnicy"`: sidebar Zawodnicy i górna sekcja Dane.
 
@@ -85,9 +98,11 @@ Na wyraźne polecenie użytkownika dodano podział wykresów formy (Podsumowanie
 
 Na dalsze doprecyzowanie użytkownika w zakładce Podsumowanie przywrócono wykres „Forma mecz po meczu (wszystkie)” obok wariantów u siebie/na wyjeździe (trzy wykresy formy zamiast dwóch) i rozszerzono histogram „Rozkład bramek” do trzech słupków na każdą liczbę bramek: Wszystkie, U siebie, Na wyjeździe. Dane do wariantu „wszystkie” (mediana całościowa, łączna liczba meczów na słupek) były już liczone wcześniej na potrzeby KPI i pozostałych wariantów, więc zmiana dotyczyła tylko szablonu i JavaScriptu (`AnalitykaZawodnikaController`), bez zmian w repozytorium ani serwisie. Zakładka Forma i regularność nie zmieniła się — użytkownik nie prosił tam o wariant „wszystkie”. Testy interfejsu i JavaScript zaktualizowano pod nowy układ (4 wykresy zamiast 3, histogram z 3 seriami); pełny zestaw testów pozostaje zielony poza tymi samymi dwoma nieistotnymi, wcześniej udokumentowanymi wyjątkami. Sprawdzono na rzeczywistej karcie #1732: cztery wykresy i trzy podpisane serie histogramu renderują się poprawnie.
 
+Dodano zakładkę Statystyki (kompaktowy wykres „Bramki zawodnika a poziom defensywy rywali” + przycisk „Pokaż szczegóły”) i osobną stronę raportu pod tym przyciskiem — pełny opis w [defensywa_rywali.md](defensywa_rywali.md). Nowa analiza dostała własną warstwę domeny/serwisu/repozytorium/presentera, niezależną od istniejącej analityki Podsumowania i Formy; jedyna zmiana w tym pliku i widoku karty to dodanie szóstej zakładki i wywołanie nowego serwisu z domyślnymi filtrami (cała kariera) na potrzeby kompaktowego wykresu. Weryfikacja: 20 nowych testów jednostkowych serwisu, 6 testów repozytorium, 6 testów interfejsu (strona szczegółowa, 404, 400, brak danych, przykład wybierany parametrem, zakładka karty) i 2 testy JavaScript (cztery wykresy strony szczegółowej, wykres skrótu na karcie) przechodzą. Pełny zestaw: 287 z 288 testów Pythona bez integracyjnych z bazą (ten sam nieistotny błąd `SECRET_KEY`, niezwiązany ze zmianą) i 29 testów JavaScript. Mypy i Ruff (check i format) bez błędów. Na rzeczywistej karcie zawodnika #1732 (229 meczów) potwierdzono odpowiedź 200 karty i strony szczegółowej, poprawne dane JSON wszystkich czterech wykresów, działający filtr miejsca (229 → 114 dla „u siebie”) i przykład krok po kroku dla rzeczywistego meczu z 2017 roku. Bazy nie zmieniano.
+
 ## Dalszy plan
 
-Istniejące zakładki Profil, Sezony i drużyny oraz Mecze pozostają bez zmian. Podsumowanie i Forma i regularność są zaimplementowanymi dodatkowymi zakładkami. Bramki i karne, Porównania, Dyscyplina, Rekordy i Jakość danych pozostają planem bez nieczynnych elementów w interfejsie — nie są renderowane jako zakładki, dopóki nie zostaną zaimplementowane. Pełny projekt opisuje [PLAYER_DATA_SCIENCE](../../../../../docs/PLAYER_DATA_SCIENCE.md).
+Istniejące zakładki Profil, Sezony i drużyny oraz Mecze pozostają bez zmian. Podsumowanie oraz Forma i regularność (z sekcją defensywy rywali) są zaimplementowanymi dodatkowymi zakładkami. Bramki i karne, Porównania, Dyscyplina, Rekordy i Jakość danych (z [PLAYER_DATA_SCIENCE](../../../../../docs/PLAYER_DATA_SCIENCE.md)) pozostają planem bez nieczynnych elementów w interfejsie — nie są renderowane jako zakładki, dopóki nie zostaną zaimplementowane. Analiza defensywy rywali (ten dokument i [defensywa_rywali.md](defensywa_rywali.md)) jest osobną, dodatkową analizą spoza pierwotnego planu PLAYER_DATA_SCIENCE, zleconą wprost przez użytkownika.
 
 ## Układ tekstowy i mapa zmian
 
@@ -116,21 +131,42 @@ Mecze:
 Podsumowanie:
   [Sezon v] [Rozgrywki v] [Przeciwnik] [Filtruj analizy] [Wyczyść filtry]
   [KPI: mecze | bramki | średnia | mediana | dominanta | Q1–Q3 | karne | kary]
-  [trend bramek (wszystkie) + mediana — pełna szerokość]
-  [trend bramek u siebie + mediana — pełna szerokość]
-  [trend bramek na wyjeździe + mediana — pełna szerokość]
+  [Pokrycie danych o bramkach]
+  [średnia / mediana / dominanta na mecz według sezonu × rozgrywek + opis + tooltip — pełna szerokość]
+  [tabela danych statystyk według sezonu i rozgrywek]
   [rozkład bramek: słupki wszystkie, u siebie i na wyjeździe — pełna szerokość]
-  [tabela danych wykresów, z kolumną Miejsce]
+  [tabela danych rozkładu bramek]
+  Wykresy formy, regularności i defensywy rywali są w zakładce Forma i regularność.
 Forma i regularność:
   [Sezon v] [Rozgrywki v] [Przeciwnik] [Filtruj analizy] [Wyczyść filtry]
-  [KPI: średnia | mediana | dominanta | min | maks | Q1–Q3 | IQR |
-   odch. std. | MAD | wsp. zmienności | P10 | P90 | śr. ucięta | udziały 0/1–2/3–5/6+]
-  [ostrzeżenie o zbyt małej liczbie meczów u siebie, jeśli n < 5]
-  [ostrzeżenie o zbyt małej liczbie meczów na wyjeździe, jeśli n < 5]
-  [forma u siebie: bramki + mediana/średnia krocząca 5 (+ mediana krocząca 10) — pełna szerokość]
-  [forma na wyjeździe: bramki + mediana/średnia krocząca 5 (+ mediana krocząca 10) — pełna szerokość]
-  [boxplot sezonów (wspólny) — pełna szerokość]
-  [tabela danych formy: u siebie] [tabela danych formy: na wyjeździe] [tabela danych rozstępu sezonów]
+  +- Spis treści ------------------------------ 5 sekcji · kliknij, aby przejść -+
+  | [1] Statystyki | [2] Bramki mecz | [3] Forma     | [4] Regularność | [5] Defensywa |
+  |  opisowe       |  po meczu       |  krocząca     |  według sezonu  |  rywali       |
+  |  opis          |  opis           |  opis         |  opis           |  opis         |
+  |  (17 miar)     |  (3 wykresy)    |  (3 wykresy)  |  (1 wykres)     |  (1 wykres)   |
+  +-----------------------------------------------------------------------------+
+  każda sekcja poniżej: [n] Tytuł / podtytuł ................ [↑ Spis treści]
+  1. Statystyki opisowe
+    [POZIOM: średnia | mediana | dominanta | śr. ucięta]  [ZAKRES: min | maks | Q1–Q3 | P10 | P90]
+    [ROZRZUT: IQR | odch. std. | MAD | wsp. zmienności]  [UDZIAŁY: 0 | 1–2 | 3–5 | 6+]
+  2. Bramki mecz po meczu
+    [trend bramek (wszystkie) + mediana — pełna szerokość]
+    [trend bramek u siebie + mediana — pełna szerokość]
+    [trend bramek na wyjeździe + mediana — pełna szerokość]
+    [tabela danych wykresów mecz po meczu, z kolumną Miejsce]
+  3. Forma krocząca
+    [ostrzeżenie o zbyt małej liczbie meczów: wszystkie / u siebie / na wyjeździe, jeśli n < 5]
+    [forma — wszystkie mecze: bramki + mediana/średnia krocząca 5 (+ mediana krocząca 10)]
+    [forma u siebie: bramki + mediana/średnia krocząca 5 (+ mediana krocząca 10)]
+    [forma na wyjeździe: bramki + mediana/średnia krocząca 5 (+ mediana krocząca 10)]
+    [tabela danych formy: wszystkie mecze] [u siebie] [na wyjeździe]
+  4. Regularność według sezonu
+    [boxplot sezonów (wspólny) — pełna szerokość] [tabela danych rozstępu sezonów]
+  5. Bramki zawodnika a poziom defensywy rywali
+    [notatka: filtry sezonu, rozgrywek i przeciwnika; tylko mecze z pełnymi danymi]
+    [wykres słupkowy: 5 klas defensywy, średnia + n / komunikat o zbyt małej próbie]
+    [tabela danych wykresu defensywy rywali]
+    [Pokaż szczegóły] → nowa karta: defensywa_rywali.html (osobny raport, nie modal)
 
 [modal: Otwórz w nowej karcie / Zamknij]
 ```
@@ -148,11 +184,14 @@ Z JavaScript widoczna jest jedna zakładka. Na wąskim ekranie filtry układają
 | HTTP i parametry | [player_detail_views.py](../../../admin/views/player_detail_views.py) | ZawodnikSzczegolyView.get(), parametry_paginacji. |
 | Formatowanie | [player_detail_presenter.py](../../../presenters/player_detail_presenter.py) | SzczegolyZawodnikaPresenter i modele w interface/view_models/player_details.py. |
 | Zakładki i modal | [player_details.js](../../../static/js/player_details.js) | ZakladkiZawodnikaController, SzczegolyZawodnikaController, data-player-*. |
+| Spis treści Formy i regularności | [detail.html](detail.html), [player_details.js](../../../static/js/player_details.js), [admin.css](../../../static/css/admin.css) | sekcje_formy, makro naglowek_sekcji(), nav.player-toc#player-forma-spis[data-player-toc], .player-toc-list, section.player-section#player-forma-*, .player-section-head, .player-kpi-groups, a[data-player-scroll], podlaczSpisTresci(). |
 | Podsumowanie analityczne | [detail.html](detail.html), [repozytorium](../../../../infrastructure/repositories/player_detail_repository.py), [serwis](../../../../services/player_detail_service.py) | .player-kpi-grid, pobierz_analityke(), SzczegolyZawodnikaAnalyticsService. |
-| Wykresy ECharts (Podsumowanie) | [player_details.js](../../../static/js/player_details.js), [ECharts](../../../static/vendor/echarts/echarts.min.js) | AnalitykaZawodnikaController, data-player-trend-wszystkie, data-player-trend-dom, data-player-trend-wyjazd, data-player-distribution. |
+| Wykresy ECharts (Podsumowanie) | [player_details.js](../../../static/js/player_details.js), [ECharts](../../../static/vendor/echarts/echarts.min.js), [serwis](../../../../services/player_detail_service.py) | AnalitykaZawodnikaController.uruchomSezony() (data-player-season-stats, data-player-season-stats-data, opisGrupy(), .player-tooltip, .player-chart-opis), _sezony_rozgrywki(); uruchomRozklad(): data-player-distribution, data-player-distribution-data. |
 | Forma i regularność | [detail.html](detail.html), [domena](../../../../domain/player_details.py), [serwis](../../../../services/player_detail_service.py), [presenter](../../../presenters/player_detail_presenter.py) | pobierz_forme(), FormaIRegularnoscZawodnika, FormaWedlugMiejscaZawodnika, PunktFormyZawodnika, RozstepSezonuZawodnika, FormaIRegularnoscZawodnikaViewModel. |
-| Wykresy formy i boxplot | [player_details.js](../../../static/js/player_details.js) | FormaZawodnikaController, data-player-form-dom, data-player-form-wyjazd, data-player-boxplot, data-player-forma-data. |
+| Wykresy Formy i regularności | [player_details.js](../../../static/js/player_details.js) | FormaZawodnikaController.uruchomTrendy() (data-player-trend-wszystkie/-dom/-wyjazd, data-player-trend-data), uruchomForme(): data-player-form-wszystkie, data-player-form-dom, data-player-form-wyjazd, data-player-boxplot, data-player-forma-data. |
 | Podział u siebie/na wyjeździe | [repozytorium](../../../../infrastructure/repositories/player_detail_repository.py), [domena](../../../../domain/player_details.py) | AnalitykaMeczuZawodnika.miejsce, kolumna `miejsce` liczona z `mecze_zawodnicy.strona` z wykluczeniem niejednoznacznych meczów. |
+| Defensywa rywali (sekcja Formy) | [detail.html](detail.html), [detail_views.py](../../../admin/views/player_detail_views.py) | #player-forma-defensywa, data-defense-summary, DefensywaSkrotZawodnikaController, DefensywaRywalaService.pobierz_analize(), DefensywaRywalaPresenter.przygotuj_karte(). |
+| Bramki a defensywa rywali (szczegóły) | [defensywa_rywali.html](defensywa_rywali.html), [defensywa_rywali.md](defensywa_rywali.md) | Pełny opis modelu, tras, plików i mapy zmian w osobnym dokumencie. |
 | Przycisk i dwuklik | [list.html](list.html), [list.md](list.md) | data-player-href, #player-detail-dialog, link Szczegóły. |
 | Paginacja | [pagination.html](../../partials/pagination.html) | parametry_paginacji, strona. |
 | Style i responsywność | [admin.css](../../../static/css/admin.css) | .match-detail-dialog, .match-tabs, .player-*, data-player-panel. |

@@ -14,18 +14,203 @@
     return ladowanieECharts;
   };
 
+  const escapujHtml = tekst => String(tekst ?? '').replace(/[&<>"']/g, znak => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[znak]);
+
+  const PROG_MALEJ_PROBY = 5;
+
+  const formatujLiczbe = (wartosc, miejsca = 1) => (wartosc === null || wartosc === undefined ? '—' : Number(wartosc).toFixed(miejsca).replace('.', ','));
+
   class AnalitykaZawodnikaController {
     constructor(korzen) {
       this.korzen = korzen;
     }
 
     async uruchom() {
+      await Promise.all([this.uruchomSezony(), this.uruchomRozklad()]);
+    }
+
+    async uruchomSezony() {
+      const element = this.korzen.querySelector('[data-player-season-stats]');
+      const zrodlo = this.korzen.querySelector('[data-player-season-stats-data]');
+      if (!element || !zrodlo || element.dataset.chartReady) return;
+      element.dataset.chartReady = 'true';
+      try {
+        const echarts = await zaladujECharts(this.korzen.dataset.echartsUrl);
+        this.rysujSezony(echarts, element, JSON.parse(zrodlo.textContent));
+      } catch {
+        element.textContent = 'Nie udało się narysować wykresu. Dane tabelaryczne pozostają dostępne poniżej.';
+      }
+    }
+
+    opisGrupy(grupa) {
+      const wiersze = [
+        ['Mecze ze znaną liczbą bramek', grupa.znane === grupa.mecze ? String(grupa.mecze) : `${grupa.znane} z ${grupa.mecze}`],
+        ['Suma bramek', grupa.suma ?? '—'],
+        ['Średnia', formatujLiczbe(grupa.srednia, 2)],
+        ['Mediana', formatujLiczbe(grupa.mediana)],
+        ['Dominanta', grupa.dominanty.length ? grupa.dominanty.join(', ') : '—'],
+        ['Q1–Q3', grupa.q1 === null ? '—' : `${formatujLiczbe(grupa.q1)}–${formatujLiczbe(grupa.q3)}`],
+        ['Min–maks', grupa.minimum === null ? '—' : `${grupa.minimum}–${grupa.maksimum}`],
+      ];
+      const malaProba = grupa.znane < PROG_MALEJ_PROBY ? '<span class="player-tooltip-flag">mała próba</span>' : '';
+      return `<div class="player-tooltip"><div class="player-tooltip-title">${escapujHtml(grupa.sezon)}${malaProba}</div>`
+        + `<div class="player-tooltip-sub">${escapujHtml(grupa.rozgrywki)}</div><table>`
+        + wiersze.map(([etykieta, wartosc]) => `<tr><th>${escapujHtml(etykieta)}</th><td>${escapujHtml(wartosc)}</td></tr>`).join('')
+        + '</table></div>';
+    }
+
+    rysujSezony(echarts, element, grupy) {
+      const ograniczonyRuch = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      const wykres = echarts.init(element, null, {renderer: 'svg'});
+      const skrot = tekst => (tekst.length > 22 ? `${tekst.slice(0, 21)}…` : tekst);
+      wykres.setOption({
+        animation: !ograniczonyRuch,
+        animationDuration: 450,
+        animationEasing: 'cubicOut',
+        aria: {show: true, description: 'Wykres średniej, mediany i dominanty bramek zawodnika na mecz w kolejnych sezonach i rozgrywkach.'},
+        color: ['#2b6ea4', '#3a7c67', '#9f6a15'],
+        legend: {top: 0},
+        grid: {left: 42, right: 18, top: 36, bottom: 78},
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {type: 'line', lineStyle: {color: '#9aa5b1', type: 'dashed'}},
+          confine: true,
+          backgroundColor: '#ffffff',
+          borderColor: '#c8d4dd',
+          borderWidth: 1,
+          padding: 0,
+          extraCssText: 'box-shadow:0 6px 18px rgba(16,40,63,.16);border-radius:8px;',
+          formatter: parametry => {
+            const lista = Array.isArray(parametry) ? parametry : [parametry];
+            const linia = lista.find(parametr => parametr.seriesType === 'line');
+            const grupa = grupy[linia ? linia.dataIndex : lista[0]?.value?.[0]];
+            return grupa ? this.opisGrupy(grupa) : '';
+          },
+        },
+        xAxis: {
+          type: 'category',
+          data: grupy.map(grupa => `${grupa.sezon}\n${skrot(grupa.rozgrywki)}`),
+          axisLabel: {rotate: 30, hideOverlap: true, fontSize: 10, lineHeight: 12},
+        },
+        yAxis: {type: 'value', minInterval: 1, name: 'Bramki na mecz'},
+        dataZoom: grupy.length > 20 ? [{type: 'inside'}, {type: 'slider', height: 14, bottom: 2}] : undefined,
+        series: [
+          {
+            name: 'Średnia',
+            type: 'line',
+            symbol: 'circle',
+            symbolSize: 9,
+            smooth: 0.15,
+            connectNulls: false,
+            lineStyle: {width: 2.5},
+            emphasis: {focus: 'series', scale: 1.5},
+            data: grupy.map(grupa => this.punktSezonu(grupa, grupa.srednia, '#2b6ea4')),
+          },
+          {
+            name: 'Mediana',
+            type: 'line',
+            symbol: 'rect',
+            symbolSize: 8,
+            connectNulls: false,
+            lineStyle: {width: 2, type: 'dashed'},
+            emphasis: {focus: 'series', scale: 1.5},
+            data: grupy.map(grupa => this.punktSezonu(grupa, grupa.mediana, '#3a7c67')),
+          },
+          {
+            name: 'Dominanta',
+            type: 'scatter',
+            symbol: 'diamond',
+            symbolSize: 12,
+            emphasis: {focus: 'series', scale: 1.4},
+            data: grupy.flatMap((grupa, indeks) => grupa.dominanty.map(wartosc => [indeks, wartosc])),
+          },
+        ],
+      });
+      this.obserwujRozmiar(wykres, element);
+    }
+
+    punktSezonu(grupa, wartosc, kolor) {
+      if (grupa.znane >= PROG_MALEJ_PROBY) return wartosc;
+      return {value: wartosc, itemStyle: {color: '#ffffff', borderColor: kolor, borderWidth: 2}};
+    }
+
+    async uruchomRozklad() {
+      const rozklad = this.korzen.querySelector('[data-player-distribution]');
+      const zrodlo = this.korzen.querySelector('[data-player-distribution-data]');
+      if (!rozklad || !zrodlo || rozklad.dataset.chartReady) return;
+      rozklad.dataset.chartReady = 'true';
+      try {
+        const echarts = await zaladujECharts(this.korzen.dataset.echartsUrl);
+        this.rysujRozklad(echarts, rozklad, JSON.parse(zrodlo.textContent));
+      } catch {
+        rozklad.textContent = 'Nie udało się narysować wykresu. Dane tabelaryczne pozostają dostępne poniżej.';
+      }
+    }
+
+    rysujRozklad(echarts, element, rozklad) {
+      const ograniczonyRuch = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      const wykres = echarts.init(element, null, {renderer: 'svg'});
+      wykres.setOption({
+        animation: !ograniczonyRuch,
+        animationDuration: 400,
+        aria: {show: true, description: 'Histogram liczby meczów według liczby zdobytych bramek: wszystkie, u siebie i na wyjeździe.'},
+        color: ['#3a7c67', '#2b6ea4', '#9f6a15'],
+        legend: {top: 0},
+        grid: {left: 42, right: 18, top: 34, bottom: 38},
+        tooltip: {trigger: 'axis', axisPointer: {type: 'shadow'}},
+        xAxis: {type: 'category', name: 'Bramki', data: rozklad.map(punkt => punkt.bramki)},
+        yAxis: {type: 'value', minInterval: 1, name: 'Mecze'},
+        series: [
+          {
+            name: 'Wszystkie',
+            type: 'bar',
+            barMaxWidth: 20,
+            emphasis: {focus: 'series'},
+            data: rozklad.map(punkt => punkt.mecze),
+          },
+          {
+            name: 'U siebie',
+            type: 'bar',
+            barMaxWidth: 20,
+            emphasis: {focus: 'series'},
+            data: rozklad.map(punkt => punkt.dom),
+          },
+          {
+            name: 'Na wyjeździe',
+            type: 'bar',
+            barMaxWidth: 20,
+            emphasis: {focus: 'series'},
+            data: rozklad.map(punkt => punkt.wyjazd),
+          },
+        ],
+      });
+      this.obserwujRozmiar(wykres, element);
+    }
+
+    obserwujRozmiar(wykres, element) {
+      if (typeof ResizeObserver === 'function') new ResizeObserver(() => wykres.resize()).observe(element);
+    }
+  }
+
+  const PALETA_SEZONOW = ['#2b6ea4', '#3a7c67', '#9f6a15', '#7c3aed', '#b04646', '#0e7490'];
+
+  class FormaZawodnikaController {
+    constructor(korzen) {
+      this.korzen = korzen;
+    }
+
+    async uruchom() {
+      await Promise.all([this.uruchomTrendy(), this.uruchomForme()]);
+    }
+
+    async uruchomTrendy() {
       const trendWszystkie = this.korzen.querySelector('[data-player-trend-wszystkie]');
       const trendDom = this.korzen.querySelector('[data-player-trend-dom]');
       const trendWyjazd = this.korzen.querySelector('[data-player-trend-wyjazd]');
-      const rozklad = this.korzen.querySelector('[data-player-distribution]');
-      const zrodlo = this.korzen.querySelector('[data-player-analytics-data]');
-      if (!trendWszystkie || !trendDom || !trendWyjazd || !rozklad || !zrodlo || trendWszystkie.dataset.chartReady) return;
+      const zrodlo = this.korzen.querySelector('[data-player-trend-data]');
+      if (!trendWszystkie || !trendDom || !trendWyjazd || !zrodlo || trendWszystkie.dataset.chartReady) return;
       trendWszystkie.dataset.chartReady = 'true';
       try {
         const echarts = await zaladujECharts(this.korzen.dataset.echartsUrl);
@@ -35,12 +220,33 @@
         this.rysujTrend(echarts, trendWszystkie, dane.punkty, dane.mediana, 'Brak meczów w wybranym zakresie.');
         this.rysujTrend(echarts, trendDom, punktyDom, dane.mediana_dom, 'Brak meczów u siebie w wybranym zakresie.');
         this.rysujTrend(echarts, trendWyjazd, punktyWyjazd, dane.mediana_wyjazd, 'Brak meczów na wyjeździe w wybranym zakresie.');
-        this.rysujRozklad(echarts, rozklad, dane.rozklad);
       } catch {
         trendWszystkie.textContent = 'Nie udało się narysować wykresów. Dane tabelaryczne pozostają dostępne poniżej.';
         trendDom.hidden = true;
         trendWyjazd.hidden = true;
-        rozklad.hidden = true;
+      }
+    }
+
+    async uruchomForme() {
+      const formaWszystkie = this.korzen.querySelector('[data-player-form-wszystkie]');
+      const formaDom = this.korzen.querySelector('[data-player-form-dom]');
+      const formaWyjazd = this.korzen.querySelector('[data-player-form-wyjazd]');
+      const boxplot = this.korzen.querySelector('[data-player-boxplot]');
+      const zrodlo = this.korzen.querySelector('[data-player-forma-data]');
+      if (!formaWszystkie || !formaDom || !formaWyjazd || !boxplot || !zrodlo || formaWszystkie.dataset.chartReady) return;
+      formaWszystkie.dataset.chartReady = 'true';
+      try {
+        const echarts = await zaladujECharts(this.korzen.dataset.echartsUrl);
+        const dane = JSON.parse(zrodlo.textContent);
+        this.rysujForme(echarts, formaWszystkie, dane.wszystkie.punkty, 'Brak meczów w wybranym zakresie.');
+        this.rysujForme(echarts, formaDom, dane.dom.punkty, 'Brak meczów u siebie w wybranym zakresie.');
+        this.rysujForme(echarts, formaWyjazd, dane.wyjazd.punkty, 'Brak meczów na wyjeździe w wybranym zakresie.');
+        this.rysujBoxplot(echarts, boxplot, dane);
+      } catch {
+        formaWszystkie.textContent = 'Nie udało się narysować wykresów. Dane tabelaryczne pozostają dostępne poniżej.';
+        formaDom.hidden = true;
+        formaWyjazd.hidden = true;
+        boxplot.hidden = true;
       }
     }
 
@@ -104,78 +310,6 @@
         if (id) window.open(this.korzen.dataset.playerMatchUrl.replace(/0$/, String(id)), '_blank', 'noopener');
       });
       this.obserwujRozmiar(wykres, element);
-    }
-
-    rysujRozklad(echarts, element, rozklad) {
-      const ograniczonyRuch = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      const wykres = echarts.init(element, null, {renderer: 'svg'});
-      wykres.setOption({
-        animation: !ograniczonyRuch,
-        animationDuration: 400,
-        aria: {show: true, description: 'Histogram liczby meczów według liczby zdobytych bramek: wszystkie, u siebie i na wyjeździe.'},
-        color: ['#3a7c67', '#2b6ea4', '#9f6a15'],
-        legend: {top: 0},
-        grid: {left: 42, right: 18, top: 34, bottom: 38},
-        tooltip: {trigger: 'axis', axisPointer: {type: 'shadow'}},
-        xAxis: {type: 'category', name: 'Bramki', data: rozklad.map(punkt => punkt.bramki)},
-        yAxis: {type: 'value', minInterval: 1, name: 'Mecze'},
-        series: [
-          {
-            name: 'Wszystkie',
-            type: 'bar',
-            barMaxWidth: 20,
-            emphasis: {focus: 'series'},
-            data: rozklad.map(punkt => punkt.mecze),
-          },
-          {
-            name: 'U siebie',
-            type: 'bar',
-            barMaxWidth: 20,
-            emphasis: {focus: 'series'},
-            data: rozklad.map(punkt => punkt.dom),
-          },
-          {
-            name: 'Na wyjeździe',
-            type: 'bar',
-            barMaxWidth: 20,
-            emphasis: {focus: 'series'},
-            data: rozklad.map(punkt => punkt.wyjazd),
-          },
-        ],
-      });
-      this.obserwujRozmiar(wykres, element);
-    }
-
-    obserwujRozmiar(wykres, element) {
-      if (typeof ResizeObserver === 'function') new ResizeObserver(() => wykres.resize()).observe(element);
-    }
-  }
-
-  const PALETA_SEZONOW = ['#2b6ea4', '#3a7c67', '#9f6a15', '#7c3aed', '#b04646', '#0e7490'];
-
-  class FormaZawodnikaController {
-    constructor(korzen) {
-      this.korzen = korzen;
-    }
-
-    async uruchom() {
-      const formaDom = this.korzen.querySelector('[data-player-form-dom]');
-      const formaWyjazd = this.korzen.querySelector('[data-player-form-wyjazd]');
-      const boxplot = this.korzen.querySelector('[data-player-boxplot]');
-      const zrodlo = this.korzen.querySelector('[data-player-forma-data]');
-      if (!formaDom || !formaWyjazd || !boxplot || !zrodlo || formaDom.dataset.chartReady) return;
-      formaDom.dataset.chartReady = 'true';
-      try {
-        const echarts = await zaladujECharts(this.korzen.dataset.echartsUrl);
-        const dane = JSON.parse(zrodlo.textContent);
-        this.rysujForme(echarts, formaDom, dane.dom.punkty, 'Brak meczów u siebie w wybranym zakresie.');
-        this.rysujForme(echarts, formaWyjazd, dane.wyjazd.punkty, 'Brak meczów na wyjeździe w wybranym zakresie.');
-        this.rysujBoxplot(echarts, boxplot, dane);
-      } catch {
-        formaDom.textContent = 'Nie udało się narysować wykresów. Dane tabelaryczne pozostają dostępne poniżej.';
-        formaWyjazd.hidden = true;
-        boxplot.hidden = true;
-      }
     }
 
     kolorSezonu(sezon, kolejnosc) {
@@ -309,6 +443,52 @@
     }
   }
 
+  class DefensywaSkrotZawodnikaController {
+    constructor(korzen) {
+      this.korzen = korzen;
+    }
+
+    async uruchom() {
+      const wykres = this.korzen.querySelector('[data-defense-summary]');
+      const zrodlo = this.korzen.querySelector('[data-defense-summary-data]');
+      if (!wykres || !zrodlo || wykres.dataset.chartReady) return;
+      wykres.dataset.chartReady = 'true';
+      try {
+        const echarts = await zaladujECharts(this.korzen.dataset.echartsUrl);
+        const klasy = JSON.parse(zrodlo.textContent);
+        const ograniczonyRuch = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        const instancja = echarts.init(wykres, null, {renderer: 'svg'});
+        instancja.setOption({
+          animation: !ograniczonyRuch,
+          animationDuration: 400,
+          aria: {show: true, description: 'Średnia liczba bramek zawodnika według pięciu klas jakości defensywy rywala, z liczbą meczów n przy każdej klasie.'},
+          color: ['#2b6ea4'],
+          grid: {left: 42, right: 18, top: 20, bottom: 60},
+          tooltip: {
+            trigger: 'item',
+            formatter: parametry => `${parametry.name}\nŚrednia: ${parametry.value}\nn=${klasy[parametry.dataIndex].n}`,
+          },
+          xAxis: {
+            type: 'category',
+            data: klasy.map(k => k.klasa),
+            axisLabel: {rotate: 20, hideOverlap: true},
+          },
+          yAxis: {type: 'value', name: 'Średnia bramek'},
+          series: [{
+            type: 'bar',
+            barMaxWidth: 40,
+            data: klasy.map(k => k.srednia),
+            label: {show: true, position: 'top', formatter: parametry => `n=${klasy[parametry.dataIndex].n}`},
+            emphasis: {focus: 'series'},
+          }],
+        });
+        if (typeof ResizeObserver === 'function') new ResizeObserver(() => instancja.resize()).observe(wykres);
+      } catch {
+        wykres.textContent = 'Nie udało się narysować wykresu.';
+      }
+    }
+  }
+
   class ZakladkiZawodnikaController {
     constructor(korzen, poWyborze = () => {}) {
       this.korzen = korzen;
@@ -325,6 +505,7 @@
         zdjecie.addEventListener('error', brak);
         if (zdjecie.complete && !zdjecie.naturalWidth) brak();
       }
+      this.podlaczSpisTresci();
       const pasek = this.korzen.querySelector('[data-player-tabs]');
       if (!pasek) return;
       this.przyciski = Array.from(pasek.querySelectorAll('[role="tab"]'));
@@ -353,6 +534,21 @@
       this.wybierz(Math.max(0, indeks));
     }
 
+    podlaczSpisTresci() {
+      const spis = this.korzen.querySelector('[data-player-toc]');
+      if (!spis) return;
+      this.korzen.querySelectorAll('a[data-player-scroll]').forEach(link => {
+        link.addEventListener('click', zdarzenie => {
+          const cel = this.korzen.querySelector(link.getAttribute('href'));
+          if (!cel) return;
+          zdarzenie.preventDefault();
+          const ograniczonyRuch = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+          cel.scrollIntoView({behavior: ograniczonyRuch ? 'auto' : 'smooth', block: 'start'});
+          cel.focus({preventScroll: true});
+        });
+      });
+    }
+
     wybierz(indeks) {
       this.przyciski.forEach((przycisk, numer) => {
         przycisk.setAttribute('aria-selected', String(numer === indeks));
@@ -361,7 +557,10 @@
       const klucz = this.przyciski[indeks].dataset.playerTab;
       this.panele.forEach(panel => { panel.hidden = panel.dataset.playerPanel !== klucz; });
       if (klucz === 'podsumowanie') new AnalitykaZawodnikaController(this.korzen).uruchom();
-      if (klucz === 'forma') new FormaZawodnikaController(this.korzen).uruchom();
+      if (klucz === 'forma') {
+        new FormaZawodnikaController(this.korzen).uruchom();
+        new DefensywaSkrotZawodnikaController(this.korzen).uruchom();
+      }
       this.poWyborze(klucz);
     }
   }

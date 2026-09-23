@@ -98,6 +98,22 @@ class PunktFormyZawodnika:
 
 
 @dataclass(frozen=True)
+class StatystykiSezonuRozgrywekZawodnika:
+    sezon: str
+    rozgrywki: str
+    liczba_meczow: int
+    liczba_znanych: int
+    suma: int | None
+    srednia: float | None
+    mediana: float | None
+    dominanty: tuple[int, ...]
+    kwartyl_pierwszy: float | None
+    kwartyl_trzeci: float | None
+    minimum: int | None
+    maksimum: int | None
+
+
+@dataclass(frozen=True)
 class RozstepSezonuZawodnika:
     sezon: str
     liczba_znanych: int
@@ -123,6 +139,7 @@ class FormaIRegularnoscZawodnika:
     liczba_meczow: int
     liczba_znanych: int
     sezony: tuple[RozstepSezonuZawodnika, ...]
+    wszystkie: FormaWedlugMiejscaZawodnika
     dom: FormaWedlugMiejscaZawodnika
     wyjazd: FormaWedlugMiejscaZawodnika
     srednia: float | None
@@ -148,6 +165,7 @@ class FormaIRegularnoscZawodnika:
 @dataclass(frozen=True)
 class PodsumowanieAnalityczneZawodnika:
     mecze: tuple[AnalitykaMeczuZawodnika, ...]
+    sezony_rozgrywki: tuple[StatystykiSezonuRozgrywekZawodnika, ...]
     liczba_meczow: int
     liczba_znanych_bramek: int
     suma_bramek: int | None

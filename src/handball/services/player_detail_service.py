@@ -11,6 +11,7 @@ from handball.domain.player_details import (
     PodsumowanieAnalityczneZawodnika,
     PunktFormyZawodnika,
     RozstepSezonuZawodnika,
+    StatystykiSezonuRozgrywekZawodnika,
     StronaMeczowZawodnika,
     SzczegolyZawodnika,
 )
@@ -47,6 +48,7 @@ class SzczegolyZawodnikaAnalyticsService:
         rekord = max(bramki, default=None)
         return PodsumowanieAnalityczneZawodnika(
             mecze=mecze,
+            sezony_rozgrywki=self._sezony_rozgrywki(mecze),
             liczba_meczow=len(mecze),
             liczba_znanych_bramek=len(bramki),
             suma_bramek=sum(bramki) if bramki else None,
@@ -74,6 +76,33 @@ class SzczegolyZawodnikaAnalyticsService:
             znane_upomnienia=sum(m.upomnienia is not None for m in mecze),
             znane_dyskwalifikacje=sum(m.dyskwalifikacje is not None for m in mecze),
         )
+
+    def _sezony_rozgrywki(
+        self, mecze: Sequence[AnalitykaMeczuZawodnika]
+    ) -> tuple[StatystykiSezonuRozgrywekZawodnika, ...]:
+        grupy: dict[tuple[str, str], list[AnalitykaMeczuZawodnika]] = {}
+        for mecz in mecze:
+            grupy.setdefault((mecz.sezon, mecz.rozgrywki), []).append(mecz)
+        wynik = []
+        for (sezon, rozgrywki), mecze_grupy in grupy.items():
+            znane = [m.bramki for m in mecze_grupy if m.bramki is not None]
+            wynik.append(
+                StatystykiSezonuRozgrywekZawodnika(
+                    sezon=sezon,
+                    rozgrywki=rozgrywki,
+                    liczba_meczow=len(mecze_grupy),
+                    liczba_znanych=len(znane),
+                    suma=sum(znane) if znane else None,
+                    srednia=mean(znane) if znane else None,
+                    mediana=float(median(znane)) if znane else None,
+                    dominanty=self._dominanty(znane),
+                    kwartyl_pierwszy=self._percentyl(znane, 0.25),
+                    kwartyl_trzeci=self._percentyl(znane, 0.75),
+                    minimum=min(znane, default=None),
+                    maksimum=max(znane, default=None),
+                )
+            )
+        return tuple(wynik)
 
     @staticmethod
     def _mediana_wedlug_miejsca(
@@ -131,6 +160,7 @@ class SzczegolyZawodnikaAnalyticsService:
             liczba_meczow=len(mecze),
             liczba_znanych=n,
             sezony=self._sezony_rozstepow(mecze),
+            wszystkie=self._forma_meczow(mecze),
             dom=self._forma_wedlug_miejsca(mecze, "dom"),
             wyjazd=self._forma_wedlug_miejsca(mecze, "wyjazd"),
             srednia=srednia,
@@ -172,13 +202,17 @@ class SzczegolyZawodnikaAnalyticsService:
     def _forma_wedlug_miejsca(
         self, mecze: Sequence[AnalitykaMeczuZawodnika], miejsce: str
     ) -> FormaWedlugMiejscaZawodnika:
-        podzbior = [mecz for mecz in mecze if mecz.miejsce == miejsce]
-        znane = sum(1 for mecz in podzbior if mecz.bramki is not None)
+        return self._forma_meczow([mecz for mecz in mecze if mecz.miejsce == miejsce])
+
+    def _forma_meczow(
+        self, mecze: Sequence[AnalitykaMeczuZawodnika]
+    ) -> FormaWedlugMiejscaZawodnika:
+        znane = sum(1 for mecz in mecze if mecz.bramki is not None)
         return FormaWedlugMiejscaZawodnika(
             liczba_znanych=znane,
             wystarczajaco_na_trend_5=znane >= PROG_MALEJ_PROBY,
             wystarczajaco_na_trend_10=znane >= 2 * PROG_MALEJ_PROBY,
-            punkty=self._punkty_formy(podzbior),
+            punkty=self._punkty_formy(mecze),
         )
 
     @staticmethod
