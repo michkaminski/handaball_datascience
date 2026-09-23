@@ -36,7 +36,7 @@ Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogó
 | `partials/navigation.html` | [partials/navigation.md](../src/handball/interface/templates/partials/navigation.md) | istnieje |
 | `partials/messages.html` | [partials/messages.md](../src/handball/interface/templates/partials/messages.md) | istnieje |
 | `partials/pagination.html` | [partials/pagination.md](../src/handball/interface/templates/partials/pagination.md) | istnieje |
-| `admin/start.html` | [admin/start.md](../src/handball/interface/templates/admin/start.md) | istnieje |
+| `admin/start.html` | [admin/start.md](../src/handball/interface/templates/admin/start.md) | istnieje: Aktualności — ostatnie mecze, ciekawostki, najlepsi strzelcy |
 | `admin/matches/list.html` | [admin/matches/list.md](../src/handball/interface/templates/admin/matches/list.md) | istnieje |
 | `admin/matches/detail.html` | [admin/matches/detail.md](../src/handball/interface/templates/admin/matches/detail.md) | planowany (etap 5) |
 | `admin/players/detail.html` | [admin/players/detail.md](../src/handball/interface/templates/admin/players/detail.md) | istnieje: Profil, Sezony i drużyny, Mecze, Podsumowanie, Forma i regularność (ze spisem treści i sekcją defensywy rywali) |

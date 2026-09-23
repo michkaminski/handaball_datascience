@@ -52,7 +52,7 @@
       this.lokalizacja = lokalizacja;
       this.magazyn = magazyn;
       this.klucz = 'hds.mecze.filtry.v1';
-      this.pola = ['id_sezon', 'rozgrywki', 'runda', 'kolejka', 'id_hala', 'druzyna', 'data_meczu'];
+      this.pola = ['id_sezon', 'rozgrywki', 'runda', 'kolejka', 'id_hala', 'druzyna', 'data_meczu', 'zakonczone'];
     }
 
     uruchom() {

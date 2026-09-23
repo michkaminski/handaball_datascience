@@ -1,8 +1,8 @@
 # Aktualizacja i import danych ZPRP
 
-Opis aktualnego kodu na dzień 2026-09-19. Dokument dotyczy importera w pakiecie `handball`, dostępnego pod `/administracja/import`. Starszy importer z katalogu nadrzędnego działa osobno.
+Opis aktualnego kodu na dzień 2026-09-23. Dokument dotyczy importera w pakiecie `handball`, dostępnego pod `/administracja/import`. Starszy importer z katalogu nadrzędnego działa osobno.
 
-Importer pobiera dane wybranych seniorskich rozgrywek sezonu **2026/2027 (ID 195)**, przygotowuje różnice względem bazy i pokazuje je administratorowi. **Dane w PostgreSQL zapisuje dopiero po zatwierdzeniu podglądu.** Podczas pobierania zapisuje już lokalne pliki i stan roboczy w SQLite.
+Tryby pełny i uzupełniający pobierają dane wybranych seniorskich rozgrywek sezonu **2026/2027 (ID 195)**; tryb „Tylko tabele” — tabele wybranych rozgrywek dowolnego sezonu z bazy (opis niżej). Importer przygotowuje różnice względem bazy i pokazuje je administratorowi. **Dane w PostgreSQL zapisuje dopiero po zatwierdzeniu podglądu.** Podczas pobierania zapisuje już lokalne pliki i stan roboczy w SQLite.
 
 ## Tryb pełny i uzupełniający
 
@@ -29,6 +29,26 @@ Wybrane ligi
 W tym trybie mapper nie zleca pobierania składów sezonowych. Dane nowych zawodników pochodzą ze szczegółów meczu; istniejące dane osobowe są tylko uzupełniane. Nie odkrywa nowych meczów ani nie sprawdza całego terminarza. Brak kandydatów daje od razu pusty podgląd, bez wywołań API. Każdy nowy przebieg ponownie ocenia braki — nie ma jeszcze odraczania kolejnej próby dla konkretnego meczu.
 
 Pole `PrzebiegImportu.tryb` jest zapisywane w lokalnym stanie i parametrach historii PostgreSQL. Stare przebiegi bez tego pola mają domyślnie `pelny`. Tryb jest widoczny na stronie przebiegu i w historii. Poniższy opis przechodzenia przez sezony, rundy i kolejki dotyczy trybu pełnego; porównanie i zatwierdzenie są wspólne.
+
+## Import tabel wybranego sezonu
+
+Trzeci, osobny tryb (`tryb="tabele"`, „Tylko tabele”) pobiera wyłącznie tabele (klasyfikacje) wybranych rozgrywek dowolnego sezonu obecnego w bazie. Dwa dotychczasowe tryby działają bez zmian i nadal dotyczą sezonu 2026/2027 oraz listy `LIGI_IMPORTU`.
+
+Sekcja „Import tabel” w panelu ma listę sezonów i rozgrywek odczytaną z bazy (`ImportSQLAlchemyRepository.pobierz_sezony()` i `pobierz_rozgrywki_sezonu()`, transakcja READ ONLY zakończona ROLLBACK). Domyślnie wybrany jest bieżący sezon — z najwyższym `rok_rozpoczecia` wśród sezonów mających rozgrywki. Zmiana sezonu przeładowuje listę rozgrywek (GET `?sezon_tabel=`); bez JavaScript służy do tego przycisk „Pokaż rozgrywki sezonu”. Domyślnie zaznaczone są Superligi i Ligi Centralne (bez Superpucharów); przyciski szybkiego wyboru dopasowują nazwy z bazy także w środku nazwy (np. „LOTTO Superliga”). `ImportService.rozpocznij_tabele()` odrzuca sezon spoza listy i rozgrywki spoza wybranego sezonu.
+
+```text
+Wybrany sezon i rozgrywki (z bazy, READ ONLY)
+    -> pokaz_tabele_spis.php?Rozgrywki=...            (dla każdych rozgrywek)
+    -> pokaz_tabela.php?Rozgrywki=...&Tabela=...&Tabela2=...   (dla każdej tabeli i grupy; grupa 0, gdy brak menu2)
+    -> rekordy: tabele, tabele_grupy, tabele_wiersze (+ brakujące zespoly, zespoly_sezony, zespoly_rozgrywki)
+    -> porównanie z bazą, podgląd i osobne zatwierdzenie (jak w pozostałych trybach)
+```
+
+Mapowanie pól wierszy tabeli odpowiada staremu importerowi (`data/desktop/zprp_desktop/importers/standings.py`): mecze, zwycięstwa, remisy, porażki, bramki, punkty, `Zd_St`, `Kryteria`, `Grupa`, `GrupaKolor`; `miejsce` i `kolejnosc_zrodlowa` to kolejność wiersza w odpowiedzi. Wiersz nagłówka (`"0"`, bez `ID_zespoly`) nie jest drużyną — z niego pochodzą `Kryteria`, gdy wiersz ich nie ma. Wiersz bez poprawnego `ID_zespoly` jest pomijany (numeracja miejsc zostaje zachowana). Rozgrywki bez tabel (pusty spis, np. puchary) nie przerywają importu. Drużyny z tabeli są dopisywane do `zespoly`, `zespoly_sezony` i `zespoly_rozgrywki` wybranego sezonu z `uzupelnij=True` — istniejące wartości, w tym nazwy sezonowe, nie są nadpisywane. Składów nie pobiera.
+
+Tabele w bazie mają sztuczne klucze (`tabele.id` → `tabele_grupy.id_tabela` → `tabele_wiersze.id_tabela_grupa`), więc klucze rekordów zawierają łańcuch odwołań po kluczach naturalnych (`id_rozgrywki`+`tabela_id`, grupa `grupa_id`, wiersz `id_zespol`). Repozytorium rozwiązuje go rekurencyjnie od rodzica (`_rozwiaz_klucz()`, `_identyfikator()`); gdy rodzica nie ma w bazie, rekord jest nowy, a przy zapisie rodzic powstaje wcześniej dzięki kolejności `KOLEJNOSC`. Aktualizacja bez rozwiązanego klucza jest przerywana błędem, żeby nie powstał `UPDATE` bez warunku. Blokada doradcza, parametry historii (`sezon`) i opis kontekstu audytu używają sezonu przebiegu (`id_sezon`, `nazwa_sezonu`); przebiegi zapisane przed tą zmianą mają domyślnie sezon 195.
+
+Import nie usuwa wierszy: drużyna wycofana z tabeli w ZPRP pozostanie w starym stanie (stary importer przycinał takie wiersze). Do sprawdzenia rzeczywistego zachowania użyto API ZPRP i bazy tylko do podglądu (sezon 2026/2027, Superliga M i Liga Centralna M): 4 odpowiedzi, istniejące tabele i grupy rozpoznane jako bez zmian, 14 nowych i 12 zmienionych wierszy; zapisu nie wykonano.
 
 ## 1. Przebieg w skrócie
 

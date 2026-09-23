@@ -5,6 +5,8 @@ from typing import Any
 from uuid import UUID
 
 SEZON_IMPORTU = 195
+NAZWA_SEZONU_IMPORTU = "2026/2027"
+TRYBY_IMPORTU = {"pelny": "Pełny", "uzupelniajacy": "Uzupełniający", "tabele": "Tylko tabele"}
 LIGI_IMPORTU = {
     12007: "Superliga mężczyzn",
     12009: "Superliga kobiet",
@@ -39,6 +41,19 @@ LIGI_IMPORTU = {
 
 class BladImportu(Exception):
     pass
+
+
+@dataclass(frozen=True)
+class OpcjaImportu:
+    id: int
+    nazwa: str
+
+
+@dataclass(frozen=True)
+class OpcjeImportuTabel:
+    sezony: list[OpcjaImportu]
+    wybrany_sezon: OpcjaImportu | None
+    rozgrywki: list[OpcjaImportu]
 
 
 @dataclass
@@ -76,10 +91,17 @@ class PrzebiegImportu:
     tryb: str = "pelny"
     nieudane_probowania: dict[str, int] = field(default_factory=dict)
     pominiete: list[dict[str, Any]] = field(default_factory=list)
+    id_sezon: int = SEZON_IMPORTU
+    nazwa_sezonu: str = NAZWA_SEZONU_IMPORTU
+    nazwy_lig: dict[str, str] = field(default_factory=dict)
 
     @property
     def nazwa_trybu(self) -> str:
-        return "Uzupełniający" if self.tryb == "uzupelniajacy" else "Pełny"
+        return TRYBY_IMPORTU.get(self.tryb, TRYBY_IMPORTU["pelny"])
+
+    @property
+    def nazwy_rozgrywek(self) -> list[str]:
+        return [self.nazwy_lig.get(str(i)) or LIGI_IMPORTU.get(i) or str(i) for i in self.ligi]
 
     @property
     def adres_id(self) -> str:

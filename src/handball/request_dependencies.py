@@ -10,6 +10,7 @@ from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
 from handball.contracts.match_repository import MeczReadRepository
 from handball.contracts.match_stage_repository import EtapMeczowReadRepository
+from handball.contracts.news_repository import AktualnosciReadRepository
 from handball.contracts.opponent_defense_repository import DefensywaRywalaReadRepository
 from handball.contracts.player_detail_repository import SzczegolyZawodnikaReadRepository
 from handball.contracts.player_repository import ZawodnikReadRepository
@@ -33,6 +34,7 @@ from handball.infrastructure.repositories.match_repository import MeczSQLAlchemy
 from handball.infrastructure.repositories.match_stage_repository import (
     EtapMeczowSQLAlchemyRepository,
 )
+from handball.infrastructure.repositories.news_repository import AktualnosciSQLAlchemyRepository
 from handball.infrastructure.repositories.opponent_defense_repository import (
     DefensywaRywalaSQLAlchemyRepository,
 )
@@ -57,6 +59,7 @@ from handball.interface.presenters.match_presenter import (
     MeczPresenter,
     SkladMeczuPresenter,
 )
+from handball.interface.presenters.news_presenter import AktualnosciPresenter
 from handball.interface.presenters.opponent_defense_presenter import DefensywaRywalaPresenter
 from handball.interface.presenters.player_detail_presenter import SzczegolyZawodnikaPresenter
 from handball.interface.presenters.player_presenter import ZawodnikPresenter
@@ -66,6 +69,7 @@ from handball.services.catalog_service import KatalogService
 from handball.services.classification_service import KlasyfikacjaService
 from handball.services.match_dictionary_service import SlownikiMeczowService
 from handball.services.match_service import MeczService
+from handball.services.news_service import AktualnosciService
 from handball.services.opponent_defense_service import DefensywaRywalaService
 from handball.services.player_detail_service import (
     SzczegolyZawodnikaAnalyticsService,
@@ -94,7 +98,11 @@ class ZaleznosciZadaniaFactory:
         fabryka_szczegolow_sedziego: Callable[[], SzczegolySedziegoReadRepository] | None = None,
         fabryka_klasyfikacji: Callable[[], KlasyfikacjaReadRepository] | None = None,
         fabryka_defensywy_rywala: Callable[[], DefensywaRywalaReadRepository] | None = None,
+        fabryka_aktualnosci: Callable[[], AktualnosciReadRepository] | None = None,
     ) -> None:
+        self._fabryka_aktualnosci = fabryka_aktualnosci or (
+            lambda: AktualnosciSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
         self._fabryka_defensywy_rywala = fabryka_defensywy_rywala or (
             lambda: DefensywaRywalaSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -135,6 +143,12 @@ class ZaleznosciZadaniaFactory:
         self._fabryka_repozytorium_etapow = fabryka_repozytorium_etapow or (
             lambda: EtapMeczowSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
+
+    def utworz_serwis_aktualnosci(self) -> AktualnosciService:
+        return AktualnosciService(self._fabryka_aktualnosci())
+
+    def utworz_presenter_aktualnosci(self) -> AktualnosciPresenter:
+        return AktualnosciPresenter()
 
     def utworz_serwis_meczow(self) -> MeczService:
         return MeczService(self._fabryka_repozytorium_meczow())

@@ -62,7 +62,7 @@ def test_podsumowanie_liczy_mediane_kwartyle_i_wiele_dominant() -> None:
     assert wynik.dwie_minuty == 0
 
 
-def test_podsumowanie_liczy_statystyki_osobno_dla_sezonu_i_rozgrywek() -> None:
+def test_podsumowanie_liczy_statystyki_sezonu_z_podzialem_na_rozgrywki() -> None:
     wynik = SzczegolyZawodnikaAnalyticsService(
         AnalitykaRepository(
             (2, 4, 4, None, 7, 1, 3),
@@ -70,19 +70,20 @@ def test_podsumowanie_liczy_statystyki_osobno_dla_sezonu_i_rozgrywek() -> None:
             rozgrywki=("Liga", "Liga", "Liga", "Liga", "Puchar", "Liga", "Liga"),
         )
     ).pobierz_podsumowanie(7, FiltryMeczowZawodnika())
-    grupy = wynik.sezony_rozgrywki
-    assert [(g.sezon, g.rozgrywki) for g in grupy] == [
-        ("2024/2025", "Liga"),
-        ("2024/2025", "Puchar"),
-        ("2025/2026", "Liga"),
-    ]
-    liga = grupy[0]
-    assert liga.liczba_meczow == 4 and liga.liczba_znanych == 3
-    assert liga.suma == 10
+    sezony = wynik.statystyki_sezonow
+    assert [s.sezon for s in sezony] == ["2024/2025", "2025/2026"]
+    caly_sezon = sezony[0].statystyki
+    assert caly_sezon.liczba_meczow == 5 and caly_sezon.liczba_znanych == 4
+    assert caly_sezon.suma == 17
+    assert caly_sezon.srednia == pytest.approx(17 / 4)
+    assert caly_sezon.mediana == 4.0 and caly_sezon.dominanty == (4,)
+    assert caly_sezon.minimum == 2 and caly_sezon.maksimum == 7
+    assert [r.rozgrywki for r in sezony[0].rozgrywki] == ["Liga", "Puchar"]
+    liga = sezony[0].rozgrywki[0].statystyki
+    assert liga.liczba_meczow == 4 and liga.liczba_znanych == 3 and liga.suma == 10
     assert liga.srednia == pytest.approx(10 / 3)
-    assert liga.mediana == 4.0 and liga.dominanty == (4,)
-    assert liga.minimum == 2 and liga.maksimum == 4
-    assert grupy[2].dominanty == (1, 3) and grupy[2].mediana == 2.0
+    assert sezony[0].rozgrywki[1].statystyki.suma == 7
+    assert sezony[1].statystyki.dominanty == (1, 3) and sezony[1].statystyki.mediana == 2.0
 
 
 def test_podsumowanie_nie_zamienia_brakow_na_zera() -> None:

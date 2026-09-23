@@ -52,6 +52,7 @@ class FiltryMeczow:
     runda: str | None = None
     kolejka: str | None = None
     tylko_rozegrane: bool = False
+    tylko_zakonczone: bool = False
 
     def __post_init__(self) -> None:
         if self.strona < 1:

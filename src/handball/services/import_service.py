@@ -8,7 +8,13 @@ from uuid import uuid4
 
 from handball.contracts.import_repository import ImportRepository
 from handball.contracts.import_storage import ImportStore, ZprpReadClient
-from handball.domain.imports import LIGI_IMPORTU, BladImportu, PrzebiegImportu, ZadaniePobrania
+from handball.domain.imports import (
+    LIGI_IMPORTU,
+    BladImportu,
+    OpcjeImportuTabel,
+    PrzebiegImportu,
+    ZadaniePobrania,
+)
 from handball.services.import_mapping import ZprpImportMapper
 
 LIMIT_PROB_ZADANIA = 3
@@ -39,6 +45,38 @@ class ImportService:
                 ZadaniePobrania("pokaz_sezony.php", {}, "sezony"),
                 ZadaniePobrania("pokaz_rozgrywki.php", {"Sezon": 195}, "rozgrywki"),
             ]
+        self.magazyn.dodaj(przebieg)
+        return przebieg
+
+    def opcje_tabel(self, id_sezon: int | None = None) -> OpcjeImportuTabel:
+        sezony = self._repozytorium.pobierz_sezony()
+        wybrany = next((s for s in sezony if s.id == id_sezon), sezony[0] if sezony else None)
+        rozgrywki = self._repozytorium.pobierz_rozgrywki_sezonu(wybrany.id) if wybrany else []
+        return OpcjeImportuTabel(sezony, wybrany, rozgrywki)
+
+    def rozpocznij_tabele(self, id_sezon: int, ligi: list[int]) -> PrzebiegImportu:
+        opcje = self.opcje_tabel(id_sezon)
+        if opcje.wybrany_sezon is None or opcje.wybrany_sezon.id != id_sezon:
+            raise BladImportu("Wybierz sezon z listy.")
+        dostepne = {r.id: r.nazwa for r in opcje.rozgrywki}
+        if not ligi or not set(ligi).issubset(dostepne):
+            raise BladImportu("Wybierz przynajmniej jedne rozgrywki wybranego sezonu.")
+        wybrane = sorted(set(ligi))
+        przebieg = PrzebiegImportu(
+            uuid4().hex,
+            wybrane,
+            datetime.now(UTC).isoformat(),
+            tryb="tabele",
+            id_sezon=id_sezon,
+            nazwa_sezonu=opcje.wybrany_sezon.nazwa,
+            nazwy_lig={str(cid): dostepne[cid] for cid in wybrane},
+        )
+        przebieg.kolejka = [
+            ZadaniePobrania(
+                "pokaz_tabele_spis.php", {"Rozgrywki": cid}, "tabele_spis", {"cid": cid}
+            )
+            for cid in wybrane
+        ]
         self.magazyn.dodaj(przebieg)
         return przebieg
 

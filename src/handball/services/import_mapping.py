@@ -113,6 +113,14 @@ class ZprpImportMapper:
         if zadanie.rodzaj == "sklad":
             self.sklad(dokument, zadanie.kontekst)
             return
+        if zadanie.rodzaj in ("tabele_spis", "tabela") and dokument in (None, [], {}):
+            return
+        if zadanie.rodzaj == "tabele_spis":
+            self.tabele_spis(dokument, zadanie.kontekst["cid"])
+            return
+        if zadanie.rodzaj == "tabela":
+            self.tabela(dokument, zadanie.kontekst)
+            return
         wiersze = self.wiersze(dokument)
         if not wiersze:
             if zadanie.rodzaj == "mecze":
@@ -175,17 +183,96 @@ class ZprpImportMapper:
                     mid=mid,
                 )
 
-    def druzyna(self, tid: int | None, cid: int | None, nazwa: Any = None) -> None:
+    def tabele_spis(self, dokument: Any, cid: int) -> None:
+        for _, r in self.wiersze(dokument):
+            tid = self.ident(r.get("tabela_id"))
+            tabela = {"id_rozgrywki": cid, "tabela_id": tid}
+            self.dodaj("tabele", tabela, self.pola(r, {"tabela_nazwa": "tabela_nazwa"}))
+            grupy = self.wiersze(r["menu2"]) if r.get("menu2") else []
+            for _, g in grupy or [("0", {})]:
+                gid = self.liczba(g.get("tabela_Id2")) or 0
+                self.dodaj(
+                    "tabele_grupy",
+                    {"id_tabela": {"tabela": "tabele", "klucz": tabela}, "grupa_id": gid},
+                    self.pola(g, {"grupa_nazwa": "tabela_nazwa2"}),
+                )
+                self.zlec(
+                    "pokaz_tabela.php",
+                    "tabela",
+                    {"Rozgrywki": cid, "Tabela": tid, "Tabela2": gid},
+                    cid=cid,
+                    tid=tid,
+                    gid=gid,
+                )
+
+    def tabela(self, dokument: Any, kontekst: dict[str, int]) -> None:
+        cid = kontekst["cid"]
+        grupa = {
+            "tabela": "tabele_grupy",
+            "klucz": {
+                "id_tabela": {
+                    "tabela": "tabele",
+                    "klucz": {"id_rozgrywki": cid, "tabela_id": kontekst["tid"]},
+                },
+                "grupa_id": kontekst["gid"],
+            },
+        }
+        wiersze = self.wiersze(dokument)
+        naglowek = next((r for _, r in wiersze if "ID_zespoly" not in r), {})
+        druzyny = [r for _, r in wiersze if "ID_zespoly" in r]
+        for miejsce, r in enumerate(druzyny, 1):
+            tid = self.liczba(r.get("ID_zespoly"))
+            if not tid or tid <= 0:
+                continue
+            self.druzyna(tid, cid, r.get("Nazwa"), uzupelnij_sezon=True)
+            dane = self.pola(
+                r,
+                {
+                    "kryteria": "Kryteria",
+                    "zd_st": "Zd_St",
+                    "grupa": "Grupa",
+                    "grupa_kolor": "GrupaKolor",
+                },
+                {
+                    "mecze": "Mecze",
+                    "zwyciestwa": "Zwyciestwa",
+                    "remisy": "Remisy",
+                    "przegrane": "Przegrane",
+                    "remis_wygrane": "RemisWygrane",
+                    "remis_przegrane": "RemisPrzegrane",
+                    "bramki_zdobyte": "BramkiZdobyte",
+                    "bramki_stracone": "BramkiStracone",
+                    "bramki_zdobyte_ex": "BramkiZdobyteEx",
+                    "bramki_ex": "BramkiEx",
+                    "bramki_zdobyte_wyjazd": "BramkiZdobyteWyjazd",
+                    "punkty_zdobyte": "PunktyZdobyte",
+                    "punkty_stracone": "PunktyStracone",
+                    "punkty_ex": "PunktyEx",
+                    "punkty_bonusowe": "PunktyBonusowe",
+                },
+            )
+            if "kryteria" not in dane and "Kryteria" in naglowek:
+                dane.update(self.pola(naglowek, {"kryteria": "Kryteria"}))
+            dane.update(miejsce=miejsce, kolejnosc_zrodlowa=miejsce)
+            self.dodaj("tabele_wiersze", {"id_tabela_grupa": grupa, "id_zespol": tid}, dane)
+
+    def druzyna(
+        self, tid: int | None, cid: int | None, nazwa: Any = None, uzupelnij_sezon: bool = False
+    ) -> None:
         if not tid or tid <= 0:
             return
+        sezon = self._przebieg.id_sezon
         self.dodaj("zespoly", {"id": tid}, {"kategoria": "Senior"}, True)
         dane = {"kategoria": "Senior"}
         if isinstance(nazwa, str) and nazwa:
             dane["nazwa"] = nazwa
-        self.dodaj("zespoly_sezony", {"id_zespol": tid, "id_sezon": 195}, dane)
+        self.dodaj("zespoly_sezony", {"id_zespol": tid, "id_sezon": sezon}, dane, uzupelnij_sezon)
         if cid:
             self.dodaj(
-                "zespoly_rozgrywki", {"id_zespol": tid, "id_rozgrywki": cid}, {"id_sezon": 195}
+                "zespoly_rozgrywki",
+                {"id_zespol": tid, "id_rozgrywki": cid},
+                {"id_sezon": sezon},
+                uzupelnij_sezon,
             )
         if self._przebieg.tryb == "pelny":
             self.zlec("pokaz_sklad.php", "sklad", {"Sezon": 195, "Zespol": tid}, tid=tid)

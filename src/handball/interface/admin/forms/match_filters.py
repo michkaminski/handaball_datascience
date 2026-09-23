@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from wtforms import IntegerField, SelectField, StringField, ValidationError, validators
 from wtforms.form import Form
 
@@ -33,6 +35,11 @@ class MeczFilterForm(Form):
         validators=[validators.Optional()],
     )
 
+    def __init__(self, formdata: Any = None, **kwargs: Any) -> None:
+        super().__init__(formdata, **kwargs)
+        wartosci = formdata.getlist("zakonczone") if formdata is not None else []
+        self.tylko_zakonczone = not wartosci or "1" in wartosci
+
     def do_filtrow(self) -> FiltryMeczow:
         data_od = data_do = None
         if self.data_meczu.data:
@@ -50,4 +57,5 @@ class MeczFilterForm(Form):
             strona=self.strona.data or 1,
             rozmiar_strony=self.rozmiar_strony.data or 20,
             sortowanie=self.sortowanie.data or "data",
+            tylko_zakonczone=self.tylko_zakonczone,
         )

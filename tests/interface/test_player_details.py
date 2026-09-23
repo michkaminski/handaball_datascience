@@ -75,6 +75,9 @@ def test_karta_ma_dodatkowe_podsumowanie_analityczne() -> None:
     assert "data-player-season-stats" in panel and "data-player-season-stats-data" in panel
     assert panel.index("data-player-season-stats") < panel.index("data-player-distribution")
     assert "Dane statystyk według sezonu i rozgrywek" in panel
+    assert "data-player-season-goals" in panel and "data-player-season-toggle" in panel
+    assert 'data-player-season-view="slupki"' in panel
+    assert "Średnia, mediana i dominanta bramek na mecz według sezonu<" in panel
     assert "Histogram pokazuje, w ilu meczach" in panel
     assert "Dane rozkładu bramek" in panel
     assert "data-player-trend" not in panel and "data-player-form" not in panel

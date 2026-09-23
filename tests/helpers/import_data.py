@@ -53,6 +53,32 @@ class ImportTestClient(ZprpClient):
                 "gosp": {"100": {"imie": "Test", "nazwisko": "Testowy", "bramki": "3"}},
                 "gosc": {},
             },
+            "pokaz_tabele_spis.php": {
+                "1": {
+                    "tabela_id": "1",
+                    "tabela_nazwa": "Tabela zasadnicza",
+                    "menu2": {
+                        "1": {"tabela_Id2": "1", "tabela_nazwa2": "Grupa A"},
+                        "2": {"tabela_Id2": "2", "tabela_nazwa2": "Grupa B"},
+                    },
+                }
+            },
+            "pokaz_tabela.php": {
+                "1": {
+                    "ID_zespoly": "14066",
+                    "Nazwa": "KGHM MKS Zagłębie Lubin",
+                    "Mecze": "3",
+                    "Zwyciestwa": "3",
+                    "BramkiZdobyte": "90",
+                    "BramkiStracone": "70",
+                    "Zd_St": "20",
+                    "PunktyZdobyte": "9",
+                    "PunktyEx": None,
+                },
+                "2": {"ID_zespoly": "0", "Nazwa": "Bez identyfikatora"},
+                "3": {"ID_zespoly": "14059", "Nazwa": "PGE MKS El-Volt Lublin", "Mecze": "3"},
+                "0": {"NazwaRozgrywek": "Superliga", "Kryteria": "Kryteria: P_Zd"},
+            },
             "pokaz_sklad.php": [
                 {
                     "ID_zespol": "15890",

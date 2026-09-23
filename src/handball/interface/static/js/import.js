@@ -13,9 +13,13 @@
     }
 
     zaznacz(wybor) {
+      const wzorce = wybor.split('|');
       this.pola.forEach(pole => {
+        const nazwa = pole.dataset.nazwa.toLocaleLowerCase('pl');
         pole.checked = wybor === 'wszystkie' || (
-          wybor !== 'zadne' && pole.dataset.nazwa.toLocaleLowerCase('pl').startsWith(wybor)
+          wybor !== 'zadne' && wzorce.some(wzorzec => (
+            wzorzec.startsWith('*') ? nazwa.includes(wzorzec.slice(1)) && !nazwa.includes('superpuchar') : nazwa.startsWith(wzorzec)
+          ))
         );
       });
     }
@@ -23,6 +27,12 @@
 
   document.querySelectorAll('[data-wybor-lig]').forEach(pole => {
     new WyborLigController(pole).uruchom();
+  });
+
+  document.querySelectorAll('[data-import-sezon]').forEach(formularz => {
+    const lista = formularz.querySelector('select');
+    formularz.querySelector('[data-import-sezon-przycisk]').hidden = true;
+    lista.addEventListener('change', () => formularz.submit());
   });
 
   const form = document.getElementById('pobieranie');

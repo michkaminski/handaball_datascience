@@ -20,6 +20,18 @@
 
   const PROG_MALEJ_PROBY = 5;
 
+  const PALETA_ROZGRYWEK = ['#3a7c67', '#9f6a15', '#7c3aed', '#b04646', '#0e7490', '#64748b'];
+
+  const WZOR_KOLOR = 'rgba(255,255,255,0.5)';
+  const WZORY_ROZGRYWEK = [
+    {symbol: 'rect', symbolSize: 1, dashArrayX: [1, 0], dashArrayY: [2, 5], rotation: Math.PI / 4, color: WZOR_KOLOR},
+    {symbol: 'circle', symbolSize: 0.7, dashArrayX: [[1, 4]], dashArrayY: [4], color: WZOR_KOLOR},
+    {symbol: 'rect', symbolSize: 1, dashArrayX: [1, 0], dashArrayY: [2, 5], rotation: -Math.PI / 4, color: WZOR_KOLOR},
+    {symbol: 'triangle', symbolSize: 0.8, dashArrayX: [[1, 4]], dashArrayY: [5], color: WZOR_KOLOR},
+    {symbol: 'rect', symbolSize: 1, dashArrayX: [1, 0], dashArrayY: [2, 4], rotation: 0, color: WZOR_KOLOR},
+    {symbol: 'diamond', symbolSize: 0.8, dashArrayX: [[1, 4]], dashArrayY: [5], color: WZOR_KOLOR},
+  ];
+
   const formatujLiczbe = (wartosc, miejsca = 1) => (wartosc === null || wartosc === undefined ? '—' : Number(wartosc).toFixed(miejsca).replace('.', ','));
 
   class AnalitykaZawodnikaController {
@@ -36,68 +48,138 @@
       const zrodlo = this.korzen.querySelector('[data-player-season-stats-data]');
       if (!element || !zrodlo || element.dataset.chartReady) return;
       element.dataset.chartReady = 'true';
+      const bramki = this.korzen.querySelector('[data-player-season-goals]');
       try {
         const echarts = await zaladujECharts(this.korzen.dataset.echartsUrl);
-        this.rysujSezony(echarts, element, JSON.parse(zrodlo.textContent));
+        const sezony = JSON.parse(zrodlo.textContent);
+        this.rysujSezony(echarts, element, sezony);
+        if (bramki) this.rysujBramkiSezonow(echarts, bramki, sezony);
       } catch {
         element.textContent = 'Nie udało się narysować wykresu. Dane tabelaryczne pozostają dostępne poniżej.';
+        if (bramki) bramki.hidden = true;
       }
     }
 
-    opisGrupy(grupa) {
+    opisSezonu(sezon) {
+      const mecze = grupa => (grupa.znane === grupa.mecze ? String(grupa.mecze) : `${grupa.znane} z ${grupa.mecze}`);
+      const dominanta = grupa => (grupa.dominanty.length ? grupa.dominanty.join(', ') : '—');
       const wiersze = [
-        ['Mecze ze znaną liczbą bramek', grupa.znane === grupa.mecze ? String(grupa.mecze) : `${grupa.znane} z ${grupa.mecze}`],
-        ['Suma bramek', grupa.suma ?? '—'],
-        ['Średnia', formatujLiczbe(grupa.srednia, 2)],
-        ['Mediana', formatujLiczbe(grupa.mediana)],
-        ['Dominanta', grupa.dominanty.length ? grupa.dominanty.join(', ') : '—'],
-        ['Q1–Q3', grupa.q1 === null ? '—' : `${formatujLiczbe(grupa.q1)}–${formatujLiczbe(grupa.q3)}`],
-        ['Min–maks', grupa.minimum === null ? '—' : `${grupa.minimum}–${grupa.maksimum}`],
+        ['Suma bramek', sezon.suma ?? '—'],
+        ['Średnia', formatujLiczbe(sezon.srednia, 2)],
+        ['Mediana', formatujLiczbe(sezon.mediana)],
+        ['Dominanta', dominanta(sezon)],
+        ['Q1–Q3', sezon.q1 === null ? '—' : `${formatujLiczbe(sezon.q1)}–${formatujLiczbe(sezon.q3)}`],
+        ['Min–maks', sezon.minimum === null ? '—' : `${sezon.minimum}–${sezon.maksimum}`],
       ];
-      const malaProba = grupa.znane < PROG_MALEJ_PROBY ? '<span class="player-tooltip-flag">mała próba</span>' : '';
-      return `<div class="player-tooltip"><div class="player-tooltip-title">${escapujHtml(grupa.sezon)}${malaProba}</div>`
-        + `<div class="player-tooltip-sub">${escapujHtml(grupa.rozgrywki)}</div><table>`
+      const malaProba = sezon.znane < PROG_MALEJ_PROBY ? '<span class="player-tooltip-flag">mała próba</span>' : '';
+      const rozgrywki = sezon.rozgrywki.map(grupa => '<tr>'
+        + `<th>${escapujHtml(grupa.rozgrywki)}</th>`
+        + `<td>${escapujHtml(mecze(grupa))}</td>`
+        + `<td>${escapujHtml(formatujLiczbe(grupa.srednia, 2))}</td>`
+        + `<td>${escapujHtml(formatujLiczbe(grupa.mediana))}</td>`
+        + `<td>${escapujHtml(dominanta(grupa))}</td></tr>`).join('');
+      return `<div class="player-tooltip"><div class="player-tooltip-title">${escapujHtml(sezon.sezon)}${malaProba}</div>`
+        + `<div class="player-tooltip-sub">Wszystkie rozgrywki · mecze: ${escapujHtml(mecze(sezon))}</div><table>`
         + wiersze.map(([etykieta, wartosc]) => `<tr><th>${escapujHtml(etykieta)}</th><td>${escapujHtml(wartosc)}</td></tr>`).join('')
-        + '</table></div>';
+        + '</table><div class="player-tooltip-section">Podział na rozgrywki</div>'
+        + '<table class="player-tooltip-breakdown"><thead><tr><th>Rozgrywki</th><td>Mecze</td><td>Śr.</td><td>Med.</td><td>Dom.</td></tr></thead>'
+        + `<tbody>${rozgrywki}</tbody></table></div>`;
     }
 
-    rysujSezony(echarts, element, grupy) {
-      const ograniczonyRuch = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    rysujSezony(echarts, element, sezony) {
       const wykres = echarts.init(element, null, {renderer: 'svg'});
-      const skrot = tekst => (tekst.length > 22 ? `${tekst.slice(0, 21)}…` : tekst);
-      wykres.setOption({
+      wykres.setOption(this.opcjeSezonow(sezony, 'linie'));
+      const przelacznik = this.korzen.querySelector('[data-player-season-toggle]');
+      if (przelacznik) {
+        const przyciski = Array.from(przelacznik.querySelectorAll('[data-player-season-view]'));
+        przelacznik.hidden = false;
+        przyciski.forEach(przycisk => {
+          przycisk.addEventListener('click', () => {
+            const tryb = przycisk.dataset.playerSeasonView;
+            przyciski.forEach(inny => inny.setAttribute('aria-pressed', String(inny === przycisk)));
+            wykres.setOption(this.opcjeSezonow(sezony, tryb), {replaceMerge: ['series']});
+          });
+        });
+      }
+      this.obserwujRozmiar(wykres, element);
+      return wykres;
+    }
+
+    tooltipSezonow(sezony, opis) {
+      return {
+        trigger: 'axis',
+        axisPointer: {type: 'shadow'},
+        confine: true,
+        backgroundColor: '#ffffff',
+        borderColor: '#c8d4dd',
+        borderWidth: 1,
+        padding: 0,
+        extraCssText: 'box-shadow:0 6px 18px rgba(16,40,63,.16);border-radius:8px;',
+        formatter: parametry => {
+          const lista = Array.isArray(parametry) ? parametry : [parametry];
+          const kategoria = lista.find(parametr => parametr.seriesType !== 'scatter');
+          const sezon = sezony[kategoria ? kategoria.dataIndex : lista[0]?.value?.[0]];
+          return sezon ? opis(sezon) : '';
+        },
+      };
+    }
+
+    osSezonow(sezony) {
+      return {
+        type: 'category',
+        data: sezony.map(sezon => sezon.sezon),
+        axisLabel: {rotate: sezony.length > 6 ? 30 : 0, hideOverlap: true},
+      };
+    }
+
+    opcjeSezonow(sezony, tryb) {
+      const ograniczonyRuch = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      const przejscie = {enabled: !ograniczonyRuch};
+      const wspolne = {
         animation: !ograniczonyRuch,
         animationDuration: 450,
+        animationDurationUpdate: 500,
         animationEasing: 'cubicOut',
-        aria: {show: true, description: 'Wykres średniej, mediany i dominanty bramek zawodnika na mecz w kolejnych sezonach i rozgrywkach.'},
         color: ['#2b6ea4', '#3a7c67', '#9f6a15'],
         legend: {top: 0},
-        grid: {left: 42, right: 18, top: 36, bottom: 78},
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: {type: 'line', lineStyle: {color: '#9aa5b1', type: 'dashed'}},
-          confine: true,
-          backgroundColor: '#ffffff',
-          borderColor: '#c8d4dd',
-          borderWidth: 1,
-          padding: 0,
-          extraCssText: 'box-shadow:0 6px 18px rgba(16,40,63,.16);border-radius:8px;',
-          formatter: parametry => {
-            const lista = Array.isArray(parametry) ? parametry : [parametry];
-            const linia = lista.find(parametr => parametr.seriesType === 'line');
-            const grupa = grupy[linia ? linia.dataIndex : lista[0]?.value?.[0]];
-            return grupa ? this.opisGrupy(grupa) : '';
-          },
-        },
-        xAxis: {
-          type: 'category',
-          data: grupy.map(grupa => `${grupa.sezon}\n${skrot(grupa.rozgrywki)}`),
-          axisLabel: {rotate: 30, hideOverlap: true, fontSize: 10, lineHeight: 12},
-        },
+        grid: {left: 42, right: 18, top: 36, bottom: 48},
+        tooltip: this.tooltipSezonow(sezony, sezon => this.opisSezonu(sezon)),
+        xAxis: this.osSezonow(sezony),
         yAxis: {type: 'value', minInterval: 1, name: 'Bramki na mecz'},
-        dataZoom: grupy.length > 20 ? [{type: 'inside'}, {type: 'slider', height: 14, bottom: 2}] : undefined,
+        dataZoom: sezony.length > 20 ? [{type: 'inside'}, {type: 'slider', height: 14, bottom: 2}] : undefined,
+      };
+      if (tryb === 'slupki') {
+        return {
+          ...wspolne,
+          aria: {show: true, description: 'Wykres słupkowy średniej, mediany i dominanty bramek zawodnika na mecz w kolejnych sezonach; przy kilku dominantach słupek pokazuje najmniejszą, a etykieta wszystkie.'},
+          series: [
+            {id: 'srednia', name: 'Średnia', type: 'bar', barMaxWidth: 18, universalTransition: przejscie, emphasis: {focus: 'series'}, data: sezony.map(sezon => this.slupekSezonu(sezon, sezon.srednia, '#2b6ea4'))},
+            {id: 'mediana', name: 'Mediana', type: 'bar', barMaxWidth: 18, universalTransition: przejscie, emphasis: {focus: 'series'}, data: sezony.map(sezon => this.slupekSezonu(sezon, sezon.mediana, '#3a7c67'))},
+            {
+              id: 'dominanta',
+              name: 'Dominanta',
+              type: 'bar',
+              barMaxWidth: 18,
+              universalTransition: przejscie,
+              emphasis: {focus: 'series'},
+              data: sezony.map(sezon => {
+                if (!sezon.dominanty.length) return null;
+                const slupek = this.slupekSezonu(sezon, Math.min(...sezon.dominanty), '#9f6a15');
+                const punkt = typeof slupek === 'object' ? slupek : {value: slupek};
+                return sezon.dominanty.length > 1
+                  ? {...punkt, label: {show: true, position: 'top', fontSize: 10, color: '#6b4a10', formatter: sezon.dominanty.join('/')}}
+                  : punkt;
+              }),
+            },
+          ],
+        };
+      }
+      return {
+        ...wspolne,
+        aria: {show: true, description: 'Wykres średniej, mediany i dominanty bramek zawodnika na mecz w kolejnych sezonach; szczegóły z podziałem na rozgrywki w okienku po najechaniu.'},
         series: [
           {
+            id: 'srednia',
             name: 'Średnia',
             type: 'line',
             symbol: 'circle',
@@ -105,30 +187,127 @@
             smooth: 0.15,
             connectNulls: false,
             lineStyle: {width: 2.5},
+            universalTransition: przejscie,
             emphasis: {focus: 'series', scale: 1.5},
-            data: grupy.map(grupa => this.punktSezonu(grupa, grupa.srednia, '#2b6ea4')),
+            data: sezony.map(sezon => this.punktSezonu(sezon, sezon.srednia, '#2b6ea4')),
           },
           {
+            id: 'mediana',
             name: 'Mediana',
             type: 'line',
             symbol: 'rect',
             symbolSize: 8,
             connectNulls: false,
             lineStyle: {width: 2, type: 'dashed'},
+            universalTransition: przejscie,
             emphasis: {focus: 'series', scale: 1.5},
-            data: grupy.map(grupa => this.punktSezonu(grupa, grupa.mediana, '#3a7c67')),
+            data: sezony.map(sezon => this.punktSezonu(sezon, sezon.mediana, '#3a7c67')),
           },
           {
+            id: 'dominanta',
             name: 'Dominanta',
             type: 'scatter',
             symbol: 'diamond',
             symbolSize: 12,
+            universalTransition: przejscie,
             emphasis: {focus: 'series', scale: 1.4},
-            data: grupy.flatMap((grupa, indeks) => grupa.dominanty.map(wartosc => [indeks, wartosc])),
+            data: sezony.flatMap((sezon, indeks) => sezon.dominanty.map(wartosc => [indeks, wartosc])),
           },
         ],
+      };
+    }
+
+    slupekSezonu(grupa, wartosc, kolor) {
+      if (wartosc === null || grupa.znane >= PROG_MALEJ_PROBY) return wartosc;
+      return {value: wartosc, itemStyle: {color: `${kolor}40`, borderColor: kolor, borderWidth: 1.5, borderType: 'dashed'}};
+    }
+
+    opisBramekSezonu(sezon) {
+      const wiersze = sezon.rozgrywki.map(grupa => '<tr>'
+        + `<th>${escapujHtml(grupa.rozgrywki)}</th>`
+        + `<td>${escapujHtml(grupa.znane === grupa.mecze ? grupa.mecze : `${grupa.znane} z ${grupa.mecze}`)}</td>`
+        + `<td>${escapujHtml(grupa.suma ?? '—')}</td></tr>`).join('');
+      return `<div class="player-tooltip"><div class="player-tooltip-title">${escapujHtml(sezon.sezon)}</div>`
+        + `<div class="player-tooltip-sub">Suma bramek w sezonie: <b>${escapujHtml(sezon.suma ?? '—')}</b></div>`
+        + '<div class="player-tooltip-section">Podział na rozgrywki</div>'
+        + '<table class="player-tooltip-breakdown"><thead><tr><th>Rozgrywki</th><td>Mecze</td><td>Bramki</td></tr></thead>'
+        + `<tbody>${wiersze}</tbody></table></div>`;
+    }
+
+    slotyRozgrywek(sezony, styl, ukryte) {
+      const widoczne = sezony.map(sezon => sezon.rozgrywki.filter(grupa => !ukryte.has(grupa.rozgrywki)));
+      const liczbaSlotow = Math.max(0, ...widoczne.map(grupy => grupy.length));
+      return Array.from({length: liczbaSlotow}, (_, slot) => ({
+        id: `rozgrywki-${slot}`,
+        name: `rozgrywki-${slot}`,
+        type: 'bar',
+        barMaxWidth: 30,
+        emphasis: {focus: 'self'},
+        data: widoczne.map(grupy => {
+          const grupa = grupy[slot];
+          return grupa ? {value: grupa.suma, nazwa: grupa.rozgrywki, itemStyle: styl.get(grupa.rozgrywki)} : null;
+        }),
+      }));
+    }
+
+    rysujBramkiSezonow(echarts, element, sezony) {
+      const ograniczonyRuch = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      const nazwy = [...new Set(sezony.flatMap(sezon => sezon.rozgrywki.map(grupa => grupa.rozgrywki)))];
+      const styl = new Map(nazwy.map((nazwa, indeks) => [nazwa, {
+        color: PALETA_ROZGRYWEK[indeks % PALETA_ROZGRYWEK.length],
+        decal: WZORY_ROZGRYWEK[indeks % WZORY_ROZGRYWEK.length],
+      }]));
+      const suma = {
+        id: 'suma',
+        name: 'Suma w sezonie',
+        type: 'bar',
+        barMaxWidth: 30,
+        barGap: '10%',
+        barCategoryGap: '18%',
+        itemStyle: {color: '#173e65'},
+        emphasis: {focus: 'self'},
+        label: {show: sezony.length <= 12, position: 'top', fontSize: 10, color: '#173e65'},
+        data: sezony.map(sezon => sezon.suma),
+      };
+      const legenda = nazwy.map(nazwa => ({
+        id: `legenda-${nazwa}`,
+        name: nazwa,
+        type: 'line',
+        data: [],
+        symbol: 'roundRect',
+        itemStyle: styl.get(nazwa),
+        lineStyle: {opacity: 0},
+      }));
+      const serie = ukryte => [suma, ...this.slotyRozgrywek(sezony, styl, ukryte), ...legenda];
+      const wykres = echarts.init(element, null, {renderer: 'svg'});
+      wykres.setOption({
+        animation: !ograniczonyRuch,
+        animationDuration: 450,
+        animationDurationUpdate: 350,
+        animationEasing: 'cubicOut',
+        aria: {show: true, description: 'Wykres słupkowy liczby bramek zawodnika w kolejnych sezonach: pierwszy słupek to suma sezonu, kolejne to bramki w poszczególnych rozgrywkach, rozróżnione kolorem i wzorem.'},
+        legend: {
+          top: 0,
+          left: 'center',
+          width: '88%',
+          type: 'scroll',
+          icon: 'roundRect',
+          data: ['Suma w sezonie', ...nazwy],
+          formatter: nazwa => (nazwa.length > 26 ? `${nazwa.slice(0, 25)}…` : nazwa),
+        },
+        grid: {left: 42, right: 18, top: 60, bottom: 48},
+        tooltip: this.tooltipSezonow(sezony, sezon => this.opisBramekSezonu(sezon)),
+        xAxis: this.osSezonow(sezony),
+        yAxis: {type: 'value', minInterval: 1, name: 'Bramki'},
+        dataZoom: sezony.length > 20 ? [{type: 'inside'}, {type: 'slider', height: 14, bottom: 2}] : undefined,
+        series: serie(new Set()),
+      });
+      wykres.on('legendselectchanged', zdarzenie => {
+        const ukryte = new Set(nazwy.filter(nazwa => zdarzenie.selected[nazwa] === false));
+        wykres.setOption({legend: {selected: zdarzenie.selected}, series: serie(ukryte)}, {replaceMerge: ['series']});
       });
       this.obserwujRozmiar(wykres, element);
+      return wykres;
     }
 
     punktSezonu(grupa, wartosc, kolor) {

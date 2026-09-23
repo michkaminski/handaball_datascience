@@ -6,6 +6,7 @@ from handball.domain.player_details import (
     FormaIRegularnoscZawodnika,
     FormaWedlugMiejscaZawodnika,
     PodsumowanieAnalityczneZawodnika,
+    StatystykiBramekGrupy,
     StronaMeczowZawodnika,
     SzczegolyZawodnika,
 )
@@ -176,22 +177,16 @@ class SzczegolyZawodnikaPresenter:
                 }
                 for wartosc in sorted(rozklad)
             ],
-            sezony_rozgrywki=[
+            statystyki_sezonow=[
                 {
-                    "sezon": grupa.sezon,
-                    "rozgrywki": grupa.rozgrywki,
-                    "mecze": grupa.liczba_meczow,
-                    "znane": grupa.liczba_znanych,
-                    "suma": grupa.suma,
-                    "srednia": grupa.srednia,
-                    "mediana": grupa.mediana,
-                    "dominanty": list(grupa.dominanty),
-                    "q1": grupa.kwartyl_pierwszy,
-                    "q3": grupa.kwartyl_trzeci,
-                    "minimum": grupa.minimum,
-                    "maksimum": grupa.maksimum,
+                    "sezon": sezon.sezon,
+                    **self._statystyki_grupy(sezon.statystyki),
+                    "rozgrywki": [
+                        {"rozgrywki": grupa.rozgrywki, **self._statystyki_grupy(grupa.statystyki)}
+                        for grupa in sezon.rozgrywki
+                    ],
                 }
-                for grupa in dane.sezony_rozgrywki
+                for sezon in dane.statystyki_sezonow
             ],
             mediana_wartosc=dane.mediana_bramek,
             mediana_dom_wartosc=dane.mediana_bramek_dom,
@@ -214,6 +209,21 @@ class SzczegolyZawodnikaPresenter:
             najdluzsza_seria=str(dane.najdluzsza_seria_z_bramka),
             jakosc=self._przygotuj_jakosc(dane),
         )
+
+    @staticmethod
+    def _statystyki_grupy(statystyki: StatystykiBramekGrupy) -> dict[str, object]:
+        return {
+            "mecze": statystyki.liczba_meczow,
+            "znane": statystyki.liczba_znanych,
+            "suma": statystyki.suma,
+            "srednia": statystyki.srednia,
+            "mediana": statystyki.mediana,
+            "dominanty": list(statystyki.dominanty),
+            "q1": statystyki.kwartyl_pierwszy,
+            "q3": statystyki.kwartyl_trzeci,
+            "minimum": statystyki.minimum,
+            "maksimum": statystyki.maksimum,
+        }
 
     def przygotuj_forme(
         self, dane: FormaIRegularnoscZawodnika

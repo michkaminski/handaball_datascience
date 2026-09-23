@@ -109,7 +109,7 @@ class PodsumowanieAnalityczneZawodnikaViewModel:
     pokrycie_bramek: str
     punkty: list[dict[str, int | str | None]]
     rozklad: list[dict[str, int]]
-    sezony_rozgrywki: list[dict[str, int | str | float | list[int] | None]]
+    statystyki_sezonow: list[dict[str, object]]
     mediana_wartosc: float | None
     mediana_dom_wartosc: float | None
     mediana_wyjazd_wartosc: float | None

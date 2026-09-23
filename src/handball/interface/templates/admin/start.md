@@ -1,69 +1,72 @@
-# Strona startowa administracji
+# Strona startowa administracji — Aktualności
 
-Status: etap 4 ukończony. Szablon `admin/start.html` odwzorowuje pełną strukturę `index.html` prototypu v6 (nagłówek strony, filtry, tabela meczów) na wyraźne polecenie użytkownika ("weź prototyp i pod niego będzie wszystko budowane") — bez okrojonej wersji z samym komunikatem tekstowym.
+Status: zaimplementowane (2026-09-23). Szablon `admin/start.html`, trasa `GET /administracja/`, endpoint `administracja.start`. Widok tylko do odczytu. Na wyraźne zlecenie użytkownika Start zastąpił dotychczasową makietę listy meczów z prototypu (niepodłączone filtry i pustą tabelę) stroną aktualności w stylu klasycznego portalu sportowego: ostatnie mecze, ciekawostki i najlepsi strzelcy bieżącego sezonu, z naciskiem na Superligę M i K oraz Ligi Centralne.
 
-Docelowy szablon względem katalogu szablony: `admin/start.html`.
+## Przeznaczenie i dane
 
-## Przeznaczenie
+Bieżący sezon to sezon z najwyższym `sezony.rok_rozpoczecia`, w którym jest choć jeden rozegrany mecz (oba wyniki `*_full`, bez wycofania i walkowera). Jeżeli takiego sezonu nie ma, strona pokazuje tylko nagłówek z komunikatem „Brak rozegranych meczów w bazie.”.
 
-Start panelu oparty na index.html prototypu v6. Docelowo tabela meczów ma pokazywać podgląd ostatnich meczów; pełna, filtrowana lista jest już dostępna pod osobnym adresem (`admin/matches/list.html`). Na tym etapie sekcja filtrów i tabela mają pełną strukturę prototypu (nagłówki kolumn, pola filtrów), ale bez fikcyjnych wierszy — tabela ma jeden wiersz `colspan` z jawną informacją, filtry nie są jeszcze podłączone do żadnej logiki (brak `action`/JS). Przycisk "Pełna lista meczów" prowadzi do prawdziwego, działającego widoku (`administracja.lista_meczow`).
+Ligi priorytetowe rozpoznaje `KategoriaRozgrywekPolicy` po nazwie i płci rozgrywek bieżącego sezonu, a nie po zakodowanych identyfikatorach (zgodnie z [dokumentacją bazy](../../../../../docs/database/README.md), która ostrzega przed utrwalaniem ID): nazwa zawierająca „superliga” (ale nie „superpuchar”) to Superliga, „liga centralna” to Liga Centralna; płeć pochodzi z `rozgrywki.plec`, a przy jej braku z nazwy („kobiet”). Kolejność sekcji: Superliga mężczyzn, Superliga kobiet, Liga Centralna mężczyzn, Liga Centralna kobiet. Pozostałe rozgrywki sezonu trafiają do wspólnej tabeli.
 
-## Dane wejściowe
+- **Ostatnie mecze** — w każdej sekcji priorytetowej 6 najnowszych rozegranych meczów, liczba rozegranych i średnia bramek na mecz; w „Pozostałych rozgrywkach” 12 najnowszych wyników z nazwą rozgrywek. Strony i wynik uwzględniają `mecze.zamiana` przez `MeczPolicy`, jak lista meczów. Zwycięzca jest pogrubiony, wynik prowadzi do karty meczu, a „wszystkie mecze »” do listy meczów przefiltrowanej po sezonie (i rozgrywkach).
+- **Ciekawostki sezonu** — liczone w `AktualnosciService` z rozegranych meczów i protokołów: sezon w liczbach (bramki, mecze, średnia), mecz z największą liczbą bramek, najwyższe zwycięstwo (różnica), najlepszy występ indywidualny (najwięcej bramek zawodnika w jednym meczu) oraz najbardziej bramkostrzelna liga priorytetowa. Odmiana „bramka/bramki/bramek” jest poprawna gramatycznie.
+- **Najlepsi strzelcy** — 5 najlepszych w każdej lidze priorytetowej. Tabela `public.strzelcy` (oficjalna klasyfikacja ze źródła) jest dla bieżącego sezonu nieaktualna (stan po pierwszej kolejce) i nie obejmuje Lig Centralnych, dlatego strzelcy są sumą bramek z `mecze_zawodnicy` w danych rozgrywkach (M = liczba meczów z wpisaną liczbą bramek, Śr. = bramki / M). Drużyna to drużyna z najnowszego meczu zawodnika w tych rozgrywkach. Strona mówi o tym wprost pod tabelami.
 
-`sekcja_aktywna="start"` przekazywana przez `StartView` (patrz partials/navigation.md i base.md — sam zestaw pozycji menu jest teraz globalny, nie budowany przez ten widok). Na tym etapie brak danych meczowych na samej stronie startowej — tabela wyświetla tekst informujący, gdzie znaleźć rzeczywiste dane. Podgląd ostatnich meczów bezpośrednio na stronie startowej jest świadomie odłożony (patrz "Stan implementacji").
+Strona wykonuje pięć zapytań tylko do odczytu (bieżący sezon, rozgrywki, rozegrane mecze, strzelcy z funkcją okna `row_number`, najlepsze występy); wszystkie statystyki i wybory rekordów liczy Python.
 
-## Powiązania
+## Kontrakt i powiązania
 
-Dziedziczy `base.html` (`{% extends %}`). Widok: `StartView` w `interface/admin/views/start.py`, zarejestrowany pod `/administracja/` w Blueprint `admin`.
+- `aktualnosci`: `AktualnosciViewModel` — `sezon`, `id_sezon`, `stan_danych` (data ostatniego wyniku), `liczba_rozegranych`, `suma_bramek`, `srednia_bramek`, `sekcje` (`SekcjaAktualnosciViewModel`: `klucz` kategorii, `etykieta`, `rozgrywki`, `liczba_rozegranych`, `srednia_bramek`, `mecze`, `strzelcy`), `pozostale_mecze`, `ciekawostki` (`CiekawostkaViewModel`: `tytul`, `wartosc`, `opis`, opcjonalnie `id_mecz`, `id_zawodnik`).
+- `sekcja_aktywna="start"`.
+- Warstwy: `StartView` → `AktualnosciService` (+ `KategoriaRozgrywekPolicy`) → kontrakt `AktualnosciReadRepository` → `AktualnosciSQLAlchemyRepository`; formatowanie w `AktualnosciPresenter`. Zależności składa `ZaleznosciZadaniaFactory` (`fabryka_aktualnosci`, `utworz_serwis_aktualnosci()`, `utworz_presenter_aktualnosci()`).
+- Błąd odczytu bazy daje 503 (`obsluz_blad_domeny`). Nazwy z bazy są escapowane przez Jinja2, a nadmiarowe spacje w nazwach drużyn i zawodników są usuwane w presenterze.
 
-## Gdzie wprowadzać zmiany
+Tabele mają ukryty dla oka nagłówek i podpis (`.sr-only`), więc czytniki ekranu dostają kolumny Data / Gospodarz / Wynik / Gość. Szerokości kolumn ustala `<colgroup>` (`table-layout: fixed`); w ramkach lig nazwy drużyn zawijają się do dwóch linii, w tabeli pozostałych rozgrywek są skracane wielokropkiem z pełną nazwą w `title`.
 
-Tutaj zmieniaj zawartość strony startowej. Wspólną prezentację tabeli wydziel do osobnego fragmentu z własnym MD, jeśli będzie użyta również na liście; nie duplikuj logiki danych.
+## Weryfikacja
 
-## Sprawdzenie zmiany
-
-Sprawdź stan przed integracją, pustą listę, brak części danych i zgodność hierarchii treści z prototypem.
-
-## Stan implementacji
-
-Wykonano: `tests/interface/test_start.py` sprawdza status 200 i obecność marki/nawigacji w odpowiedzi; sprawdzenie wizualne w przeglądarce (Playwright, Chromium headless) na ~1400px i ~380px oraz bezpośrednie porównanie zrzutu z prototypem (`index.html`) potwierdza zgodność struktury (nagłówek, filtry, tabela, pełny sidebar). Przycisk "Pełna lista meczów" sprawdzony ręcznie — prowadzi do działającego widoku z rzeczywistymi danymi z bazy `zprp`. Nie sprawdzono/nie zrobiono: podglądu ostatnich meczów bezpośrednio na tej stronie (zamiast wiersza informacyjnego) — to świadomie odłożona decyzja projektowa, nie błąd; samego formularza filtrów na tej stronie (nie jest jeszcze podłączony do żadnej logiki, w przeciwieństwie do filtrów na `matches/list.html`).
+Testy: `tests/unit/test_news_service.py` (klasyfikacja lig, kolejność sekcji, limity, średnie, rekordy, strzelcy w sekcjach, brak sezonu), `tests/unit/test_news_presenter.py` (zamiana stron, zwycięzca, remis, odmiana, linki, puste pola), `tests/unit/test_news_repository.py` (mapowanie wierszy, błąd bazy) i `tests/interface/test_start.py` (render, linki, escapowanie, brak danych, 503, zasoby statyczne). Na rzeczywistej bazie (sezon 2026/2027, 123 rozegrane mecze) sprawdzono stronę w Edge przy 1440 px i w ramce 390 px.
 
 ## Układ tekstowy i mapa zmian
 
-Stan: układ istniejącego `start.html`. Rama strony pochodzi z `base.html`. Pola filtrów na tej stronie są makietą bez obsługi danych.
-
 ```text
 [wspólny nagłówek] -> [górne menu: Start aktywne]
-+------------------+-------------------------------------------------------+
-| wspólny sidebar  | [☰ Menu na wąskim ekranie] [komunikaty, jeżeli są]      |
-|                  | (1) Start › Mecze                                    |
-|                  |     OSTATNIE MECZE I ZARZĄDZANIE DANYMI               |
-|                  |     Najważniejsza część panelu: lista meczów...       |
-|                  |                                                       |
-|                  | (2) FILTRY — jeszcze nie działają                    |
-|                  | [Sezon v] [Rozgrywki v] [Kolejka v]                   |
-|                  | [Drużyna v] [Status v] [Szukaj: tekst]                |
-|                  |                                                       |
-|                  | (3) [Pełna lista meczów]   Podgląd ... w kolejnym etapie|
-|                  |                                                       |
-|                  | (4) ID | Data | Godz. | Rozgrywki | Kol. |            |
-|                  |     Gospodarz | Wynik | Gość | Status                |
-|                  |     Podgląd ostatnich meczów ... nie został wdrożony |
-+------------------+-------------------------------------------------------+
++------------------+----------------------------------------------------------------+
+| wspólny sidebar  | (1) Start › Aktualności                                        |
+|                  |     AKTUALNOŚCI (szeryfowy tytuł)                              |
+|                  |     Sezon 2026/2027 · ostatni wynik · rozegrane mecze · bramki |
+|                  | +-------------------------------------+ +--------------------+ |
+|                  | | (2) Ostatnie mecze (podwójna linia) | | (5) CIEKAWOSTKI    | |
+|                  | | +-----------------+ +--------------+ | |  Sezon w liczbach  | |
+|                  | | |SUPERLIGA MĘŻCZ. | |SUPERLIGA KOB.| | |  Najwięcej bramek  | |
+|                  | | |20.09 A [37:24] B| |16.09 C [28:29]| | |  Najwyższe zwycięs.| |
+|                  | | |... 6 wyników    | |...           | | |  Najlepszy występ  | |
+|                  | | |Rozegrane · śr.  | |wszystkie »   | | |  Najbardziej bramk.| |
+|                  | | +-----------------+ +--------------+ | +--------------------+ |
+|                  | | |LIGA CENTR. M.   | |LIGA CENTR. K.| | | (6) NAJLEPSI       | |
+|                  | | +-----------------+ +--------------+ | |     STRZELCY       | |
+|                  | | (3) POZOSTAŁE ROZGRYWKI             | |  Superliga M: 1-5  | |
+|                  | |  data | rozgrywki | A [wynik] B      | |  Superliga K: 1-5  | |
+|                  | |  ... 12 wyników · wszystkie mecze » | |  LC M, LC K: 1-5   | |
+|                  | +-------------------------------------+ |  (4) źródło danych | |
+|                  |                                         +--------------------+ |
++------------------+----------------------------------------------------------------+
 [wspólna stopka]
 ```
 
-Rysunek zawija długi wiersz filtrów i nagłówki tabeli. W HTML kolejność elementów jest taka jak powyżej. Nie ma przycisku wysłania filtrów ani formularza GET. Działa odnośnik „Pełna lista meczów”, prowadzący do `/administracja/mecze`. Jedyny wiersz tabeli jest komunikatem, nie prawdziwym meczem.
-
-Siatka filtrów zmienia liczbę kolumn przy 1100, 700 i 430 px, tak samo jak na liście meczów. Wspólny sidebar i przycisk mobilnego menu opisuje `base.md`.
+Poniżej 1100 px kolumna boczna przechodzi pod główną, a poniżej 760 px ramki lig układają się jedna pod drugą i znika kolumna rozgrywek w tabeli pozostałych meczów. Ramki kobiece mają bordowy pasek nagłówka, męskie granatowy; Ligi Centralne mają jaśniejsze podkreślenie paska.
 
 ### Mapa zmian
 
-| Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
+| Element | Plik | Blok / selektor / dane |
 | --- | --- | --- |
-| 1. Nagłówek strony | [start.html](start.html) | `.pagehead`, `.crumb`, `<h1>`, opis i blok `tytul`. |
-| 2. Makieta filtrów | [start.html](start.html) | `.panel-body.filters`; podłączenie filtrów wymaga dodatkowo danych i logiki widoku, nie tylko zmiany etykiet. |
-| 3. Odnośnik i notatka | [start.html](start.html) | `.toolbar .left` i `.toolbar .right`; cel linku to `administracja.lista_meczow`. |
-| 4. Tabela i komunikat | [start.html](start.html) | `<thead>` oraz jedyny wiersz `<tbody>` z `colspan="9"`. |
-| Dostarczenie prawdziwego podglądu | [start.py](../../admin/views/start.py) | `StartView.get()` obecnie tylko renderuje szablon. Nie dostarcza listy meczów. |
-| Rozmiary i zawijanie | [admin.css](../../static/css/admin.css) | `.filters`, `.toolbar`, `.table-wrap`, `.note` i zapytania `@media`. |
+| 1. Nagłówek i linia stanu | [start.html](start.html) | `.news-head`, `.news-dateline`, `aktualnosci.sezon`, `stan_danych`, `liczba_rozegranych`, `suma_bramek`. |
+| 2. Ramki lig priorytetowych | [start.html](start.html), [admin.css](../../static/css/admin.css) | makro `wiersz_meczu`, `.news-boxes`, `.news-box.news-{klucz}`, `.news-results`, `.news-col-*`, `aktualnosci.sekcje`. |
+| 3. Pozostałe rozgrywki | [start.html](start.html) | `.news-other`, `wiersz_meczu(mecz, true)`, `aktualnosci.pozostale_mecze`. |
+| 4. Źródło strzelców | [start.html](start.html) | `.news-source`; zmiana źródła wymaga zmiany `pobierz_strzelcow()`. |
+| 5. Ciekawostki | [news_presenter.py](../../presenters/news_presenter.py), [news_service.py](../../../services/news_service.py) | `_ciekawostki()`, `_rekord()`, `_wystep()`; rekordy i średnie liczy serwis. |
+| 6. Najlepsi strzelcy | [news_repository.py](../../../infrastructure/repositories/news_repository.py) | `pobierz_strzelcow()` (agregacja `mecze_zawodnicy`, `row_number` w rozgrywkach), `.news-scorer-table`. |
+| Rozpoznawanie lig | [news_service.py](../../../services/news_service.py) | `KategoriaRozgrywekPolicy.kategoria()`, `KategoriaRozgrywek` w [domain/news.py](../../../domain/news.py). |
+| Liczby w sekcjach | [news_service.py](../../../services/news_service.py) | `LICZBA_MECZOW_W_SEKCJI`, `LICZBA_STRZELCOW_W_SEKCJI`, `LICZBA_POZOSTALYCH_MECZOW`, `LICZBA_NAJLEPSZYCH_WYSTEPOW`. |
+| Widok i zależności | [start.py](../../admin/views/start.py), [request_dependencies.py](../../../request_dependencies.py) | `StartView.get()`, `fabryka_aktualnosci`. |
+| Styl „klasycznego portalu” | [admin.css](../../static/css/admin.css) | `.news-*`, `.sr-only`, zapytania `@media` 1100 i 760 px. |

@@ -18,6 +18,7 @@
 <label>Hala{{ formularz.id_hala() }}</label>
 <label>Drużyna{{ formularz.druzyna(placeholder="nazwa drużyny...") }}</label>
 <label>Data{{ formularz.data_meczu() }}</label>
+<label class="filter-checkbox" title="Mecze z terminem przed dzisiejszym dniem albo z wpisanym wynikiem"><input type="checkbox" name="zakonczone" value="1"{% if formularz.tylko_zakonczone %} checked{% endif %}> Tylko zakończone</label><input type="hidden" name="zakonczone" value="0">
 <div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
 <div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.lista_meczow', id_sezon='') }}">Wyczyść filtry</a></div>
 </form>

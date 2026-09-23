@@ -11,7 +11,9 @@ from handball.domain.player_details import (
     PodsumowanieAnalityczneZawodnika,
     PunktFormyZawodnika,
     RozstepSezonuZawodnika,
-    StatystykiSezonuRozgrywekZawodnika,
+    StatystykiBramekGrupy,
+    StatystykiRozgrywekSezonuZawodnika,
+    StatystykiSezonuZawodnika,
     StronaMeczowZawodnika,
     SzczegolyZawodnika,
 )
@@ -48,7 +50,7 @@ class SzczegolyZawodnikaAnalyticsService:
         rekord = max(bramki, default=None)
         return PodsumowanieAnalityczneZawodnika(
             mecze=mecze,
-            sezony_rozgrywki=self._sezony_rozgrywki(mecze),
+            statystyki_sezonow=self._statystyki_sezonow(mecze),
             liczba_meczow=len(mecze),
             liczba_znanych_bramek=len(bramki),
             suma_bramek=sum(bramki) if bramki else None,
@@ -77,32 +79,43 @@ class SzczegolyZawodnikaAnalyticsService:
             znane_dyskwalifikacje=sum(m.dyskwalifikacje is not None for m in mecze),
         )
 
-    def _sezony_rozgrywki(
+    def _statystyki_sezonow(
         self, mecze: Sequence[AnalitykaMeczuZawodnika]
-    ) -> tuple[StatystykiSezonuRozgrywekZawodnika, ...]:
-        grupy: dict[tuple[str, str], list[AnalitykaMeczuZawodnika]] = {}
+    ) -> tuple[StatystykiSezonuZawodnika, ...]:
+        sezony: dict[str, list[AnalitykaMeczuZawodnika]] = {}
         for mecz in mecze:
-            grupy.setdefault((mecz.sezon, mecz.rozgrywki), []).append(mecz)
+            sezony.setdefault(mecz.sezon, []).append(mecz)
         wynik = []
-        for (sezon, rozgrywki), mecze_grupy in grupy.items():
-            znane = [m.bramki for m in mecze_grupy if m.bramki is not None]
+        for sezon, mecze_sezonu in sezony.items():
+            rozgrywki: dict[str, list[AnalitykaMeczuZawodnika]] = {}
+            for mecz in mecze_sezonu:
+                rozgrywki.setdefault(mecz.rozgrywki, []).append(mecz)
             wynik.append(
-                StatystykiSezonuRozgrywekZawodnika(
+                StatystykiSezonuZawodnika(
                     sezon=sezon,
-                    rozgrywki=rozgrywki,
-                    liczba_meczow=len(mecze_grupy),
-                    liczba_znanych=len(znane),
-                    suma=sum(znane) if znane else None,
-                    srednia=mean(znane) if znane else None,
-                    mediana=float(median(znane)) if znane else None,
-                    dominanty=self._dominanty(znane),
-                    kwartyl_pierwszy=self._percentyl(znane, 0.25),
-                    kwartyl_trzeci=self._percentyl(znane, 0.75),
-                    minimum=min(znane, default=None),
-                    maksimum=max(znane, default=None),
+                    statystyki=self._statystyki_grupy(mecze_sezonu),
+                    rozgrywki=tuple(
+                        StatystykiRozgrywekSezonuZawodnika(nazwa, self._statystyki_grupy(grupa))
+                        for nazwa, grupa in rozgrywki.items()
+                    ),
                 )
             )
         return tuple(wynik)
+
+    def _statystyki_grupy(self, mecze: Sequence[AnalitykaMeczuZawodnika]) -> StatystykiBramekGrupy:
+        znane = [m.bramki for m in mecze if m.bramki is not None]
+        return StatystykiBramekGrupy(
+            liczba_meczow=len(mecze),
+            liczba_znanych=len(znane),
+            suma=sum(znane) if znane else None,
+            srednia=mean(znane) if znane else None,
+            mediana=float(median(znane)) if znane else None,
+            dominanty=self._dominanty(znane),
+            kwartyl_pierwszy=self._percentyl(znane, 0.25),
+            kwartyl_trzeci=self._percentyl(znane, 0.75),
+            minimum=min(znane, default=None),
+            maksimum=max(znane, default=None),
+        )
 
     @staticmethod
     def _mediana_wedlug_miejsca(

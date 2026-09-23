@@ -12,7 +12,13 @@ from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import SQLAlchemyError
 
 from handball.contracts.import_storage import ImportStore
-from handball.domain.imports import BladImportu, PrzebiegImportu, RekordImportu, ZadaniePobrania
+from handball.domain.imports import (
+    BladImportu,
+    OpcjaImportu,
+    PrzebiegImportu,
+    RekordImportu,
+    ZadaniePobrania,
+)
 
 KOLEJNOSC = (
     "sezony",
@@ -26,6 +32,9 @@ KOLEJNOSC = (
     "mecze",
     "zawodnicy",
     "mecze_zawodnicy",
+    "tabele",
+    "tabele_grupy",
+    "tabele_wiersze",
 )
 
 
@@ -80,6 +89,40 @@ class ImportSQLAlchemyRepository:
         except SQLAlchemyError as blad:
             raise BladImportu("Nie można odczytać meczów wymagających uzupełnienia.") from blad
 
+    def pobierz_sezony(self) -> list[OpcjaImportu]:
+        return self._opcje(
+            text(
+                "SELECT s.id, s.nazwa FROM public.sezony s "
+                "WHERE EXISTS (SELECT 1 FROM public.rozgrywki r WHERE r.id_sezon = s.id) "
+                "ORDER BY s.rok_rozpoczecia DESC NULLS LAST, s.id DESC"
+            ),
+            {},
+        )
+
+    def pobierz_rozgrywki_sezonu(self, id_sezon: int) -> list[OpcjaImportu]:
+        return self._opcje(
+            text(
+                "SELECT r.id, r.nazwa FROM public.rozgrywki r "
+                "WHERE r.id_sezon = :sezon ORDER BY r.nazwa, r.id"
+            ),
+            {"sezon": id_sezon},
+        )
+
+    def _opcje(self, zapytanie: Any, parametry: dict[str, Any]) -> list[OpcjaImportu]:
+        try:
+            with self._silnik.connect().execution_options(
+                postgresql_readonly=True, isolation_level="REPEATABLE READ"
+            ) as polaczenie:
+                try:
+                    return [
+                        OpcjaImportu(int(wiersz[0]), str(wiersz[1]))
+                        for wiersz in polaczenie.execute(zapytanie, parametry)
+                    ]
+                finally:
+                    polaczenie.rollback()
+        except SQLAlchemyError as blad:
+            raise BladImportu("Nie można odczytać sezonów i rozgrywek z bazy.") from blad
+
     def _tabele(self, polaczenie: Connection) -> dict[str, Table]:
         metadane = MetaData()
         return {
@@ -110,22 +153,53 @@ class ImportSQLAlchemyRepository:
     def _rozwiaz(
         self, polaczenie: Connection, tabela: Table, dane: dict[str, Any]
     ) -> dict[str, Any]:
-        wynik = dict(dane)
-        for pole, wartosc in dane.items():
-            if isinstance(wartosc, dict) and "tabela" in wartosc:
-                rodzic = tabela.metadata.tables["public." + wartosc["tabela"]]
-                ident = polaczenie.execute(
-                    select(rodzic.c.id).where(
-                        and_(*(rodzic.c[k] == v for k, v in wartosc["klucz"].items()))
-                    )
-                ).scalar_one_or_none()
-                wynik[pole] = ident
+        return {
+            pole: self._identyfikator(polaczenie, tabela.metadata, wartosc)
+            if self._odwolanie(wartosc)
+            else wartosc
+            for pole, wartosc in dane.items()
+        }
+
+    @staticmethod
+    def _odwolanie(wartosc: Any) -> bool:
+        return isinstance(wartosc, dict) and "tabela" in wartosc
+
+    def _identyfikator(
+        self, polaczenie: Connection, metadane: MetaData, odwolanie: dict[str, Any]
+    ) -> Any:
+        rodzic = metadane.tables["public." + odwolanie["tabela"]]
+        klucz = self._rozwiaz_klucz(polaczenie, metadane, odwolanie["klucz"])
+        if klucz is None:
+            return None
+        return polaczenie.execute(
+            select(rodzic.c.id).where(and_(*(rodzic.c[k] == v for k, v in klucz.items())))
+        ).scalar_one_or_none()
+
+    def _rozwiaz_klucz(
+        self, polaczenie: Connection, metadane: MetaData, klucz: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        wynik = {}
+        for pole, wartosc in klucz.items():
+            if self._odwolanie(wartosc):
+                wartosc = self._identyfikator(polaczenie, metadane, wartosc)
+                if wartosc is None:
+                    return None
+            wynik[pole] = wartosc
         return wynik
+
+    def _warunek_klucza(self, polaczenie: Connection, tabela: Table, rekord: RekordImportu) -> Any:
+        klucz = self._rozwiaz_klucz(polaczenie, tabela.metadata, rekord.klucz)
+        if not klucz:
+            raise BladImportu(f"Nie można ustalić rekordu {rekord.tabela} do aktualizacji.")
+        return and_(*(tabela.c[k] == v for k, v in klucz.items()))
 
     def _wiersz(
         self, polaczenie: Connection, tabela: Table, rekord: RekordImportu
     ) -> dict[str, Any] | None:
-        warunek = and_(*(tabela.c[k] == v for k, v in rekord.klucz.items()))
+        klucz = self._rozwiaz_klucz(polaczenie, tabela.metadata, rekord.klucz)
+        if klucz is None:
+            return None
+        warunek = and_(*(tabela.c[k] == v for k, v in klucz.items()))
         wiersz = polaczenie.execute(select(tabela).where(warunek)).mappings().first()
         return {k: self._json(v) for k, v in wiersz.items()} if wiersz is not None else None
 
@@ -174,7 +248,10 @@ class ImportSQLAlchemyRepository:
             ):
                 polaczenie.execute(text("SET LOCAL lock_timeout = '5s'"))
                 polaczenie.execute(text("SET LOCAL statement_timeout = '60s'"))
-                polaczenie.execute(text("SELECT pg_advisory_xact_lock(195, 20262027)"))
+                polaczenie.execute(
+                    text("SELECT pg_advisory_xact_lock(:sezon, 20262027)"),
+                    {"sezon": przebieg.id_sezon},
+                )
                 poprzedni = polaczenie.execute(
                     text(
                         "SELECT id FROM logs.import_przebiegi "
@@ -203,7 +280,7 @@ class ImportSQLAlchemyRepository:
                             "parametry": json.dumps(
                                 {
                                     "hds_id": przebieg.id,
-                                    "sezon": 195,
+                                    "sezon": przebieg.id_sezon,
                                     "ligi": przebieg.ligi,
                                     "tryb": przebieg.tryb,
                                 }
@@ -218,11 +295,12 @@ class ImportSQLAlchemyRepository:
                 for rekord in sorted(przebieg.rekordy, key=lambda r: KOLEJNOSC.index(r.tabela)):
                     id_pliku, id_proby = pliki[rekord.zrodlo]
                     polaczenie.execute(
-                        text(
-                            "SELECT logs.ustaw_kontekst('hds-admin', :przebieg, :proba, "
-                            "'Aktualizacja API 2026/2027')"
-                        ),
-                        {"przebieg": id_przebieg, "proba": id_proby},
+                        text("SELECT logs.ustaw_kontekst('hds-admin', :przebieg, :proba, :opis)"),
+                        {
+                            "przebieg": id_przebieg,
+                            "proba": id_proby,
+                            "opis": f"Aktualizacja API {przebieg.nazwa_sezonu}",
+                        },
                     )
                     tabela = tabele[rekord.tabela]
                     if rekord.poprzednio is None:
@@ -235,7 +313,7 @@ class ImportSQLAlchemyRepository:
                     elif rekord.zmiany:
                         polaczenie.execute(
                             tabela.update()
-                            .where(and_(*(tabela.c[k] == v for k, v in rekord.klucz.items())))
+                            .where(self._warunek_klucza(polaczenie, tabela, rekord))
                             .values(
                                 **self._dane(
                                     tabela, self._rozwiaz(polaczenie, tabela, rekord.zmiany)

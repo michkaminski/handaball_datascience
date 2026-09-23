@@ -1,6 +1,6 @@
 # Import danych ZPRP
 
-Istniejący szablon [panel.html](panel.html) obsługuje wybór rozgrywek sezonu 2026/2027, podgląd przebiegu i historię pobrań. Dziedziczy `base.html`; definiuje bloki `tytul` i `tresc`. Wzorzec v6 `imports.html` dostarcza wspólną ramę administracji, a jego treść była placeholderem.
+Istniejący szablon [panel.html](panel.html) obsługuje wybór rozgrywek sezonu 2026/2027, osobny import tabel wybranego sezonu i rozgrywek, podgląd przebiegu i historię pobrań. Dziedziczy `base.html`; definiuje bloki `tytul` i `tresc`. Wzorzec v6 `imports.html` dostarcza wspólną ramę administracji, a jego treść była placeholderem.
 
 Opis całego procesu, magazynów danych i tekstowy UML: [Importy — krok po kroku](../../../../../../docs/IMPORTS.md).
 
@@ -16,6 +16,8 @@ Opis całego procesu, magazynów danych i tekstowy UML: [Importy — krok po kro
 | `ligi` | Słownik identyfikatorów i nazw `LIGI_IMPORTU` z [imports.py](../../../../domain/imports.py) |
 | `przebieg` | `PrzebiegImportu` lub `None` |
 | `historia` | Lista przebiegów z magazynu serwisu |
+| `opcje_tabel` | `OpcjeImportuTabel` (sezony z bazy, wybrany sezon — domyślnie bieżący, rozgrywki wybranego sezonu) lub `None` |
+| `blad_opcji` | Komunikat, gdy nie udało się odczytać sezonów i rozgrywek z bazy (sekcja tabel pokazuje go zamiast formularza) |
 
 Widok korzysta z `ImportService`. Brak konfiguracji zwraca ekran instrukcji dostępu (503), brak poprawnego logowania HTTP Basic — 401. Formularze POST wymagają tokenu CSRF. Dokument opisuje istniejący interfejs; zmiana zaznaczenia nie uruchamia importu.
 
@@ -27,11 +29,15 @@ Tryb uzupełniający nie pobiera składów sezonowych i nie nadpisuje istniejąc
 
 Brak kandydatów prowadzi od razu do podglądu z komunikatem „Nie znaleziono meczów wymagających uzupełnienia”, bez żądań do ZPRP. Przy pustej liście rekordów przycisk zatwierdzenia nie jest wyświetlany. Każdy klient API w procesie aplikacji zachowuje odstęp co najmniej 3 sekund między rozpoczęciami żądań.
 
+## Import tabel
+
+Sekcja `#import-tabel` ma formularz GET z listą sezonów (`sezon_tabel`, pierwszy oznaczony „(bieżący)”), który w JavaScript przeładowuje stronę po zmianie wyboru, a bez JavaScript przyciskiem „Pokaż rozgrywki sezonu”. Poniżej formularz POST `akcja=rozpocznij_tabele` z ukrytym `sezon_tabel` i checkboxami `name="ligi"` rozgrywek wybranego sezonu; Superligi i Ligi Centralne są domyślnie zaznaczone. Przebieg tabel pokazuje tryb „Tylko tabele”, sezon i listę rozgrywek; potwierdzenie zapisu wymienia sezon przebiegu, a po zapisie link prowadzi do listy tabel tego sezonu. Opis procesu: [IMPORTS.md](../../../../../../docs/IMPORTS.md#import-tabel-wybranego-sezonu).
+
 ## Szybki wybór rozgrywek
 
 Nad checkboxami znajduje się siedem przycisków typu `button`: „Zaznacz wszystkie”, „Odznacz wszystkie”, „Tylko Superligi”, „Tylko Ligi Centralne”, „Tylko I ligi”, „Tylko II ligi” i „Tylko Puchar Polski”. Przyciski „Tylko…” zastępują cały wybór, zaznaczając rozgrywki obu płci danej grupy. Następnie można ręcznie zmienić dowolny checkbox.
 
-Klasa `WyborLigController` w [import.js](../../../static/js/import.js) operuje wyłącznie wewnątrz `[data-wybor-lig]`. Nazwy pochodzą z `data-nazwa` checkboxów, a prefiksy z `data-wybor` przycisków. Porównanie ignoruje wielkość liter. Prefiksy `i liga ` i `ii liga ` są rozłączne. `puchar polski ` obejmuje rozgrywki wojewódzkie i eliminacje, ale nie Superpuchar Polski. „Zaznacz wszystkie” obejmuje również Superpuchary.
+Klasa `WyborLigController` w [import.js](../../../static/js/import.js) operuje wyłącznie wewnątrz swojego `[data-wybor-lig]` (w panelu są dwa: import sezonu 2026/2027 i import tabel). Wzorzec z prefiksem `*` dopasowuje fragment nazwy (bez Superpucharów), a `|` łączy kilka wzorców — używane w sekcji tabel, gdzie nazwy z bazy mają przedrostki sponsorów. Nazwy pochodzą z `data-nazwa` checkboxów, a prefiksy z `data-wybor` przycisków. Porównanie ignoruje wielkość liter. Prefiksy `i liga ` i `ii liga ` są rozłączne. `puchar polski ` obejmuje rozgrywki wojewódzkie i eliminacje, ale nie Superpuchar Polski. „Zaznacz wszystkie” obejmuje również Superpuchary.
 
 Obsługa inicjalizuje się również bez formularza pobierania `#pobieranie`. Przyciski nie wysyłają formularza ani żądania sieciowego. Bez JavaScript pasek pozostaje ukryty, a checkboxy działają ręcznie. Domyślnie wszystkie ligi są zaznaczone. Pusty wybór po wysłaniu odrzuca istniejąca walidacja serwisu.
 
@@ -63,13 +69,21 @@ Aktualizacja danych ZPRP
     [Pełny import — sprawdź aktualizacje ZPRP]
     [Uzupełnij brakujące dane meczów]
     Opis zakresu uzupełniania
+  Import tabel (#import-tabel)
+    Opis: tylko tabele, zapis po zatwierdzeniu, bez usuwania
+    Sezon [2026/2027 (bieżący) v]  [Pokaż rozgrywki sezonu — tylko bez JS]
+    Rozgrywki sezonu ...
+      [Zaznacz wszystkie] [Odznacz wszystkie] [Tylko Superligi] [Tylko Ligi Centralne]
+      [Superligi i Ligi Centralne] [Tylko I ligi] [Tylko II ligi]
+      [x] LOTTO Superliga ... [ ] I Liga ...
+    [Pobierz tabele — sprawdź zmiany]
   [jeśli istnieje przebieg:]
-    Przebieg: status, tryb, liczba pobrań i zadań, ewentualny błąd
+    Przebieg: status, tryb · sezon, liczba pobrań i zadań, ewentualny błąd
     [uzupełnianie bez kandydatów: komunikat o braku meczów]
     [kontynuacja / podgląd i zatwierdzenie / potwierdzenie zapisu]
     [dla podglądu i zapisu: rozwijane tabele zmian rekordów]
   Historia pobrań w Handball DataScience
-    Rozpoczęcie | Tryb | Status | Ligi | Błąd
+    Rozpoczęcie | Tryb | Sezon | Status | Ligi | Błąd
 [wspólna stopka]
 ```
 
@@ -83,6 +97,8 @@ Pasek przycisków zawija się według dostępnej szerokości; rysunek pokazuje u
 | Zaznaczanie grup | [import.js](../../../static/js/import.js) | `WyborLigController.uruchom()` i `zaznacz()` |
 | Odstępy i zawijanie przycisków | [admin.css](../../../static/css/admin.css) | `.import-selection:not([hidden])`, `.btn.secondary.small`, `.import-form`, `.import-choice` |
 | Lista nazw i identyfikatorów | [imports.py](../../../../domain/imports.py) | `LIGI_IMPORTU` |
+| Import tabel | [panel.html](panel.html), [import_service.py](../../../../services/import_service.py), [import_mapping.py](../../../../services/import_mapping.py) | `#import-tabel`, `data-import-sezon`, `opcje_tabel()`, `rozpocznij_tabele()`, `tabele_spis()`, `tabela()` |
+| Łańcuch kluczy tabel | [import_repository.py](../../../../infrastructure/repositories/import_repository.py) | `KOLEJNOSC`, `_rozwiaz_klucz()`, `_identyfikator()`, `_warunek_klucza()`, `pobierz_sezony()`, `pobierz_rozgrywki_sezonu()` |
 | Dane widoku i obsługa formularzy | [import_views.py](../../../admin/views/import_views.py) | `ImportPanelView.get()` i `post()` |
 | Postęp pobierania | [import.js](../../../static/js/import.js) | `#pobieranie`, `#stan-pobierania`, liczniki odpowiedzi i zadań |
 | Historia i różnice | [panel.html](panel.html) | `#historia`, `przebieg.rekordy`, `.table-wrap` |

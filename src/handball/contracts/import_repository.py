@@ -1,10 +1,14 @@
 from typing import Protocol
 
-from handball.domain.imports import PrzebiegImportu, ZadaniePobrania
+from handball.domain.imports import OpcjaImportu, PrzebiegImportu, ZadaniePobrania
 
 
 class ImportRepository(Protocol):
     def pobierz_brakujace(self, ligi: list[int]) -> list[ZadaniePobrania]: ...
+
+    def pobierz_sezony(self) -> list[OpcjaImportu]: ...
+
+    def pobierz_rozgrywki_sezonu(self, id_sezon: int) -> list[OpcjaImportu]: ...
 
     def porownaj(self, przebieg: PrzebiegImportu) -> None: ...
 

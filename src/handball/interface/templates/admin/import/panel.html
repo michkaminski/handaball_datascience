@@ -30,14 +30,44 @@
 <button class="btn secondary" type="submit" name="tryb" value="uzupelniajacy">Uzupełnij brakujące dane meczów</button>
 <p class="note">Import uzupełniający sprawdza tylko znane mecze sprzed dzisiejszego dnia z brakującym wynikiem lub składem gospodarzy albo gości. Pomija walkowery i mecze wycofane. Zachowuje istniejące wartości; korekty i nowe mecze pobierzesz pełnym importem.</p>
 </form></div></section>
+<section class="panel" id="import-tabel"><h2>Import tabel</h2><div class="panel-body">
+<p class="note">Pobiera z ZPRP wyłącznie tabele (klasyfikacje) wybranych rozgrywek i sezonu, bez meczów i składów. Brakujące drużyny są dopisywane, istniejące dane drużyn tylko uzupełniane. Zapis następuje dopiero po zatwierdzeniu podglądu; wiersze nie są usuwane.</p>
+{% if blad_opcji %}<p class="notice notice-error" role="alert">{{ blad_opcji }}</p>
+{% elif opcje_tabel and opcje_tabel.wybrany_sezon %}
+<form method="get" action="{{ url_for('administracja.import_danych') }}#import-tabel" class="import-season" data-import-sezon>
+<label class="field">Sezon <select name="sezon_tabel">{% for sezon in opcje_tabel.sezony %}<option value="{{ sezon.id }}"{% if sezon.id == opcje_tabel.wybrany_sezon.id %} selected{% endif %}>{{ sezon.nazwa }}{% if loop.first %} (bieżący){% endif %}</option>{% endfor %}</select></label>
+<button class="btn secondary small" type="submit" data-import-sezon-przycisk>Pokaż rozgrywki sezonu</button>
+</form>
+<form method="post" action="{{ url_for('administracja.import_danych') }}" class="import-form">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="rozpocznij_tabele"><input type="hidden" name="sezon_tabel" value="{{ opcje_tabel.wybrany_sezon.id }}">
+<fieldset data-wybor-lig><legend>Rozgrywki sezonu {{ opcje_tabel.wybrany_sezon.nazwa }}</legend>
+<div class="import-selection" role="group" aria-label="Szybkie zaznaczanie rozgrywek" hidden>
+<button class="btn secondary small" type="button" data-wybor="wszystkie">Zaznacz wszystkie</button>
+<button class="btn secondary small" type="button" data-wybor="zadne">Odznacz wszystkie</button>
+<button class="btn secondary small" type="button" data-wybor="*superliga">Tylko Superligi</button>
+<button class="btn secondary small" type="button" data-wybor="*liga centralna">Tylko Ligi Centralne</button>
+<button class="btn secondary small" type="button" data-wybor="*superliga|*liga centralna">Superligi i Ligi Centralne</button>
+<button class="btn secondary small" type="button" data-wybor="i liga ">Tylko I ligi</button>
+<button class="btn secondary small" type="button" data-wybor="ii liga ">Tylko II ligi</button>
+</div>
+{% for rozgrywki in opcje_tabel.rozgrywki %}{% set nazwa = rozgrywki.nazwa|lower %}
+<label class="import-choice"><input type="checkbox" name="ligi" value="{{ rozgrywki.id }}" data-nazwa="{{ rozgrywki.nazwa }}"{% if ('superliga' in nazwa or 'liga centralna' in nazwa) and 'superpuchar' not in nazwa %} checked{% endif %}> {{ rozgrywki.nazwa }}</label>
+{% else %}<p class="note">Brak rozgrywek tego sezonu w bazie.</p>{% endfor %}
+</fieldset>
+<button class="btn" type="submit">Pobierz tabele — sprawdź zmiany</button>
+</form>
+{% else %}<p class="note">Brak sezonów z rozgrywkami w bazie.</p>{% endif %}
+</div></section>
 {% if przebieg %}
 <section class="panel" id="przebieg"><h2>Przebieg: {{ przebieg.status }}</h2><div class="panel-body">
-<p>Tryb: <strong>{{ przebieg.nazwa_trybu }}</strong></p>
+<p>Tryb: <strong>{{ przebieg.nazwa_trybu }}</strong> · sezon <strong>{{ przebieg.nazwa_sezonu }}</strong></p>
 <p>Pobrano <strong id="liczba-pobran">{{ przebieg.wykonane|length }}</strong> odpowiedzi API.
 Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</strong> odkrytych zadań.</p>
 {% if przebieg.tryb == 'uzupelniajacy' %}
 <p class="note">Pobierane są wyłącznie szczegóły wybranych meczów, bez składów sezonowych. Brakujące odpowiedzi są pomijane.</p>
 {% if not przebieg.wykonane and not przebieg.kolejka %}<p role="status">Nie znaleziono meczów wymagających uzupełnienia.</p>{% endif %}
+{% elif przebieg.tryb == 'tabele' %}
+<p class="note">Pobierane są spisy tabel i tabele (także poszczególne grupy) rozgrywek: {{ przebieg.nazwy_rozgrywek|join(', ') }}.</p>
 {% else %}<p class="note">Liczba zadań rośnie podczas odnajdywania rund, kolejek i meczów.</p>{% endif %}
 {% if przebieg.blad %}<p class="notice notice-error" role="alert">{{ przebieg.blad }}</p>{% endif %}
 {% if przebieg.pominiete %}
@@ -56,13 +86,14 @@ Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</stron
 <span class="stat-pill">Bez zmian: <b>{{ przebieg.podsumowanie.bez_zmian }}</b></span></div>
 {% if przebieg.rekordy %}
 <form method="post" class="import-form"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="zastosuj">
-<label class="import-choice"><input type="checkbox" name="potwierdzenie" value="tak" required> Zatwierdzam pokazane zmiany sezonu 2026/2027 w bazie.</label>
+<label class="import-choice"><input type="checkbox" name="potwierdzenie" value="tak" required> Zatwierdzam pokazane zmiany sezonu {{ przebieg.nazwa_sezonu }} w bazie.</label>
 <button class="btn" type="submit">Zastosuj aktualizację</button></form>
 {% else %}<p>Brak danych do zapisania.</p>{% endif %}
 <form method="post"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="porownaj"><button class="btn secondary" type="submit">Odśwież podgląd</button></form>
 {% elif przebieg.status == 'ZAPISANO' %}
 <p class="notice notice-success">Aktualizacja zatwierdzona. Numer przebiegu w bazie: {{ przebieg.id_przebieg_bazy }}.</p>
-<p><a href="{{ url_for('administracja.lista_meczow', id_sezon=195) }}">Przejdź do meczów sezonu 2026/2027</a></p>
+{% if przebieg.tryb == 'tabele' %}<p><a href="{{ url_for('administracja.lista_tabel', id_sezon=przebieg.id_sezon) }}">Przejdź do tabel sezonu {{ przebieg.nazwa_sezonu }}</a></p>
+{% else %}<p><a href="{{ url_for('administracja.lista_meczow', id_sezon=przebieg.id_sezon) }}">Przejdź do meczów sezonu {{ przebieg.nazwa_sezonu }}</a></p>{% endif %}
 {% endif %}</div></section>
 {% if przebieg.status in ('PODGLAD', 'ZAPISANO') %}
 <section class="panel"><h2>Zmiany rekordów</h2><div class="panel-body">
@@ -74,9 +105,9 @@ Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</stron
 {% endfor %}{% endfor %}</tbody></table></div></details>{% endfor %}
 </div></section>{% endif %}{% endif %}
 <section class="panel" id="historia"><h2>Historia pobrań w Handball DataScience</h2><div class="table-wrap">
-<table><thead><tr><th>Rozpoczęcie</th><th>Tryb</th><th>Status</th><th>Ligi</th><th>Błąd</th></tr></thead><tbody>
-{% for wpis in historia %}<tr><td><a href="{{ url_for('administracja.import_danych', identyfikator=wpis.adres_id) }}">{{ wpis.rozpoczecie }}</a></td><td>{{ wpis.nazwa_trybu }}</td><td>{{ wpis.status }}</td><td>{% for id in wpis.ligi %}{{ ligi[id] }}{% if not loop.last %}, {% endif %}{% endfor %}</td><td>{{ wpis.blad or '—' }}</td></tr>
-{% else %}<tr><td colspan="5">Brak przebiegów. Wybierz ligi i sprawdź aktualizacje.</td></tr>{% endfor %}
+<table><thead><tr><th>Rozpoczęcie</th><th>Tryb</th><th>Sezon</th><th>Status</th><th>Ligi</th><th>Błąd</th></tr></thead><tbody>
+{% for wpis in historia %}<tr><td><a href="{{ url_for('administracja.import_danych', identyfikator=wpis.adres_id) }}">{{ wpis.rozpoczecie }}</a></td><td>{{ wpis.nazwa_trybu }}</td><td>{{ wpis.nazwa_sezonu }}</td><td>{{ wpis.status }}</td><td>{{ wpis.nazwy_rozgrywek|join(', ') }}</td><td>{{ wpis.blad or '—' }}</td></tr>
+{% else %}<tr><td colspan="6">Brak przebiegów. Wybierz ligi i sprawdź aktualizacje.</td></tr>{% endfor %}
 </tbody></table></div></section>
 <script src="{{ url_for('static', filename='js/import.js') }}" defer></script>
 {% endif %}{% endblock %}

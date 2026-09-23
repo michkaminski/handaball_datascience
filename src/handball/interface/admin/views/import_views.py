@@ -55,6 +55,11 @@ class ImportPanelView(MethodView):
         if not isinstance(token, str):
             token = token_urlsafe(32)
             session["import_csrf"] = token
+        opcje_tabel, blad_opcji = None, None
+        try:
+            opcje_tabel = self._serwis.opcje_tabel(request.args.get("sezon_tabel", type=int))
+        except BladImportu as blad:
+            blad_opcji = str(blad)
         try:
             przebieg = self._serwis.magazyn.pobierz(identyfikator.hex) if identyfikator else None
             odpowiedz = make_response(
@@ -66,6 +71,8 @@ class ImportPanelView(MethodView):
                     historia=self._serwis.magazyn.historia(),
                     konfiguracja=True,
                     csrf=token,
+                    opcje_tabel=opcje_tabel,
+                    blad_opcji=blad_opcji,
                 )
             )
             odpowiedz.headers["Cache-Control"] = "no-store"
@@ -88,6 +95,11 @@ class ImportPanelView(MethodView):
                 przebieg = self._serwis.rozpocznij(
                     [int(v) for v in request.form.getlist("ligi")],
                     request.form.get("tryb", "pelny"),
+                )
+            elif identyfikator is None and akcja == "rozpocznij_tabele":
+                przebieg = self._serwis.rozpocznij_tabele(
+                    int(request.form.get("sezon_tabel", "")),
+                    [int(v) for v in request.form.getlist("ligi")],
                 )
             elif identyfikator and akcja == "krok":
                 przebieg = self._serwis.krok(identyfikator.hex)

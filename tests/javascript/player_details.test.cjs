@@ -172,7 +172,7 @@ const przygotujKarte = (aktywna, elementy) => {
   const echarts = {
     init: (element, motyw, ustawienia) => ({
       setOption: opcja => opcje.push({element, opcja, ustawienia}),
-      on() {},
+      on(nazwa, akcja) { element.zdarzeniaWykresu = {...element.zdarzeniaWykresu, [nazwa]: akcja}; },
       resize() {},
     }),
   };
@@ -225,13 +225,20 @@ test('podsumowanie inicjalizuje tylko wykres rozkladu bramek', async () => {
   assert.equal(trend.dataset.chartReady, undefined);
 });
 
-test('podsumowanie rysuje srednia, mediane i dominanty wedlug sezonu i rozgrywek z tooltipem', async () => {
+test('podsumowanie rysuje statystyki wedlug sezonu, a tooltip dzieli je na rozgrywki', async () => {
   const sezony = pustyElement();
+  const statystyki = (mecze, znane, suma, srednia, mediana, dominanty) => ({mecze, znane, suma, srednia, mediana, dominanty, q1: 1, q3: 4, minimum: 0, maksimum: 7});
   const {korzen, opcje, echarts} = przygotujKarte('podsumowanie', {
     '[data-player-season-stats]': sezony,
     '[data-player-season-stats-data]': zrodloDanych([
-      {sezon: '2024/2025', rozgrywki: 'Liga <b>A</b>', mecze: 4, znane: 3, suma: 10, srednia: 3.3333, mediana: 4, dominanty: [4], q1: 3, q3: 4, minimum: 2, maksimum: 4},
-      {sezon: '2025/2026', rozgrywki: 'Puchar', mecze: 2, znane: 2, suma: 4, srednia: 2, mediana: 2, dominanty: [1, 3], q1: 1.5, q3: 2.5, minimum: 1, maksimum: 3},
+      {
+        sezon: '2024/2025', ...statystyki(6, 5, 17, 4.25, 4, [4]),
+        rozgrywki: [
+          {rozgrywki: 'Liga <b>A</b>', ...statystyki(4, 3, 10, 3.3333, 4, [4])},
+          {rozgrywki: 'Puchar', ...statystyki(1, 1, 7, 7, 7, [7])},
+        ],
+      },
+      {sezon: '2025/2026', ...statystyki(2, 2, 4, 2, 2, [1, 3]), rozgrywki: [{rozgrywki: 'Liga', ...statystyki(2, 2, 4, 2, 2, [1, 3])}]},
     ]),
   });
   uruchomKarte(korzen, echarts);
@@ -240,22 +247,88 @@ test('podsumowanie rysuje srednia, mediane i dominanty wedlug sezonu i rozgrywek
   const opcja = opcje[0].opcja;
   assert.equal(opcje[0].ustawienia.renderer, 'svg');
   assert.equal(opcja.aria.show, true);
+  assert.deepEqual(Array.from(opcja.xAxis.data), ['2024/2025', '2025/2026']);
   assert.deepEqual(Array.from(opcja.series, seria => seria.name), ['Średnia', 'Mediana', 'Dominanta']);
-  assert.equal(opcja.series[0].data[0].value, 3.3333);
-  assert.equal(opcja.series[0].data[0].itemStyle.color, '#ffffff');
-  assert.equal(opcja.series[1].data[1].value, 2);
+  assert.equal(opcja.series[0].data[0], 4.25);
+  assert.equal(opcja.series[0].data[1].itemStyle.color, '#ffffff');
   assert.equal(opcja.dataZoom, undefined);
   assert.deepEqual(Array.from(opcja.series[2].data, punkt => Array.from(punkt)), [[0, 4], [1, 1], [1, 3]]);
-  assert.match(opcja.xAxis.data[0], /^2024\/2025\n/);
   const tooltip = opcja.tooltip.formatter([{seriesType: 'line', dataIndex: 0}]);
   assert.match(tooltip, /2024\/2025/);
+  assert.match(tooltip, /Wszystkie rozgrywki · mecze: 5 z 6/);
+  assert.match(tooltip, /4,25/);
+  assert.match(tooltip, /Podział na rozgrywki/);
   assert.match(tooltip, /Liga &lt;b&gt;A&lt;\/b&gt;/);
   assert.match(tooltip, /3,33/);
-  assert.match(tooltip, /3 z 4/);
-  assert.match(tooltip, /mała próba/);
+  assert.match(tooltip, /Puchar/);
+  assert.doesNotMatch(tooltip, /mała próba/);
   const tooltipDominanty = opcja.tooltip.formatter({seriesType: 'scatter', value: [1, 3]});
-  assert.match(tooltipDominanty, /Puchar/);
+  assert.match(tooltipDominanty, /2025\/2026/);
   assert.match(tooltipDominanty, /1, 3/);
+  assert.match(tooltipDominanty, /mała próba/);
+});
+
+test('podsumowanie rysuje bramki na sezon z podzialem na rozgrywki i przelacza wykres miar na slupki', async () => {
+  const sezony = pustyElement();
+  const bramki = pustyElement();
+  const statystyki = (mecze, znane, suma, srednia, mediana, dominanty) => ({mecze, znane, suma, srednia, mediana, dominanty, q1: 1, q3: 4, minimum: 0, maksimum: 7});
+  const przycisk = tryb => {
+    const element = pustyElement();
+    element.dataset = {playerSeasonView: tryb};
+    element.setAttribute = (nazwa, wartosc) => { element[nazwa] = wartosc; };
+    return element;
+  };
+  const linie = przycisk('linie');
+  const slupki = przycisk('slupki');
+  const przelacznik = {hidden: true, querySelectorAll: () => [linie, slupki]};
+  const {korzen, opcje, echarts} = przygotujKarte('podsumowanie', {
+    '[data-player-season-stats]': sezony,
+    '[data-player-season-goals]': bramki,
+    '[data-player-season-toggle]': przelacznik,
+    '[data-player-season-stats-data]': zrodloDanych([
+      {
+        sezon: '2024/2025', ...statystyki(6, 6, 17, 2.83, 2.5, [1, 4]),
+        rozgrywki: [
+          {rozgrywki: 'Liga', ...statystyki(5, 5, 10, 2, 2, [1])},
+          {rozgrywki: 'Puchar <i>', ...statystyki(1, 1, 7, 7, 7, [7])},
+        ],
+      },
+      {sezon: '2025/2026', ...statystyki(2, 2, 4, 2, 2, [2]), rozgrywki: [{rozgrywki: 'Liga', ...statystyki(2, 2, 4, 2, 2, [2])}]},
+    ]),
+  });
+  uruchomKarte(korzen, echarts);
+  await new Promise(resolve => setImmediate(resolve));
+  const wykres = element => opcje.filter(wpis => wpis.element === element).map(wpis => wpis.opcja);
+  assert.equal(przelacznik.hidden, false);
+  const bramkiOpcja = wykres(bramki)[0];
+  const slupkiBramek = bramkiOpcja.series.filter(seria => seria.type === 'bar');
+  assert.deepEqual(Array.from(slupkiBramek, seria => seria.id), ['suma', 'rozgrywki-0', 'rozgrywki-1']);
+  assert.deepEqual(Array.from(bramkiOpcja.legend.data), ['Suma w sezonie', 'Liga', 'Puchar <i>']);
+  assert.deepEqual(Array.from(slupkiBramek[0].data), [17, 4]);
+  assert.deepEqual(Array.from(slupkiBramek[1].data, punkt => punkt?.value ?? null), [10, 4]);
+  assert.deepEqual(Array.from(slupkiBramek[2].data, punkt => punkt?.value ?? null), [7, null]);
+  assert.equal(slupkiBramek[1].data[0].itemStyle.color, slupkiBramek[1].data[1].itemStyle.color);
+  assert.notEqual(slupkiBramek[1].data[0].itemStyle.color, slupkiBramek[2].data[0].itemStyle.color);
+  assert.ok(slupkiBramek[2].data[0].itemStyle.decal);
+  bramki.zdarzeniaWykresu.legendselectchanged({selected: {'Suma w sezonie': true, Liga: false, 'Puchar <i>': true}});
+  const poUkryciu = wykres(bramki)[1].series.filter(seria => seria.type === 'bar');
+  assert.deepEqual(Array.from(poUkryciu, seria => seria.id), ['suma', 'rozgrywki-0']);
+  assert.deepEqual(Array.from(poUkryciu[1].data, punkt => punkt?.value ?? null), [7, null]);
+  const tooltip = bramkiOpcja.tooltip.formatter([{seriesType: 'bar', dataIndex: 0}]);
+  assert.match(tooltip, /Suma bramek w sezonie: <b>17<\/b>/);
+  assert.match(tooltip, /Puchar &lt;i&gt;/);
+  assert.equal(wykres(sezony)[0].series[0].type, 'line');
+  slupki.zdarzenia.click();
+  const poPrzelaczeniu = wykres(sezony)[1];
+  assert.equal(slupki['aria-pressed'], 'true');
+  assert.equal(linie['aria-pressed'], 'false');
+  assert.deepEqual(Array.from(poPrzelaczeniu.series, seria => seria.type), ['bar', 'bar', 'bar']);
+  assert.deepEqual(Array.from(poPrzelaczeniu.series, seria => seria.id), ['srednia', 'mediana', 'dominanta']);
+  assert.equal(poPrzelaczeniu.series[2].data[0].value, 1);
+  assert.equal(poPrzelaczeniu.series[2].data[0].label.formatter, '1/4');
+  assert.equal(poPrzelaczeniu.series[0].data[1].itemStyle.borderType, 'dashed');
+  linie.zdarzenia.click();
+  assert.equal(wykres(sezony)[2].series[0].type, 'line');
 });
 
 test('forma inicjalizuje trendy, forme krocząca, boxplot i defensywe rywali', async () => {

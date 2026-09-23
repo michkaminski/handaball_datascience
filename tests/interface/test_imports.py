@@ -106,3 +106,39 @@ def test_przycisk_uzupelnienia_i_pusty_wynik(tmp_path: Path) -> None:
     assert 'value="zastosuj"' not in html
     assert klient_api.zapytania == []
     assert repo.zapisy == 0
+
+
+def test_panel_ma_import_tabel_z_wyborem_sezonu(tmp_path: Path) -> None:
+    aplikacja = AplikacjaFactory(ustawienia_testowe()).utworz()
+    klient_api = ImportTestClient()
+    serwis = ImportService(ImportFileStore(tmp_path), klient_api, ImportTestRepository())
+    aplikacja.view_functions["administracja.import_danych"] = ImportPanelView.as_view(
+        "test_import", serwis, "testowe-haslo"
+    )
+    klient = aplikacja.test_client()
+    naglowki = {"Authorization": "Basic " + base64.b64encode(b"admin:testowe-haslo").decode()}
+    html = klient.get("/administracja/import", headers=naglowki).get_data(as_text=True)
+    assert 'value="rozpocznij_tabele"' in html
+    assert '<option value="195" selected>2026/2027 (bieżący)</option>' in html
+    assert 'value="12007" data-nazwa="LOTTO Superliga" checked' in html
+    assert 'value="12016" data-nazwa="I Liga Grupa A">' in html
+    html = klient.get("/administracja/import?sezon_tabel=194", headers=naglowki).get_data(
+        as_text=True
+    )
+    assert "Rozgrywki sezonu 2025/2026" in html and 'value="11592"' in html
+    with klient.session_transaction() as sesja:
+        csrf = sesja["import_csrf"]
+    odpowiedz = klient.post(
+        "/administracja/import",
+        headers=naglowki,
+        data={"csrf": csrf, "akcja": "rozpocznij_tabele", "sezon_tabel": "194", "ligi": "11592"},
+    )
+    assert odpowiedz.status_code == 303
+    html = klient.get(odpowiedz.headers["Location"], headers=naglowki).get_data(as_text=True)
+    assert "Tylko tabele" in html and "sezon <strong>2025/2026</strong>" in html
+    zle = klient.post(
+        "/administracja/import",
+        headers=naglowki,
+        data={"csrf": csrf, "akcja": "rozpocznij_tabele", "sezon_tabel": "194", "ligi": "12007"},
+    )
+    assert zle.status_code == 400

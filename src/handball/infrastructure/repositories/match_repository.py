@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import Date, and_, cast, func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, aliased
 
@@ -88,6 +88,15 @@ class MeczSQLAlchemyRepository:
         if filtry.data_od is not None and filtry.data_do is not None:
             zapytanie = zapytanie.where(
                 Mecz.data_faktyczna >= filtry.data_od, Mecz.data_faktyczna < filtry.data_do
+            )
+        if filtry.tylko_zakonczone:
+            dzisiaj = cast(func.timezone("Europe/Warsaw", func.now()), Date)
+            termin = func.coalesce(Mecz.data_faktyczna, Mecz.data_propozycji)
+            zapytanie = zapytanie.where(
+                or_(
+                    termin < dzisiaj,
+                    and_(Mecz.wynik_gosp_full.is_not(None), Mecz.wynik_gosc_full.is_not(None)),
+                )
             )
         if filtry.tylko_rozegrane:
             zapytanie = zapytanie.where(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 from datetime import datetime
 from html import unescape
@@ -247,3 +248,36 @@ def test_szczegoly_meczu_nieistniejacego_zwraca_404() -> None:
     odpowiedz = klient.get("/administracja/mecze/999999")
 
     assert odpowiedz.status_code == 404
+
+
+def test_tylko_zakonczone_jest_domyslnie_zaznaczone_i_zachowuje_stan() -> None:
+    repozytorium = MeczInMemoryRepository([POZYCJA_TESTOWA] * 25)
+    zaleznosci = ZaleznosciZadaniaFactory(
+        fabryka_repozytorium_meczow=lambda: repozytorium,
+        fabryka_repozytorium_sezonow=lambda: SezonInMemoryRepository(
+            [OpcjaWyboru(195, "2026/2027")]
+        ),
+        fabryka_repozytorium_rozgrywek=lambda: RozgrywkiInMemoryRepository(["ORLEN Superliga"]),
+        fabryka_repozytorium_hal=lambda: HalaInMemoryRepository([]),
+        fabryka_repozytorium_etapow=lambda: EtapMeczowInMemoryRepository(),
+    )
+    klient = (
+        AplikacjaFactory(ustawienia_testowe(), rejestrator_widokow=WidokiRegistrar(zaleznosci))
+        .utworz()
+        .test_client()
+    )
+
+    tresc = unescape(klient.get("/administracja/mecze").get_data(as_text=True))
+    assert 'name="zakonczone" value="1" checked> Tylko zakończone' in tresc
+    assert repozytorium.ostatnie_filtry.tylko_zakonczone is True
+
+    tresc = unescape(klient.get("/administracja/mecze?zakonczone=0").get_data(as_text=True))
+    assert 'name="zakonczone" value="1"> Tylko zakończone' in tresc
+    assert repozytorium.ostatnie_filtry.tylko_zakonczone is False
+    linki = re.findall(r'href="([^"]*sortowanie=[^"]*)"', tresc) + re.findall(
+        r'href="([^"]*strona=2[^"]*)"', tresc
+    )
+    assert len(linki) == 2 and all("zakonczone=0" in link for link in linki)
+
+    klient.get("/administracja/mecze?zakonczone=1&zakonczone=0")
+    assert repozytorium.ostatnie_filtry.tylko_zakonczone is True

@@ -14,6 +14,7 @@ class MeczInMemoryRepository:
         self._szczegoly = szczegoly or {}
 
     def pobierz_liste(self, filtry: FiltryMeczow) -> StronaMeczow:
+        self.ostatnie_filtry = filtry
         poczatek = (filtry.strona - 1) * filtry.rozmiar_strony
         koniec = poczatek + filtry.rozmiar_strony
         pasujace = [

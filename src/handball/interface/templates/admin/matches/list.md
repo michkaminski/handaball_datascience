@@ -69,6 +69,10 @@ Filtry sezonu, rozgrywek, rundy, kolejki i hali są rozwijanymi listami z nazwam
 
 Link „Szczegóły” otwiera mecz w nowej karcie (`target="_blank"`). Dwuklik w wiersz lub Enter na aktywnym wierszu otwiera `#match-detail-dialog`. `SzczegolyMeczuController` z `matches.js` pobiera stronę szczegółów i wyświetla jej `[data-match-detail]`, bez ramy i linku powrotu. Kliknięcia w link nie otwierają dodatkowo modalu. Zamknięcie i Escape anulują trwający odczyt, zachowują stan listy i przywracają fokus. Treść modalu ma zakładki „Dane podstawowe”, „Wynik i statystyki” i „Składy”, inicjalizowane przez `ZakladkiMeczuController`. Modal pokazuje ładowanie i błąd pobrania; link nowej karty pozostaje dostępny. Bez obsługi dialogu lub JavaScript działa zwykły link szczegółów.
 
+## Tylko zakończone
+
+Checkbox „Tylko zakończone” (`name="zakonczone"`) jest domyślnie zaznaczony. Zakończony mecz to mecz z terminem (`data_faktyczna`, a przy jej braku `data_propozycji`) wcześniejszym niż dzisiejszy dzień w strefie Europe/Warsaw albo z wpisanym wynikiem (`wynik_gosp_full` i `wynik_gosc_full`); warunek dokłada `MeczSQLAlchemyRepository._pobierz_liste()` przy `FiltryMeczow.tylko_zakonczone`. To inny filtr niż `tylko_rozegrane` karty hali (ten wymaga wyniku i wyklucza walkowery). Ponieważ niezaznaczony checkbox nie jest wysyłany, za nim stoi ukryte pole `zakonczone=0`: brak parametru oznacza stan domyślny (zaznaczony, np. po wejściu z menu lub z linków innych stron), `1` — zaznaczony, samo `0` — odznaczony. Checkbox jest przed ukrytym polem, więc linki sortowania i paginacji (biorące pierwszą wartość parametru) oraz pamięć filtrów w `FiltryMeczowController` zachowują stan. „Wyczyść filtry” przywraca stan domyślny.
+
 ## Pamięć i czyszczenie filtrów
 
 Klasa `FiltryMeczowController` w [matches.js](../../../static/js/matches.js) obsługuje formularz `[data-match-filters]`. Po poprawnym wyświetleniu listy zapisuje siedem zastosowanych filtrów w `localStorage` pod kluczem `hds.mecze.filtry.v1`. Pamięć dotyczy tej przeglądarki i adresu aplikacji; przetrwa jej zamknięcie. Niezatwierdzone zmiany pól nie są zapisywane.
@@ -149,7 +153,7 @@ Stan: układ istniejącego `list.html`. Numery 1–7 oznaczają miejsca opisane 
 | Narzędzia         |                                                          |
 |                   | (2) FILTRY                                               |
 |                   | [Sezon v] [Rozgrywki v] [Runda v] [Kolejka v] [Hala v]                         |
-|                   | [Drużyna: tekst] [Data: tekst] [Filtruj] [Wyczyść filtry]                  |
+|                   | [Drużyna: tekst] [Data: tekst] [x] Tylko zakończone [Filtruj] [Wyczyść]    |
 |                   |                                                          |
 |                   | (7) [Widoczne kolumny] → modal poniżej
 |                   | (3) TABELA                                               |
@@ -174,7 +178,7 @@ Stan: układ istniejącego `list.html`. Numery 1–7 oznaczają miejsca opisane 
                                     [Anuluj] [Zastosuj]
 ```
 
-Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czytelności. HTML ma jedną tabelę z jedenastoma kolumnami, z których domyślnie widocznych jest dziewięć. Nawiasy przy Rundzie i Kolejce oznaczają opcjonalną widoczność; filtrami steruje siatka CSS. Przycisk „Filtruj” jest ósmym elementem siatki, a „Wyczyść filtry” dziewiątym.
+Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czytelności. HTML ma jedną tabelę z jedenastoma kolumnami, z których domyślnie widocznych jest dziewięć. Nawiasy przy Rundzie i Kolejce oznaczają opcjonalną widoczność; filtrami steruje siatka CSS. Checkbox „Tylko zakończone” jest ósmym elementem siatki, „Filtruj” dziewiątym, a „Wyczyść filtry” dziesiątym.
 
 **Zachowanie i warianty:**
 
@@ -193,6 +197,7 @@ Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czyteln
 | 1. Ścieżka, tytuł i opis | [list.html](list.html) | `.pagehead`, `.crumb`, `<h1>` i `<p>`; tytuł karty w bloku `tytul`. |
 | 2. Etykiety, kolejność i przycisk filtrów | [list.html](list.html) | Sekcja „Filtry”, `<form method="get">`, `.filters` i `.pole-przycisku`. |
 | 2. Pamięć i czyszczenie | [matches.js](../../../static/js/matches.js), [list.html](list.html) | `FiltryMeczowController`, `[data-match-filters]`, link „Wyczyść filtry”. |
+| Tylko zakończone | [list.html](list.html), [match_filters.py](../../../admin/forms/match_filters.py), [match_repository.py](../../../../infrastructure/repositories/match_repository.py), [admin.css](../../../static/css/admin.css) | `.filter-checkbox`, `name="zakonczone"`, `MeczFilterForm.tylko_zakonczone`, `FiltryMeczow.tylko_zakonczone`, warunek w `_pobierz_liste()`. |
 | 2. Rodzaj pola, walidacja i konwersja | [match_filters.py](../../../admin/forms/match_filters.py) | `MeczFilterForm` i `do_filtrow()`. |
 | 2. Opcje list rozwijanych | [match_views.py](../../../admin/views/match_views.py) | `MeczListView.get()` ustawia `choices`; źródła opcji zbiera `SlownikiMeczowService`. |
 | 3. Kolumny i kierunek sortowania | [list.html](list.html) | `<thead>`, link w nagłówku „Data” i odpowiadające im `<td>` w `<tbody>`. Przy zmianie liczby kolumn popraw również `colspan` pustego wiersza. |
