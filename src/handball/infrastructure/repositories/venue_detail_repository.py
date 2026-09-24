@@ -28,6 +28,7 @@ from handball.domain.venue_details import (
     TrendSezonuHali,
     ZawodnikHali,
 )
+from handball.infrastructure.database.match_sides import StronyMeczuSql
 from handball.infrastructure.database.models.competitions import Rozgrywki, Sezon
 from handball.infrastructure.database.models.matches import Mecz, MeczZawodnik
 from handball.infrastructure.database.models.players import Zawodnik
@@ -188,10 +189,7 @@ class SzczegolyHaliSQLAlchemyRepository:
             return {}
         gospodarz = aliased(ZespolSezon)
         gosc = aliased(ZespolSezon)
-        nazwa = case(
-            (MeczZawodnik.strona == "gosp", gospodarz.nazwa),
-            (MeczZawodnik.strona == "gosc", gosc.nazwa),
-        )
+        nazwa = StronyMeczuSql.wedlug_kolumny(MeczZawodnik.strona, gospodarz.nazwa, gosc.nazwa)
         wiersze = self._sesja.execute(
             select(
                 MeczZawodnik.id_zawodnik,
@@ -366,9 +364,8 @@ class SzczegolyHaliSQLAlchemyRepository:
     ) -> tuple[list[RankingZawodnikaHali], int]:
         gospodarz = aliased(ZespolSezon)
         gosc = aliased(ZespolSezon)
-        nazwa_druzyny = case(
-            (MeczZawodnik.strona == "gosp", gospodarz.nazwa),
-            (MeczZawodnik.strona == "gosc", gosc.nazwa),
+        nazwa_druzyny = StronyMeczuSql.wedlug_kolumny(
+            MeczZawodnik.strona, gospodarz.nazwa, gosc.nazwa
         )
         wystepy = func.count(distinct(MeczZawodnik.id_mecz))
         bramki = func.coalesce(func.sum(MeczZawodnik.bramki), 0)

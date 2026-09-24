@@ -39,6 +39,7 @@ Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogó
 | `admin/start.html` | [admin/start.md](../src/handball/interface/templates/admin/start.md) | istnieje: Aktualności — ostatnie mecze, ciekawostki, najlepsi strzelcy |
 | `admin/matches/list.html` | [admin/matches/list.md](../src/handball/interface/templates/admin/matches/list.md) | istnieje |
 | `admin/matches/detail.html` | [admin/matches/detail.md](../src/handball/interface/templates/admin/matches/detail.md) | planowany (etap 5) |
+| `admin/teams/detail.html` | [admin/teams/detail.md](../src/handball/interface/templates/admin/teams/detail.md) | istnieje: Dane podstawowe, Sezony, Mecze, Zawodnicy, Podsumowanie, Forma i regularność |
 | `admin/players/detail.html` | [admin/players/detail.md](../src/handball/interface/templates/admin/players/detail.md) | istnieje: Profil, Sezony i drużyny, Mecze, Podsumowanie, Forma i regularność (ze spisem treści i sekcją defensywy rywali) |
 | `admin/players/defensywa_rywali.html` | [admin/players/defensywa_rywali.md](../src/handball/interface/templates/admin/players/defensywa_rywali.md) | istnieje: szczegółowy raport „Bramki zawodnika a poziom defensywy rywali” |
 | `admin/login.html` | [admin/login.md](../src/handball/interface/templates/admin/login.md) | planowany (etap 6) |
@@ -54,7 +55,7 @@ Sidebar pokazuje pełne menu prototypu v6. Tabela rozróżnia działające widok
 | --- | --- | --- |
 | Sezony — wdrożona lista odczytu | seasons.html (placeholder) | [admin/seasons/list.md](../src/handball/interface/templates/admin/seasons/list.md) |
 | Rozgrywki — wdrożona lista odczytu | competitions.html (placeholder) | [admin/competitions/list.md](../src/handball/interface/templates/admin/competitions/list.md) |
-| Drużyny — wdrożona lista odczytu | teams.html (placeholder) | [admin/teams/list.md](../src/handball/interface/templates/admin/teams/list.md) |
+| Drużyny — wdrożona lista odczytu i karta drużyny | teams.html (placeholder) | [admin/teams/list.md](../src/handball/interface/templates/admin/teams/list.md), [admin/teams/detail.md](../src/handball/interface/templates/admin/teams/detail.md) |
 | Zawodnicy — wdrożona lista odczytu | players.html (rzeczywista treść) | [admin/players/list.md](../src/handball/interface/templates/admin/players/list.md) |
 | Składy — wdrożona lista odczytu | squads.html (placeholder) | [admin/rosters/list.md](../src/handball/interface/templates/admin/rosters/list.md) |
 | Tabele — wdrożona lista odczytu | standings.html (placeholder) | [admin/standings/list.md](../src/handball/interface/templates/admin/standings/list.md) |

@@ -174,7 +174,9 @@ def test_503_przy_bledzie_odczytu(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def test_presenter_nie_zamienia_brakow_karnych_na_zero_i_zachowuje_druzyne() -> None:
+def test_presenter_nie_zamienia_brakow_karnych_na_zero_i_bierze_druzyne_ze_strony_po_zamianie() -> (
+    None
+):
     mecz = replace(
         MECZ_ZAWODNIKA,
         mecz=replace(MECZ_ZAWODNIKA.mecz, mecz=replace(MECZ_ZAWODNIKA.mecz.mecz, zamiana=True)),
@@ -182,8 +184,8 @@ def test_presenter_nie_zamienia_brakow_karnych_na_zero_i_zachowuje_druzyne() -> 
     presenter = ZaleznosciZadaniaFactory().utworz_presenter_szczegolow_zawodnika()
     widok = presenter.przygotuj_mecze(StronaMeczowZawodnika([mecz], 1, 1, 20)).pozycje[0]
     assert widok.mecz.wynik == "25 : 30"
-    assert widok.wpisy[0].druzyna == "Drużyna A"
-    assert widok.wpisy[0].przeciwnik == "Rywal B"
+    assert widok.wpisy[0].druzyna == "Rywal B"
+    assert widok.wpisy[0].przeciwnik == "Drużyna A"
     assert widok.wpisy[0].karne == "0/—"
     assert widok.wpisy[0].upomnienie == "Nie"
     assert widok.wpisy[0].dyskwalifikacja == "—"

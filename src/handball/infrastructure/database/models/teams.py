@@ -11,10 +11,10 @@ class Zespol(Baza):
     __table_args__ = {"schema": "public"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    nr_klubu: Mapped[int | None]
     nazwa: Mapped[str | None]
     plec: Mapped[str | None]
     kategoria: Mapped[str | None]
-    miasto: Mapped[str | None]
     wycofany: Mapped[bool | None]
 
 

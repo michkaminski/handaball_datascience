@@ -24,6 +24,7 @@ from handball.request_dependencies import ZaleznosciZadaniaFactory
 class KlasyfikacjaStubRepository:
     def __init__(self) -> None:
         self.filtry: FiltryKlasyfikacji | None = None
+        self.punkty_bonusowe: int | None = 1
 
     def pobierz_sklady(self, filtry: FiltryKlasyfikacji) -> StronaKlasyfikacji[Sklad]:
         self.filtry = filtry
@@ -110,6 +111,7 @@ class KlasyfikacjaStubRepository:
                     "Superliga",
                     "Tabela główna",
                     "Grupa A",
+                    77,
                     "Test Kielce",
                     1,
                     20,
@@ -121,8 +123,7 @@ class KlasyfikacjaStubRepository:
                     650,
                     500,
                     55,
-                    1,
-                    "bilans",
+                    self.punkty_bonusowe,
                 )
             ],
         )
@@ -236,3 +237,26 @@ def test_sklad_sortuje_i_koloruje_zawodnikow_wedlug_pozycji(
     assert tresc.count('class="roster-player"') == 2
     assert tresc.count("--position-hue:") == 2
     assert 'class="roster-legend"' in tresc
+
+
+def test_szczegoly_tabeli_bez_kryteriow_z_linkiem_do_druzyny(
+    klient_klasyfikacji: FlaskClient,
+) -> None:
+    tresc = klient_klasyfikacji.get("/administracja/tabele/40").get_data(as_text=True)
+    assert "Kryteria" not in tresc
+    assert "<th>Bonus</th>" in tresc
+    assert 'href="/administracja/druzyny/77"' in tresc
+    assert "data-team-modal-link" in tresc
+    assert "data-team-modal-dialog" in tresc
+
+
+@pytest.mark.parametrize("punkty_bonusowe,widoczny", [(None, False), (0, True), (2, True)])
+def test_kolumna_bonus_ukryta_gdy_brak_wartosci(
+    klient_klasyfikacji: FlaskClient,
+    repozytorium: KlasyfikacjaStubRepository,
+    punkty_bonusowe: int | None,
+    widoczny: bool,
+) -> None:
+    repozytorium.punkty_bonusowe = punkty_bonusowe
+    tresc = klient_klasyfikacji.get("/administracja/tabele/40").get_data(as_text=True)
+    assert ("<th>Bonus</th>" in tresc) is widoczny

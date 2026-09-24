@@ -12,11 +12,11 @@ Przejście między stronami wyników z zachowaniem filtrów i sortowania.
 
 `strona`: `StronaMeczowViewModel` lub `StronaZawodnikowViewModel` lub `StronaMeczowZawodnikaViewModel` (liczba_wszystkich, strona, rozmiar_strony) z kontekstu widoku. Odnośniki budowane przez `url_for(request.endpoint, **dict(parametry_paginacji|default(request.args), strona=...))`, więc automatycznie zachowują wszystkie bieżące parametry zapytania (filtry, sortowanie) — zmienia się tylko `strona`. Puste wyniki (`liczba_wszystkich == 0`) nie renderują żadnego odnośnika.
 
-Opcjonalne `parametry_paginacji` zastępują `request.args` podczas budowy adresu. Karta zawodnika przekazuje w nich również identyfikator z trasy i zakładkę Mecze. Pozostałe listy korzystają z dotychczasowego domyślnego zachowania.
+Opcjonalne `parametry_paginacji` zastępują `request.args` podczas budowy adresu. Karta zawodnika przekazuje w nich również identyfikator z trasy i zakładkę Mecze. Pozostałe listy korzystają z dotychczasowego domyślnego zachowania. Opcjonalne `parametr_strony` (domyślnie `strona`) zmienia nazwę parametru numeru strony; karta drużyny używa `strona_zawodnikow` dla zakładki Zawodnicy, aby jej paginacja nie przesuwała listy meczów.
 
 ## Powiązania
 
-Używany przez `admin/matches/list.html`, `admin/players/list.html` i `admin/players/detail.html`; przyszłe listy (np. drużyny) mogą dołączać ten sam fragment, jeśli będą zwracać obiekt z tymi samymi czterema polami.
+Używany przez `admin/matches/list.html`, `admin/players/list.html`, `admin/players/detail.html` i `admin/teams/detail.html` (dwukrotnie: mecze i zawodnicy); przyszłe listy mogą dołączać ten sam fragment, jeśli będą zwracać obiekt z tymi samymi czterema polami.
 
 ## Gdzie wprowadzać zmiany
 
@@ -51,7 +51,7 @@ Stan: istniejący fragment pod tabelą meczów lub zawodników. Liczby w rysunku
 | Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
 | --- | --- | --- |
 | 1. Napis i obliczenia zakresu | [pagination.html](pagination.html) | `span.note`, pola `strona`, `rozmiar_strony`, `liczba_wszystkich`. |
-| 2. Etykiety, warunki i linki | [pagination.html](pagination.html) | Warunki Jinja2 oraz `url_for(request.endpoint, **dict(parametry_paginacji|default(request.args), strona=...))`. |
+| 2. Etykiety, warunki i linki | [pagination.html](pagination.html) | Warunki Jinja2 oraz `url_for(request.endpoint, **dict(parametry_paginacji|default(request.args), **{parametr_strony|default('strona'): ...}))`. |
 | Ułożenie i rozmiar przycisków | [admin.css](../../static/css/admin.css) | `.toolbar`, `.toolbar .right`, `.note`, `.btn.secondary.small`; klasa `.paginacja` oznacza fragment, ale nie ma osobnej reguły CSS. |
 | Miejsce pod tabelą | [list.html](../admin/matches/list.html) | Include po `.table-wrap`. |
 | Limity i pobieranie strony | [matches.py](../../../domain/matches.py) | `FiltryMeczow` waliduje rozmiar i numer; repozytorium meczów stosuje LIMIT/OFFSET. |

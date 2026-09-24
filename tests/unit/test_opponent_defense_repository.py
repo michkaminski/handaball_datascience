@@ -27,6 +27,7 @@ def test_wystapienia_rozwiazuje_druzyne_i_przeciwnika_z_miejsca() -> None:
             24,
             None,
             None,
+            None,
             "dom",
             1,
             7,
@@ -40,6 +41,38 @@ def test_wystapienia_rozwiazuje_druzyne_i_przeciwnika_z_miejsca() -> None:
     assert w.miejsce == "dom"
     assert w.bramki_zawodnika == 7
     assert w.dane_pelne is True
+
+
+def test_wystapienia_przy_zamianie_strona_wpisu_wskazuje_kolumne_goscia() -> None:
+    sesja = Mock(spec=Session)
+    sesja.execute.return_value = [
+        (
+            101,
+            datetime(2026, 9, 20),
+            195,
+            "2026/2027",
+            2026,
+            1,
+            "Liga",
+            10,
+            "Drużyna A",
+            20,
+            "Drużyna B",
+            25,
+            24,
+            None,
+            None,
+            True,
+            "dom",
+            1,
+            7,
+        )
+    ]
+    w = DefensywaRywalaSQLAlchemyRepository(sesja).pobierz_wystapienia(7)[0]
+    assert w.id_zespol_zawodnika == 20 and w.druzyna_zawodnika == "Drużyna B"
+    assert w.id_zespol_przeciwnika == 10 and w.przeciwnik == "Drużyna A"
+    assert (w.wynik_druzyny_zawodnika, w.wynik_przeciwnika) == (24, 25)
+    assert w.miejsce == "dom"
 
 
 def test_wystapienia_pomija_mecz_z_niejednoznaczna_strona() -> None:
@@ -59,6 +92,7 @@ def test_wystapienia_pomija_mecz_z_niejednoznaczna_strona() -> None:
             "Drużyna B",
             25,
             24,
+            None,
             None,
             None,
             "wyjazd",
@@ -89,6 +123,7 @@ def test_wystapienia_dane_pelne_false_dla_walkowera() -> None:
             None,
             None,
             30,
+            None,
             "dom",
             1,
             None,

@@ -100,3 +100,21 @@ def test_zakladki_i_legenda_ponizej_tabel() -> None:
     assert tresc.index('class="roster-legend"') > tresc.rindex("</table>")
     assert "najlepszy strzelec danej drużyny" in tresc
     assert "js/matches.js" in tresc
+
+
+def test_zawodnik_w_skladzie_otwiera_okno_i_karte() -> None:
+    szczegoly = replace(
+        SZCZEGOLY_TESTOWE,
+        sklad_gospodarz=[replace(zawodnik("RO", "5"), id_zawodnik=77, zawodnik="Jan Test")],
+        sklad_gosc=[zawodnik("BR", "1")],
+    )
+    klient = _aplikacja_z_repozytorium([], {12543: szczegoly}).test_client()
+    tresc = klient.get("/administracja/mecze/12543").get_data(as_text=True)
+    assert 'href="/administracja/zawodnicy/77"' in tresc
+    assert "data-player-modal-link" in tresc and ">Jan Test</a>" in tresc
+    assert tresc.count("data-player-modal-link ") == 1
+    korzen = tresc.split("data-match-detail>")[1]
+    assert "data-player-modal-dialog" in korzen and "data-player-content" in korzen
+    assert tresc.index("js/player_details.js") < tresc.index("js/matches.js")
+    lista = klient.get("/administracja/mecze").get_data(as_text=True)
+    assert "js/goal_charts.js" in lista and "js/player_details.js" in lista

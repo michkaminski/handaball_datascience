@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import fields
 
-from sqlalchemy import Integer, Select, and_, case, func, or_, select
+from sqlalchemy import Integer, Select, and_, case, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, aliased
 
@@ -16,6 +16,7 @@ from handball.domain.player_details import (
     SzczegolyZawodnika,
     WpisMeczowyZawodnika,
 )
+from handball.infrastructure.database.match_sides import StronyMeczuSql
 from handball.infrastructure.database.models.competitions import Rozgrywki, Sezon
 from handball.infrastructure.database.models.matches import Mecz, MeczZawodnik
 from handball.infrastructure.database.models.players import Zawodnik
@@ -96,10 +97,7 @@ class SzczegolyZawodnikaSQLAlchemyRepository:
             ]
         ],
     ]:
-        id_zespol = case(
-            (MeczZawodnik.strona == "gosp", Mecz.id_zespol_gosp),
-            (MeczZawodnik.strona == "gosc", Mecz.id_zespol_gosc),
-        )
+        id_zespol = StronyMeczuSql.zespol(MeczZawodnik.strona)
         zapytanie = (
             select(
                 Mecz.id_sezon,
@@ -233,12 +231,7 @@ class SzczegolyZawodnikaSQLAlchemyRepository:
                 zespoly = select(ZespolSezon.id_zespol).where(
                     ZespolSezon.nazwa.icontains(filtry.przeciwnik, autoescape=True)
                 )
-                zapytanie = zapytanie.where(
-                    or_(
-                        and_(MeczZawodnik.strona == "gosp", Mecz.id_zespol_gosc.in_(zespoly)),
-                        and_(MeczZawodnik.strona == "gosc", Mecz.id_zespol_gosp.in_(zespoly)),
-                    )
-                )
+                zapytanie = zapytanie.where(StronyMeczuSql.rywal(MeczZawodnik.strona).in_(zespoly))
             wynik = []
             for *podstawowe, miejsce_wartosc, liczba_miejsc in self._sesja.execute(zapytanie):
                 podstawowe.append(miejsce_wartosc if liczba_miejsc == 1 else None)
@@ -259,12 +252,7 @@ class SzczegolyZawodnikaSQLAlchemyRepository:
             zespoly = select(ZespolSezon.id_zespol).where(
                 ZespolSezon.nazwa.icontains(filtry.przeciwnik, autoescape=True)
             )
-            wpisy = wpisy.where(
-                or_(
-                    and_(MeczZawodnik.strona == "gosp", Mecz.id_zespol_gosc.in_(zespoly)),
-                    and_(MeczZawodnik.strona == "gosc", Mecz.id_zespol_gosp.in_(zespoly)),
-                )
-            )
+            wpisy = wpisy.where(StronyMeczuSql.rywal(MeczZawodnik.strona).in_(zespoly))
         zapytanie = (
             select(Mecz, Sezon.nazwa, Rozgrywki.nazwa, gospodarz.nazwa, gosc.nazwa)
             .join(Sezon, Sezon.id == Mecz.id_sezon)

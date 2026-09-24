@@ -2,7 +2,8 @@ const assert = require('node:assert/strict');
 const {readFileSync} = require('node:fs');
 const {runInNewContext} = require('node:vm');
 const {test} = require('node:test');
-const kod = readFileSync('src/handball/interface/static/js/player_details.js', 'utf8');
+const kod = readFileSync('src/handball/interface/static/js/goal_charts.js', 'utf8')
+  + readFileSync('src/handball/interface/static/js/player_details.js', 'utf8');
 
 class ElementFixture {
   constructor() {

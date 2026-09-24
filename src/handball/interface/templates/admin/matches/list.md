@@ -35,6 +35,7 @@ Elementy poniżej są wymienione w kolejności na stronie. Oznaczenia F/T/P/M s�
 | T6 | Gospodarz | Nazwa gospodarza z uwzględnieniem zmiany gospodarza |
 | T7 | Wynik | Pogrubiony wynik, np. 19 : 46; kolejność zgodna z drużynami |
 | T8 | Gość | Nazwa gościa z uwzględnieniem zmiany gospodarza |
+| T12 | Widzowie | Liczba widzów z `mecze.widzowie`, wyrównana do prawej, z twardą spacją jako separatorem tysięcy (`MeczFormat.widzowie()`); 0 oznacza mecz bez publiczności, „—” brak danych. Stała kolumna przed Halą, żeby była widoczna bez przewijania tabeli. |
 | T9 | Hala | Nazwa hali |
 
 ### Widoczność kolumn — M
@@ -57,7 +58,7 @@ Przykłady krótkich poleceń: „F4: poszerz pole drużyny”, „T9: usuń kol
 
 ## Przeznaczenie
 
-Tabela meczów i zwarte filtry na podstawie matches.html prototypu v6. Kolumny: ID, Data (klikalny nagłówek sortujący), Godz., Sezon, Rozgrywki, Runda (opcjonalna), Kolejka (opcjonalna), Gospodarz, Wynik, Gość, Hala. Status/Akcje z prototypu wciąż nie są dostarczane przez `PozycjaListyMeczow` — świadomie odłożone.
+Tabela meczów i zwarte filtry na podstawie matches.html prototypu v6. Kolumny: ID, Data (klikalny nagłówek sortujący), Godz., Sezon, Rozgrywki, Runda (opcjonalna), Kolejka (opcjonalna), Gospodarz, Wynik, Gość, Widzowie, Hala. Status/Akcje z prototypu wciąż nie są dostarczane przez `PozycjaListyMeczow` — świadomie odłożone.
 
 Filtry sezonu, rozgrywek, rundy, kolejki i hali są rozwijanymi listami z nazwami (nie polami liczbowymi z ID) — użytkownik nigdy nie wpisuje ani nie widzi surowego identyfikatora bazy. Filtr sezonu jest opcjonalny: pusty wybór ("Wszystkie") przeszukuje wszystkie sezony.
 
@@ -158,7 +159,7 @@ Stan: układ istniejącego `list.html`. Numery 1–7 oznaczają miejsca opisane 
 |                   | (7) [Widoczne kolumny] → modal poniżej
 |                   | (3) TABELA                                               |
 |                   | ID | Data ▲/▼ | Godz. | Sezon | Rozgrywki |              |
-|                   | [Runda] | [Kolejka] | Gospodarz | Wynik | Gość | Hala                          |
+|                   | [Runda] | [Kolejka] | Gospodarz | Wynik | Gość | Widzowie | Hala               |
 |                   | (4) dane kolejnego meczu w tych samych kolumnach          |
 |                   |     ...                                                  |
 |                   | (5) albo: Brak meczów spełniających wybrane filtry.        |
@@ -186,7 +187,7 @@ Podział filtrów i nagłówków tabeli na dwa wiersze w rysunku służy czyteln
 - Kliknięcie „Data” przełącza kierunek, zachowuje filtry i ustawia stronę 1. Pozostałe nagłówki nie są linkami sortowania.
 - Przy `zamiana=True` kolumny Gospodarz/Wynik/Gość pokazują odwrócone drużyny i wynik.
 - Brak terminu, nazwy lub hali jest pokazany jako `—`; brak wyniku jako `- : -`. Wynik jest pogrubiony przez `.score`.
-- Pusty wynik obejmuje wszystkie widoczne kolumny (`colspan` od 9 do 11). Paginacja wtedy nie jest renderowana.
+- Pusty wynik obejmuje wszystkie widoczne kolumny (`colspan` od 11 do 13). Paginacja wtedy nie jest renderowana.
 - Siatka `.filters` ma 7 kolumn powyżej 1100 px, 4 przy szerokości do 1100 px, 2 do 700 px i 1 do 430 px. Nie wszystkie kolumny muszą być zajęte. Tabela przewija się poziomo we własnym `.table-wrap`.
 - Do 920 px sidebar jest początkowo ukryty. Przycisk „☰ Menu” przełącza go przez wspólny JS.
 

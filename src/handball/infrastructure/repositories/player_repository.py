@@ -3,13 +3,14 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import cast
 
-from sqlalchemy import Integer, Select, and_, case, distinct, extract, func, or_, select
+from sqlalchemy import Integer, Select, and_, distinct, extract, func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import InstrumentedAttribute, Session
 from sqlalchemy.sql.selectable import CTE
 
 from handball.domain.errors import BladOdczytuDanych
 from handball.domain.players import FiltryZawodnikow, PozycjaListyZawodnikow, StronaZawodnikow
+from handball.infrastructure.database.match_sides import StronyMeczuSql
 from handball.infrastructure.database.models.competitions import Rozgrywki, Sezon
 from handball.infrastructure.database.models.matches import Mecz, MeczZawodnik
 from handball.infrastructure.database.models.players import Zawodnik
@@ -62,11 +63,7 @@ class ZawodnikSQLAlchemyRepository:
             raise BladOdczytuDanych("Nie udało się odczytać listy zawodników.") from wyjatek
 
     def _wpisy(self, filtry: FiltryZawodnikow) -> CTE:
-        zespol = case(
-            (MeczZawodnik.strona == "gosp", Mecz.id_zespol_gosp),
-            (MeczZawodnik.strona == "gosc", Mecz.id_zespol_gosc),
-            else_=None,
-        )
+        zespol = StronyMeczuSql.zespol(MeczZawodnik.strona)
         zapytanie = (
             select(
                 MeczZawodnik.id_zawodnik,

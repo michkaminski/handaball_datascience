@@ -71,7 +71,7 @@ Tabela ma jeden wiersz nagłówków; rysunek zawija go dla czytelności. Na wąs
 | HTTP | [player_views.py](../../../admin/views/player_views.py) | ZawodnikListView.get(). |
 | Zapytania | [player_repository.py](../../../../infrastructure/repositories/player_repository.py) | ZawodnikSQLAlchemyRepository, `_ostatnie_pomiary()`. |
 | Teksty i braki | [player_presenter.py](../../../presenters/player_presenter.py) | ZawodnikPresenter. |
-| Karta zawodnika | [detail.md](detail.md), [player_details.js](../../../static/js/player_details.js) | data-player-href, #player-detail-dialog, SzczegolyZawodnikaController. |
+| Karta zawodnika | [detail.md](detail.md), [player_details.js](../../../static/js/player_details.js) | data-player-href, #player-detail-dialog, SzczegolyZawodnikaController (wiązanie wierszy) i wspólny OknoZawodnikaController (ładowanie karty, filtry i paginacja w oknie), używany też w składach meczu i karcie drużyny. |
 | Pamięć filtrów | [players.js](../../../static/js/players.js) | data-player-filters, hds.zawodnicy.filtry.v1. |
 | Paginacja | [pagination.html](../../partials/pagination.html) | Wspólny fragment, parametry GET. |
 | Zawijanie drużyn | [list.html](list.html), [admin.css](../../../static/css/admin.css) | `#players-table .player-teams`: white-space, overflow-wrap, width, max-width. |

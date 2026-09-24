@@ -3,7 +3,8 @@
 {% block tytul %}Mecz #{{ szczegoly.id_mecz }} — Handball DataScience{% endblock %}
 
 {% block tresc %}
-<div data-match-detail>
+{% macro wiersz_zawodnika(zawodnik) %}<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{% if zawodnik.id_zawodnik %}<a class="player-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=zawodnik.id_zawodnik) }}" target="_blank" rel="noopener" data-player-modal-link title="Kliknij: szczegóły zawodnika w oknie · dwuklik: karta w nowej karcie">{{ zawodnik.zawodnik }}</a>{% else %}{{ zawodnik.zawodnik }}{% endif %}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>{% endmacro %}
+<div class="match-detail" data-match-detail>
 <section class="pagehead">
 <div class="crumb">Start › Dane › Mecze › Szczegóły</div>
 <h1>Szczegóły meczu #{{ szczegoly.id_mecz }}</h1>
@@ -11,7 +12,7 @@
 </section>
 <section class="hero">
 <div class="score-hero">
-<div class="team-box">
+<div class="team-box home">
 <div class="team-name">{{ szczegoly.gospodarz }}</div>
 <div class="team-meta">gospodarz</div>
 </div>
@@ -20,17 +21,17 @@
 {% if szczegoly.wynik_do_przerwy %}<div class="result-sub">{{ szczegoly.wynik_do_przerwy }}</div>{% endif %}
 {% if szczegoly.dopisek_wyniku %}<div class="result-sub">{{ szczegoly.dopisek_wyniku }}</div>{% endif %}
 </div>
-<div class="team-box right">
+<div class="team-box right away">
 <div class="team-name">{{ szczegoly.gosc }}</div>
 <div class="team-meta">gość</div>
 </div>
 </div>
 <div class="hero-meta">
-<span class="meta-chip">{{ szczegoly.rozgrywki }}</span>
+<span class="meta-chip"><span class="meta-label">Rozgrywki</span> {{ szczegoly.rozgrywki }}</span>
 <span class="meta-chip">{{ szczegoly.kolejka }}</span>
-<span class="meta-chip">{{ szczegoly.termin }}</span>
-<span class="meta-chip">{{ szczegoly.hala }}</span>
-<span class="meta-chip"><span class="badge {{ 'ok' if szczegoly.status == 'Rozegrany' else ('warn' if szczegoly.status in ('Wycofany', 'Walkower') else 'plan') }}">{{ szczegoly.status }}</span></span>
+<span class="meta-chip"><span class="meta-label">Termin</span> {{ szczegoly.termin }}</span>
+<span class="meta-chip"><span class="meta-label">Hala</span> {{ szczegoly.hala }}</span>
+<span class="meta-chip status"><span class="badge {{ 'ok' if szczegoly.status == 'Rozegrany' else ('warn' if szczegoly.status in ('Wycofany', 'Walkower') else 'plan') }}">{{ szczegoly.status }}</span></span>
 </div>
 </section>
 <div class="toolbar" data-detail-navigation>
@@ -43,25 +44,20 @@
 </div>
 <section class="panel" id="match-panel-basic" data-match-panel aria-labelledby="match-tab-basic">
 <h2>Dane podstawowe</h2>
-<div class="table-wrap">
-<table>
-<thead><tr><th>Pole</th><th>Wartość</th></tr></thead>
-<tbody>
+<dl class="match-fields">
 {% for etykieta, wartosc in szczegoly.dane_podstawowe %}
-<tr><td>{{ etykieta }}</td><td>{{ wartosc }}</td></tr>
+<div class="match-field{% if wartosc == '—' %} empty{% endif %}"><dt>{{ etykieta }}</dt><dd>{{ wartosc }}</dd></div>
 {% endfor %}
-</tbody>
-</table>
-</div>
+</dl>
 </section>
 <section class="panel" id="match-panel-stats" data-match-panel aria-labelledby="match-tab-stats">
 <h2>Wynik i statystyki</h2>
 <div class="table-wrap">
-<table>
-<thead><tr><th>Statystyka</th><th>{{ szczegoly.gospodarz }}</th><th>{{ szczegoly.gosc }}</th></tr></thead>
+<table class="match-stats">
+<thead><tr><th scope="col" class="home">{{ szczegoly.gospodarz }}</th><th scope="col">Statystyka</th><th scope="col" class="away">{{ szczegoly.gosc }}</th></tr></thead>
 <tbody>
 {% for etykieta, wartosc_gospodarz, wartosc_gosc in szczegoly.statystyki %}
-<tr><td>{{ etykieta }}</td><td>{{ wartosc_gospodarz }}</td><td>{{ wartosc_gosc }}</td></tr>
+<tr{% if wartosc_gospodarz == '—' and wartosc_gosc == '—' %} class="empty"{% endif %}><td class="home">{{ wartosc_gospodarz }}</td><th scope="row">{{ etykieta }}</th><td class="away">{{ wartosc_gosc }}</td></tr>
 {% endfor %}
 </tbody>
 </table>
@@ -69,14 +65,14 @@
 </section>
 <div id="match-panel-rosters" data-match-panel aria-labelledby="match-tab-rosters">
 <div class="grid2">
-<section class="panel">
+<section class="panel roster home">
 <h2>Skład — {{ szczegoly.gospodarz }}</h2>
 <div class="table-wrap">
-<table>
+<table class="roster-table">
 <thead><tr><th>#</th><th>Zawodnik</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
 <tbody>
 {% for zawodnik in szczegoly.sklad_gospodarz %}
-<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+{{ wiersz_zawodnika(zawodnik) }}
 {% else %}
 <tr><td colspan="11" class="note">Brak danych o składzie.</td></tr>
 {% endfor %}
@@ -84,14 +80,14 @@
 </table>
 </div>
 </section>
-<section class="panel">
+<section class="panel roster away">
 <h2>Skład — {{ szczegoly.gosc }}</h2>
 <div class="table-wrap">
-<table>
+<table class="roster-table">
 <thead><tr><th>#</th><th>Zawodnik</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
 <tbody>
 {% for zawodnik in szczegoly.sklad_gosc %}
-<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+{{ wiersz_zawodnika(zawodnik) }}
 {% else %}
 <tr><td colspan="11" class="note">Brak danych o składzie.</td></tr>
 {% endfor %}
@@ -101,22 +97,29 @@
 </section>
 </div>
 {% if szczegoly.sklad_inne %}
-<section class="panel">
+<section class="panel roster">
 <h2>Pozostałe osoby przypisane do meczu</h2>
 <div class="table-wrap">
-<table>
+<table class="roster-table">
 <thead><tr><th>#</th><th>Osoba</th><th>Poz.</th><th>Br.</th><th>2 min</th><th>Upomn.</th><th>Dyskw.</th><th>KD</th><th>Wyjście</th><th>Karne</th><th>Karne seria</th></tr></thead>
 <tbody>
 {% for zawodnik in szczegoly.sklad_inne %}
-<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{{ zawodnik.zawodnik }}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>
+{{ wiersz_zawodnika(zawodnik) }}
 {% endfor %}
 </tbody>
 </table>
 </div>
 </section>
 {% endif %}
-<p class="roster-legend">Składy według pozycji. Czerwone pole bramek: najlepszy strzelec danej drużyny (także ex aequo).</p>
+<p class="roster-legend"><span class="roster-legend-swatch" aria-hidden="true"></span>Składy według pozycji. Czerwone pole bramek: najlepszy strzelec danej drużyny (także ex aequo). Kliknięcie nazwiska otwiera szczegóły zawodnika w oknie, a dwuklik — kartę zawodnika w nowej karcie.</p>
 </div>
+<dialog class="match-detail-dialog match-player-dialog" data-player-modal-dialog aria-labelledby="match-player-title-{{ szczegoly.id_mecz }}">
+<div class="modal-head"><h2 id="match-player-title-{{ szczegoly.id_mecz }}">Szczegóły zawodnika</h2><button class="close" type="button" data-player-close aria-label="Zamknij szczegóły zawodnika" autofocus>×</button></div>
+<div class="modal-body" data-player-content aria-live="polite"></div>
+<div class="modal-foot"><a class="btn secondary" data-player-open-tab target="_blank" rel="noopener">Otwórz w nowej karcie</a><button class="btn secondary" type="button" data-player-close>Zamknij</button></div>
+</dialog>
 </div>
+<script src="{{ url_for('static', filename='js/goal_charts.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/player_details.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/matches.js') }}" defer></script>
 {% endblock %}

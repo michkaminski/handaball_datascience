@@ -75,3 +75,11 @@ Nie zmieniono zapytań, tras, normalizacji importu ani zasad prezentacji meczów
 Standardem interaktywnych wykresów jest Apache ECharts 6.x dostarczany lokalnie z aplikacją na licencji Apache-2.0. Produkcja nie zależy od CDN. Domyślnie używamy SVG; Canvas wymaga potrzeby wynikającej z liczby elementów lub pomiaru wydajności. Jeden współdzielony moduł ma utrzymywać motyw, format tooltipów, animacje i zachowanie responsywne.
 
 Repozytoria zwracają typowane dane i agregują fakty do wymaganej jednostki analizy. Serwisy Pythona definiują statystyki, mianowniki i obsługę braków. Presenter tworzy gotowy model JSON, a ECharts wyłącznie go wizualizuje. Każdy wykres ma opis ARIA i tabelaryczny lub tekstowy odpowiednik; animacje respektują `prefers-reduced-motion`.
+
+## Wspólna analityka bramek — 2026-09-23
+
+Statystyki serii bramek (miary sezonów i rozgrywek, forma krocząca, rozstęp sezonów, statystyki opisowe) są wspólne dla karty zawodnika i karty drużyny. Typy są w `domain/goal_statistics.py`, z protokołem `MeczZBramkami` (id_mecz, termin, sezon, rozgrywki, bramki, miejsce). Obliczenia wykonuje `StatystykiBramekCalculator` w `services/goal_statistics.py`, formatowanie `StatystykiBramekPresenter`, a wykresy `AnalitykaBramekController` i `FormaBramekController` w `static/js/goal_charts.js`. Kontrolery JS dostają prefiks atrybutów (`player`, `team`) i podmiot opisów ARIA. Zachowanie karty zawodnika się nie zmieniło; jej testy przechodzą bez zmian asercji. Motyw i palety wykresów nadal nie są w jednym module konfiguracyjnym dla całej aplikacji; `goal_charts.js` jest krokiem w tym kierunku.
+
+## Strona wpisów zawodników — 2026-09-23
+
+Powiązanie `mecze_zawodnicy.strona` z drużyną zależy od `mecze.zamiana` i jest zdefiniowane w jednym miejscu: `StronyMeczuSql` w `infrastructure/database/match_sides.py`. Repozytoria nie budują własnych wyrażeń `case(strona == "gosp", Mecz.id_zespol_gosp)`. Presentery nie zamieniają składów. Reguła i dane: [DATA](DATA.md#strona-wpisów-zawodników-przy-zamiana--2026-09-23).

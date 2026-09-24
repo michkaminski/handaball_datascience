@@ -43,8 +43,15 @@
     }
   }
 
+  const otworzKarteZawodnika = adres => window.open(adres, '_blank', 'noopener');
+  const uruchomSzczegolyMeczu = korzen => {
+    new ZakladkiMeczuController(korzen).uruchom();
+    const Linki = globalThis.HandballZawodnik?.LinkiZawodnikowController;
+    if (Linki) new Linki(korzen, (adres, opcje) => window.fetch(adres, opcje), otworzKarteZawodnika).uruchom();
+  };
+
   const szczegolyStrony = document.querySelector('[data-match-detail]');
-  if (szczegolyStrony) new ZakladkiMeczuController(szczegolyStrony).uruchom();
+  if (szczegolyStrony) uruchomSzczegolyMeczu(szczegolyStrony);
 
   class FiltryMeczowController {
     constructor(formularz, lokalizacja, magazyn) {
@@ -216,7 +223,7 @@
         szczegoly.querySelector('[data-detail-navigation]')?.remove();
         if (!zadanie.signal.aborted) {
           this.tresc.replaceChildren(szczegoly);
-          new ZakladkiMeczuController(szczegoly).uruchom();
+          uruchomSzczegolyMeczu(szczegoly);
         }
       } catch {
         if (!zadanie.signal.aborted) {

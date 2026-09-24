@@ -38,6 +38,7 @@ class DefensywaRywalaSQLAlchemyRepository:
                     Mecz.wynik_gosc_full,
                     Mecz.wycofany,
                     Mecz.id_zespol_walkower,
+                    Mecz.zamiana,
                     func.max(miejsce),
                     func.count(func.distinct(MeczZawodnik.strona)),
                     func.sum(MeczZawodnik.bramki),
@@ -75,6 +76,7 @@ class DefensywaRywalaSQLAlchemyRepository:
                     Mecz.wynik_gosc_full,
                     Mecz.wycofany,
                     Mecz.id_zespol_walkower,
+                    Mecz.zamiana,
                 )
                 .order_by(termin.asc().nulls_last(), Mecz.id)
             )
@@ -95,6 +97,7 @@ class DefensywaRywalaSQLAlchemyRepository:
                 wynik_gosc,
                 wycofany,
                 id_walkower,
+                zamiana,
                 miejsce_wartosc,
                 liczba_stron,
                 bramki,
@@ -102,6 +105,7 @@ class DefensywaRywalaSQLAlchemyRepository:
                 if liczba_stron != 1 or id_gosp is None or id_gosc is None:
                     continue
                 u_siebie = miejsce_wartosc == "dom"
+                kolumna_gospodarza = u_siebie != bool(zamiana)
                 dane_pelne = (
                     wynik_gosp is not None
                     and wynik_gosc is not None
@@ -118,14 +122,14 @@ class DefensywaRywalaSQLAlchemyRepository:
                         rok_rozpoczecia_sezonu=rok,
                         id_rozgrywki=id_rozgrywki,
                         rozgrywki=rozgrywki,
-                        id_zespol_zawodnika=id_gosp if u_siebie else id_gosc,
-                        druzyna_zawodnika=nazwa_gosp if u_siebie else nazwa_gosc,
-                        id_zespol_przeciwnika=id_gosc if u_siebie else id_gosp,
-                        przeciwnik=nazwa_gosc if u_siebie else nazwa_gosp,
+                        id_zespol_zawodnika=id_gosp if kolumna_gospodarza else id_gosc,
+                        druzyna_zawodnika=nazwa_gosp if kolumna_gospodarza else nazwa_gosc,
+                        id_zespol_przeciwnika=id_gosc if kolumna_gospodarza else id_gosp,
+                        przeciwnik=nazwa_gosc if kolumna_gospodarza else nazwa_gosp,
                         miejsce=miejsce_wartosc,
                         bramki_zawodnika=bramki,
-                        wynik_druzyny_zawodnika=wynik_gosp if u_siebie else wynik_gosc,
-                        wynik_przeciwnika=wynik_gosc if u_siebie else wynik_gosp,
+                        wynik_druzyny_zawodnika=wynik_gosp if kolumna_gospodarza else wynik_gosc,
+                        wynik_przeciwnika=wynik_gosc if kolumna_gospodarza else wynik_gosp,
                         dane_pelne=dane_pelne,
                     )
                 )

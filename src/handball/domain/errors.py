@@ -19,3 +19,7 @@ class NieZnalezionoHali(Exception):
 
 class NieZnalezionoSedziego(Exception):
     pass
+
+
+class NieZnalezionoDruzyny(Exception):
+    pass

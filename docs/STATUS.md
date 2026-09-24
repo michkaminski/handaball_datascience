@@ -2,6 +2,68 @@
 
 Aktualizacja: 2026-09-23.
 
+## Karta drużyny: Zestawienie sezonu, „Tylko zakończone”, okno zawodnika — 2026-09-23
+
+Na zlecenia użytkownika:
+
+- **Zestawienie sezonu** (nowa zakładka karty drużyny): sezon wymagany (domyślnie najnowszy), filtry rozgrywek i przeciwnika. Zawodnicy są w wierszach, uporządkowani według pozycji (bramkarze na górze), a mecze w kolumnach z pionowym nagłówkiem (data, przeciwnik, D/W, wynik). W komórce: bramki, kary i karne wykorzystane/wszystkie. Na końcu „Podsumowanie sezonu” (Mecze, Bramki, Kary, Karne), w stopce sumy drużyny. Bez przewijania pionowego tabeli.
+- **Mecze w karcie drużyny:** checkbox „Tylko zakończone”, domyślnie zaznaczony, z tym samym warunkiem co lista meczów (wspólny `WarunkiMeczuSql`).
+- **Okno zawodnika:** w składach szczegółów meczu, w Zestawieniu sezonu i w zakładce Zawodnicy kliknięcie nazwiska otwiera kartę zawodnika w oknie modalnym, a dwuklik — w nowej karcie. Mechanikę wydzielono z modalu listy zawodników do wspólnych `OknoZawodnikaController` i `LinkiZawodnikowController` (`player_details.js`).
+
+Kontrakty: [teams/detail.md](../src/handball/interface/templates/admin/teams/detail.md), [matches/detail.md](../src/handball/interface/templates/admin/matches/detail.md).
+
+Weryfikacja: nowe testy interfejsu (zestawienie, sezon wymagany i 400 dla obcego sezonu, podsumowanie, kolejność pozycji, checkbox, linki okna), testy reguły pozycji i 4 testy JavaScript linków (klik, dwuklik, Enter, Ctrl+klik, brak okna). Pełny zestaw: 367 testów Pythona (poza błędem `SECRET_KEY`) i 40 testów JavaScript; mypy i Ruff bez błędów. Na bazie (tryb tylko do odczytu, tymczasowy serwer) sprawdzono w Edge: Zestawienie Wisły Płock 2025/2026 (25 meczów), okno zawodnika otwierane z zestawienia i ze składu meczu #189180 oraz filtr „Tylko zakończone” (2026/2027: 4 z 23 meczów). Bazy nie zmieniano.
+
+## Poprawka: zawodnicy po złych stronach przy zmianie gospodarza — 2026-09-23
+
+Na zgłoszenie użytkownika poprawiono przypisanie zawodników przy `zamiana=true`. `mecze_zawodnicy.strona` ma już stronę po zamianie (potwierdzone na składach sezonowych we wszystkich sezonach), a aplikacja odwracała ją drugi raz. Szczegóły meczu nie zamieniają już składów. Wszystkie repozytoria łączą stronę wpisu z drużyną przez nową, wspólną regułę `StronyMeczuSql`: karta zawodnika (drużyna i przeciwnik w meczach, drużyny sezonów, filtr przeciwnika), lista zawodników, defensywa rywali, karta hali, aktualności i zakładka Zawodnicy karty drużyny. Przykład: mecz #189180 pokazuje teraz zawodniczki Galiczanki pod Galiczanką. Lista zawodników Wisły Płock spadła z 329 do 178 osób, bo 152 osoby były zawodnikami rywali z 21 meczów z zamianą. Opis: [DATA](DATA.md#strona-wpisów-zawodników-przy-zamiana--2026-09-23).
+
+Weryfikacja: nowy test reguły na SQLite w pamięci (cztery kombinacje strony i zamiany oraz `inne`) i nowy test defensywy rywali przy zamianie. Pięć istniejących testów utrwalało błędne założenie lub dawny kształt wiersza i zostało poprawionych. Pełny zestaw: 354 testy Pythona (poza błędem `SECRET_KEY`) i 36 testów JavaScript; mypy i Ruff bez błędów. Na bazie (tryb tylko do odczytu) sprawdzono mecz #189180 i odpowiedzi 200 kart zawodnika, drużyny, hali, listy zawodników i strony Start. Bazy nie zmieniano.
+
+## Frekwencja: lista meczów i karta drużyny — 2026-09-23
+
+Na zlecenie użytkownika lista meczów ma kolumnę **Widzowie** (`mecze.widzowie`, separator tysięcy, „—” przy braku danych), umieszczoną przed Halą. Karta drużyny pokazuje frekwencję w trzech pierwszych zakładkach:
+
+- **Dane podstawowe:** sekcja „Frekwencja w całej historii” (średnia, mediana, suma, rekord z linkiem do meczu i pokrycie, osobno u siebie i na wyjeździe) oraz średnia widzów w tabeli hal.
+- **Sezony:** kolumny ze średnią widzów u siebie i na wyjeździe oraz sumą u siebie, dla sezonów i rozgrywek.
+- **Mecze:** te same kafelki dla zakresu filtrów i kolumna Widzowie.
+
+Liczone są tylko mecze rozegrane. 0 (mecz bez publiczności) wchodzi do średniej, brak danych nie. Frekwencja jest częścią `BilansDruzyny` (`FrekwencjaDruzynyCalculator`). Dane o widzach są w bazie od 2011/2012; w 2020/2021 większość meczów ma 0.
+
+Weryfikacja: 2 nowe testy kalkulatora, 2 testy interfejsu karty i 1 test listy meczów. Pełny zestaw: 352 testy Pythona (poza błędem `SECRET_KEY`) i 36 testów JavaScript; mypy i Ruff bez błędów. Na bazie (tryb tylko do odczytu) wartości #272 zgadzają się z bezpośrednim zapytaniem SQL, a lista meczów i zakładki karty renderują się w Edge headless przy 1440 px. Bazy nie zmieniano.
+
+## Karta drużyny — 2026-09-23
+
+Na zlecenie użytkownika dodano `GET /administracja/druzyny/<id_zespol>` z zakładkami Dane podstawowe, Sezony, Mecze, Zawodnicy, Podsumowanie, Forma i regularność. Lista drużyn ma przycisk „▣ Szczegóły” (nowa karta).
+
+- Sezony pokazują bilans Z/R/P, bramki i średnie dla każdego sezonu i rozgrywek.
+- Mecze pokazują wynik z perspektywy drużyny, z filtrami i paginacją.
+- Zawodnicy to historia z protokołów (mecze, bramki, średnia, karne, kary, sezony), z filtrami, sortowaniem i osobną paginacją.
+- Podsumowanie i Forma są analogiczne do karty zawodnika i opisują zdobyte bramki drużyny. Podsumowanie ma dodatkowo wykres Z/R/P według sezonu i rekordy meczów.
+
+Z/R/P wynika z pełnego wyniku, a rozstrzygnięcia remisów po dogrywce lub karnych są pokazane osobno. Zasady: [DATA](DATA.md#karta-drużyny--2026-09-23), kontrakt: [teams/detail.md](../src/handball/interface/templates/admin/teams/detail.md).
+
+Na kolejne prośby Podsumowanie oraz Forma i regularność pokazują **bramki zdobyte i stracone razem** na tych samych wykresach, bez przełącznika serii. Podsumowanie:
+
+- tabela miar zdobyte / stracone / różnica;
+- wspólny wykres średniej, mediany i dominanty według sezonu;
+- sumy sezonu w dwóch stosach rozgrywek;
+- rozkład z przełącznikiem miejsca.
+
+Forma i regularność:
+
+- statystyki opisowe w trzech kolumnach;
+- mecz po meczu z medianami obu serii;
+- bilans bramek ze średnią kroczącą różnicy;
+- forma krocząca obu serii;
+- boxploty sezonów parami.
+
+Dane łączy presenter; obie serie i różnicę liczy ten sam kalkulator. Średnie z kalkulatora są zawsze liczbą zmiennoprzecinkową (wcześniej całkowita średnia wyświetlała się bez miejsca po przecinku, także na karcie zawodnika). Weryfikacja: 347 testów Pythona (poza błędem `SECRET_KEY`) i 36 testów JavaScript; mypy i Ruff bez błędów. Na #272 Podsumowanie i Forma zwracają 200 i poprawnie renderują się w Edge headless przy 1440 px.
+
+Obliczenia, formatowanie i wykresy statystyk bramek wydzielono z karty zawodnika do wspólnych modułów (`goal_statistics`, `goal_charts.js`), zob. [ARCHITECTURE](ARCHITECTURE.md#wspólna-analityka-bramek--2026-09-23). Poprawiono mapowanie `Zespol`: nieistniejącą kolumnę `miasto` zastąpiono `nr_klubu`. Fragment paginacji przyjmuje opcjonalne `parametr_strony`.
+
+Weryfikacja: 7 nowych testów serwisu, 8 testów interfejsu i 3 testy JavaScript. Pełny zestaw: 345 testów Pythona (poza znanym błędem `SECRET_KEY`) i 34 testy JavaScript; Ruff i mypy dla `src` bez błędów. Na bazie (tryb tylko do odczytu) drużyna #272 zwraca 200 we wszystkich zakładkach w 0,4–0,8 s, nieistniejąca drużyna 404, a niepoprawne sortowanie 400. Wszystkie zakładki sprawdzono w Edge headless przy 1440 px. Nie zrobiono modalu na liście drużyn ani linków do karty z innych ekranów (np. szczegółów meczu). Bazy nie zmieniano.
+
 ## Mecze: filtr „Tylko zakończone” — 2026-09-23
 
 Lista meczów ma checkbox „Tylko zakończone”, domyślnie zaznaczony: pokazuje mecze z terminem przed dzisiejszym dniem (Europe/Warsaw) albo z wpisanym wynikiem. Stan jest zachowywany w sortowaniu, paginacji i pamięci filtrów dzięki parze checkbox + ukryte `zakonczone=0`; brak parametru oznacza stan domyślny. Nowy test interfejsu (domyślne zaznaczenie, odznaczenie, zachowanie w linkach); pełny zestaw 330 testów Pythona (poza błędem `SECRET_KEY`) i 31 testów JavaScript, Ruff i mypy bez błędów. Na bazie w sezonie 2026/2027 filtr zwraca 125 z 1945 meczów (123 z wynikiem i 2 po terminie bez wyniku). Kontrakt: [list.md](../src/handball/interface/templates/admin/matches/list.md).

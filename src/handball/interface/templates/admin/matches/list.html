@@ -46,6 +46,7 @@ Data {{ "▼" if filtry.sortowanie == "-data" else "▲" }}
 <th>Gospodarz</th>
 <th>Wynik</th>
 <th>Gość</th>
+<th class="num" title="Liczba widzów z protokołu meczu">Widzowie</th>
 <th>Hala</th>
 <th></th>
 </tr>
@@ -63,11 +64,12 @@ Data {{ "▼" if filtry.sortowanie == "-data" else "▲" }}
 <td>{{ pozycja.gospodarz or "—" }}</td>
 <td><span class="score">{{ pozycja.wynik }}</span>{% if pozycja.dopisek_wyniku %}<br><span class="note">{{ pozycja.dopisek_wyniku }}</span>{% endif %}</td>
 <td>{{ pozycja.gosc or "—" }}</td>
+<td class="num">{{ pozycja.widzowie }}</td>
 <td>{{ pozycja.hala or "—" }}</td>
 <td><a class="icon-link" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=pozycja.id_mecz) }}" title="Szczegóły meczu" target="_blank" rel="noopener">◈ Szczegóły</a></td>
 </tr>
 {% else %}
-<tr><td colspan="10" class="note" data-empty-matches>Brak meczów spełniających wybrane filtry.</td></tr>
+<tr><td colspan="11" class="note" data-empty-matches>Brak meczów spełniających wybrane filtry.</td></tr>
 {% endfor %}
 </tbody>
 </table>
@@ -103,5 +105,7 @@ Data {{ "▼" if filtry.sortowanie == "-data" else "▲" }}
 <button class="btn secondary" type="button" data-detail-close>Zamknij</button>
 </div>
 </dialog>
+<script src="{{ url_for('static', filename='js/goal_charts.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/player_details.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/matches.js') }}" defer></script>
 {% endblock %}

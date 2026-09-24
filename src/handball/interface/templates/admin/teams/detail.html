@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block tytul %}{{ szczegoly.nazwa }} — Handball DataScience{% endblock %}
+{% block tresc %}
+{% macro filtry_analizy(zakladka, etykieta_przycisku) %}
+<form class="panel-body filters player-analytics-filters" method="get" action="{{ url_for('administracja.szczegoly_druzyny', id_zespol=szczegoly.id_zespol) }}">
+<input type="hidden" name="zakladka" value="{{ zakladka }}"><input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}"><input type="hidden" name="rozmiar_strony" value="{{ filtry.rozmiar_strony }}">
+<label>Sezon{{ formularz.id_sezon() }}</label><label>Rozgrywki{{ formularz.rozgrywki() }}</label><label>Przeciwnik{{ formularz.przeciwnik(placeholder="nazwa drużyny...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">{{ etykieta_przycisku }}</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=szczegoly.id_zespol, zakladka=zakladka) }}">Wyczyść filtry</a></div>
+</form>
+{% endmacro %}
+{% macro tabela_miar(miary, tytul) %}<div class="table-wrap team-measures"><table><caption>{{ tytul }}</caption><thead><tr><th scope="col">Miara</th><th scope="col" class="team-col-zdobyte">Zdobyte</th><th scope="col" class="team-col-stracone">Stracone</th><th scope="col">Różnica</th></tr></thead><tbody>{% for miara in miary %}<tr><th scope="row">{{ miara.etykieta }}</th><td class="team-num team-col-zdobyte">{{ miara.zdobyte }}</td><td class="team-num team-col-stracone">{{ miara.stracone }}</td><td class="team-num">{{ miara.roznica }}</td></tr>{% endfor %}</tbody></table></div>{% endmacro %}
+{% macro przelacznik_miejsca(wykres) %}<span class="player-chart-toggle" role="group" aria-label="Zakres meczów wykresu" data-team-place-toggle="{{ wykres }}" hidden>{% for klucz, etykieta in [('wszystkie', 'Wszystkie'), ('dom', 'U siebie'), ('wyjazd', 'Na wyjeździe')] %}<button type="button" data-team-place-view="{{ klucz }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ etykieta }}</button>{% endfor %}</span>{% endmacro %}
+{% macro kafelki_frekwencji(frekwencja) %}<div class="player-kpi-grid team-attendance">
+<div><span>Średnio widzów u siebie</span><b>{{ frekwencja.dom.srednia }}</b></div><div><span>Mediana u siebie</span><b>{{ frekwencja.dom.mediana }}</b></div><div><span>Łącznie widzów u siebie</span><b>{{ frekwencja.dom.suma }}</b></div><div><span>Rekord u siebie</span><b>{% if frekwencja.dom.rekord_mecz %}<a href="{{ url_for('administracja.szczegoly_meczu', id_mecz=frekwencja.dom.rekord_mecz) }}" target="_blank" rel="noopener">{{ frekwencja.dom.rekord }}</a>{% else %}—{% endif %}</b>{% if frekwencja.dom.rekord_opis %}<small>{{ frekwencja.dom.rekord_opis }}</small>{% endif %}</div><div><span>Mecze u siebie z frekwencją</span><b>{{ frekwencja.dom.pokrycie }}</b></div>
+<div><span>Średnio widzów na wyjeździe</span><b>{{ frekwencja.wyjazd.srednia }}</b></div><div><span>Mediana na wyjeździe</span><b>{{ frekwencja.wyjazd.mediana }}</b></div><div><span>Łącznie widzów na wyjeździe</span><b>{{ frekwencja.wyjazd.suma }}</b></div><div><span>Rekord na wyjeździe</span><b>{% if frekwencja.wyjazd.rekord_mecz %}<a href="{{ url_for('administracja.szczegoly_meczu', id_mecz=frekwencja.wyjazd.rekord_mecz) }}" target="_blank" rel="noopener">{{ frekwencja.wyjazd.rekord }}</a>{% else %}—{% endif %}</b>{% if frekwencja.wyjazd.rekord_opis %}<small>{{ frekwencja.wyjazd.rekord_opis }}</small>{% endif %}</div><div><span>Mecze wyjazdowe z frekwencją</span><b>{{ frekwencja.wyjazd.pokrycie }}</b></div>
+</div>{% endmacro %}
+{% macro komorka_zestawienia(komorka) %}{% if komorka %}<td class="team-sheet-cell" title="{{ komorka.opis }}"><b>{{ komorka.bramki }}</b>{% if komorka.kary %}<span class="team-sheet-pen">{{ komorka.kary }}</span>{% endif %}{% if komorka.karne %}<span class="team-sheet-7m">{{ komorka.karne }}</span>{% endif %}</td>{% else %}<td class="team-sheet-cell team-sheet-empty" title="Brak wpisu w protokole"></td>{% endif %}{% endmacro %}
+{% macro suma_zestawienia(komorka, mecze) %}<td class="team-sheet-sum team-sheet-sum-first">{{ mecze }}</td><td class="team-sheet-sum"><b>{{ komorka.bramki }}</b></td><td class="team-sheet-sum team-sheet-pen-sum">{{ komorka.kary or '—' }}</td><td class="team-sheet-sum">{{ komorka.karne or '—' }}</td>{% endmacro %}
+{% macro wiersz_bilansu(bilans) %}<td class="team-num">{{ bilans.rozegrane }}</td><td class="team-num team-w">{{ bilans.wygrane }}</td><td class="team-num team-r">{{ bilans.remisy }}</td><td class="team-num team-p">{{ bilans.porazki }}</td><td class="team-num">{{ bilans.procent_zwyciestw }}</td><td class="team-num">{{ bilans.bramki }}</td><td class="team-num">{{ bilans.roznica }}</td><td class="team-num">{{ bilans.srednia_zdobytych }}</td><td class="team-num">{{ bilans.srednia_straconych }}</td><td class="team-note-cell">{{ bilans.rozstrzygniecia }}</td><td class="team-note-cell">{{ bilans.inne }}</td><td class="team-num">{{ bilans.widzowie_dom }}</td><td class="team-num">{{ bilans.widzowie_wyjazd }}</td><td class="team-num">{{ bilans.widzowie_dom_suma }}</td>{% endmacro %}
+{% set naglowek_bilansu %}<th title="Mecze rozegrane">M</th><th title="Zwycięstwa">Z</th><th title="Remisy według pełnego wyniku">R</th><th title="Porażki">P</th><th title="Procent zwycięstw w meczach rozegranych">% zw.</th><th title="Bramki zdobyte:stracone">Bramki</th><th title="Różnica bramek">Różn.</th><th title="Średnia bramek zdobytych na mecz">Śr. zdob.</th><th title="Średnia bramek straconych na mecz">Śr. strac.</th><th title="Remisy rozstrzygnięte dogrywką lub serią karnych: wygrane / przegrane">Remisy rozstrz.</th><th title="Walkowery, mecze wycofane i mecze bez wyniku">Inne mecze</th><th title="Średnia liczba widzów w meczach u siebie ze znaną frekwencją">Widzowie dom śr.</th><th title="Średnia liczba widzów w meczach wyjazdowych ze znaną frekwencją">Widzowie wyjazd śr.</th><th title="Suma widzów w meczach u siebie">Widzowie dom suma</th>{% endset %}
+<div data-team-detail data-active-tab="{{ aktywna_zakladka }}" data-echarts-url="{{ url_for('static', filename='vendor/echarts/echarts.min.js') }}" data-team-match-url="{{ url_for('administracja.szczegoly_meczu', id_mecz=0) }}">
+<section class="pagehead">
+<div class="crumb">Start › Dane › Drużyny › Szczegóły</div>
+<h1>{{ szczegoly.nazwa }}</h1><p>Karta drużyny #{{ szczegoly.id_zespol }} · {{ szczegoly.plec }} · sezony {{ szczegoly.zakres_sezonow }}</p>
+</section>
+<div class="toolbar" data-team-navigation><a class="btn secondary small" href="{{ url_for('administracja.lista_druzyn') }}">← Powrót do listy drużyn</a></div>
+<div class="match-tabs" role="tablist" aria-label="Szczegóły drużyny" data-team-tabs hidden>
+{% for klucz, etykieta in [('dane', 'Dane podstawowe'), ('sezony', 'Sezony'), ('mecze', 'Mecze'), ('zawodnicy', 'Zawodnicy'), ('zestawienie', 'Zestawienie sezonu'), ('podsumowanie', 'Podsumowanie'), ('forma', 'Forma i regularność')] %}
+<button type="button" role="tab" id="team-tab-{{ klucz }}" data-team-tab="{{ klucz }}" aria-controls="team-panel-{{ klucz }}" aria-selected="{{ 'true' if aktywna_zakladka == klucz else 'false' }}">{{ etykieta }}</button>
+{% endfor %}
+</div>
+
+<section class="panel" id="team-panel-dane" data-team-panel="dane" aria-labelledby="team-tab-dane">
+<h2>Dane podstawowe</h2>
+<div class="panel-body">
+<div class="player-kpi-grid team-kpi-basic">
+<div><span>Sezony w bazie</span><b>{{ szczegoly.liczba_sezonow }}</b></div><div><span>Zakres sezonów</span><b>{{ szczegoly.zakres_sezonow }}</b></div><div><span>Mecze w bazie</span><b>{{ szczegoly.liczba_meczow }}</b></div><div><span>Nazwy historyczne</span><b>{{ szczegoly.nazwy|length }}</b></div>
+</div>
+<section class="team-subpanel"><h3>Frekwencja w całej historii</h3>
+{% if frekwencja.ma_dane %}{{ kafelki_frekwencji(frekwencja) }}{% else %}<p class="note">Brak danych o liczbie widzów w meczach drużyny.</p>{% endif %}
+</section>
+<dl class="team-fields">
+<div><dt>ID drużyny</dt><dd>{{ szczegoly.id_zespol }}</dd></div>
+<div><dt>Numer klubu</dt><dd>{{ szczegoly.nr_klubu }}</dd></div>
+<div><dt>Nazwa</dt><dd>{{ szczegoly.nazwa }}</dd></div>
+<div><dt>Płeć</dt><dd>{{ szczegoly.plec }}</dd></div>
+<div><dt>Kategoria</dt><dd>{{ szczegoly.kategoria }}</dd></div>
+<div><dt>Miasto (najnowszy wpis)</dt><dd>{{ szczegoly.miasto }}</dd></div>
+<div><dt>Status</dt><dd><span class="badge {{ 'warn' if szczegoly.wycofana else 'ok' }}">{{ szczegoly.status }}</span></dd></div>
+</dl>
+<div class="grid2 team-basic-grid">
+<section class="team-subpanel"><h3>Historia nazw</h3>
+<div class="table-wrap"><table><thead><tr><th>Nazwa</th><th>Sezony</th><th>Liczba sezonów</th></tr></thead><tbody>
+{% for nazwa in szczegoly.nazwy %}<tr><td><b>{{ nazwa.nazwa }}</b></td><td>{{ nazwa.sezony }}</td><td class="team-num">{{ nazwa.liczba_sezonow }}</td></tr>{% else %}<tr><td colspan="3" class="note">Brak wpisów sezonowych.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="team-subpanel"><h3>Najczęstsze hale jako gospodarz</h3>
+<div class="table-wrap"><table><thead><tr><th>Hala</th><th>Miasto</th><th>Mecze</th><th>Śr. widzów</th></tr></thead><tbody>
+{% for hala in szczegoly.hale %}<tr><td><a href="{{ url_for('administracja.szczegoly_hali', id_hala=hala.id_hala) }}" target="_blank" rel="noopener">{{ hala.nazwa }}</a></td><td>{{ hala.miasto }}</td><td class="team-num">{{ hala.liczba_meczow }}</td><td class="team-num">{{ hala.srednia_widzow }}</td></tr>{% else %}<tr><td colspan="4" class="note">Brak meczów z przypisaną halą.</td></tr>{% endfor %}
+</tbody></table></div></section>
+</div>
+<section class="team-subpanel"><h3>Wpisy sezonowe</h3>
+<div class="table-wrap"><table class="team-seasons-list"><thead><tr><th>Sezon</th><th>Nazwa w sezonie</th><th>Miasto</th><th>Kategoria</th><th>Status</th><th>Akcje</th></tr></thead><tbody>
+{% for sezon in szczegoly.sezony %}<tr><td><span class="season-badge">{{ sezon.sezon }}</span></td><td>{{ sezon.nazwa }}</td><td>{{ sezon.miasto }}</td><td>{{ sezon.kategoria }}</td><td><span class="badge {{ 'warn' if sezon.wycofana else 'ok' }}">{{ sezon.status }}</span></td><td><a class="icon-link" href="{{ url_for('administracja.szczegoly_skladu', id_zespol_sezon=sezon.id_zespol_sezon) }}" target="_blank" rel="noopener">☰ Skład</a></td></tr>{% else %}<tr><td colspan="6" class="note">Brak wpisów sezonowych.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<p class="note">Nazwa, miasto i status drużyny w kolejnych sezonach pochodzą z <code>zespoly_sezony</code>. Hale liczone są z meczów, w których drużyna jest gospodarzem po zastosowaniu <code>zamiana</code>.</p>
+</div>
+</section>
+
+<section class="panel" id="team-panel-sezony" data-team-panel="sezony" aria-labelledby="team-tab-sezony">
+<h2>Sezony</h2><div class="panel-body">
+<p class="note">Podsumowanie każdego sezonu i każdych rozgrywek w sezonie. Zwycięstwa, remisy i porażki wynikają z pełnego wyniku (<code>wynik_*_full</code>); remisy rozstrzygnięte dogrywką lub serią karnych są policzone osobno. Walkowery, mecze wycofane i bez wyniku nie wchodzą do bilansu bramek. Widzowie: średnia i suma z rozegranych meczów ze znaną frekwencją; 0 (mecz bez publiczności) wchodzi do średniej, brak danych nie.</p>
+<div class="table-wrap"><table class="team-season-table">
+<thead><tr><th>Sezon</th><th>Rozgrywki</th><th>Nazwa w sezonie</th>{{ naglowek_bilansu }}</tr></thead>
+<tbody>{% for wiersz in sezony %}
+<tr class="{{ 'team-season-row' if wiersz.podsumowanie_sezonu else 'team-competition-row' }}"><td>{% if wiersz.podsumowanie_sezonu %}<span class="season-badge">{{ wiersz.sezon }}</span>{% endif %}</td><td>{{ wiersz.rozgrywki }}</td><td class="player-teams">{{ wiersz.nazwa_druzyny }}</td>{{ wiersz_bilansu(wiersz.bilans) }}</tr>
+{% else %}<tr><td colspan="17" class="note">Brak meczów drużyny.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+</section>
+
+<section class="panel" id="team-panel-mecze" data-team-panel="mecze" aria-labelledby="team-tab-mecze">
+<h2>Mecze</h2>
+<form class="panel-body filters player-match-filters team-match-filters" method="get" action="{{ url_for('administracja.szczegoly_druzyny', id_zespol=szczegoly.id_zespol) }}">
+<input type="hidden" name="zakladka" value="mecze"><input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}"><input type="hidden" name="rozmiar_strony" value="{{ filtry.rozmiar_strony }}">
+<label>Sezon{{ formularz.id_sezon() }}</label><label>Rozgrywki{{ formularz.rozgrywki() }}</label><label>Przeciwnik{{ formularz.przeciwnik(placeholder="nazwa drużyny...") }}</label>
+<label class="filter-checkbox" title="Mecze z terminem przed dzisiejszym dniem albo z wpisanym wynikiem"><input type="checkbox" name="zakonczone" value="1"{% if formularz.tylko_zakonczone %} checked{% endif %}> Tylko zakończone</label><input type="hidden" name="zakonczone" value="0">
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=szczegoly.id_zespol, zakladka='mecze') }}">Wyczyść filtry</a></div>
+</form>
+<div class="panel-body">
+<section class="team-subpanel"><h3>Frekwencja w wybranym zakresie</h3>
+{% if frekwencja_meczow.ma_dane %}{{ kafelki_frekwencji(frekwencja_meczow) }}{% else %}<p class="note">Brak danych o liczbie widzów w meczach spełniających wybrane filtry.</p>{% endif %}
+</section>
+<p class="note">Wynik drużyny: bramki zdobyte:stracone z pełnego wyniku. Miejsce uwzględnia <code>zamiana</code>. Wynik meczu: gospodarz–gość. Widzowie: liczba z protokołu meczu (<code>mecze.widzowie</code>); 0 oznacza mecz bez publiczności, a „—” brak danych.</p>
+<div class="table-wrap"><table class="team-matches-table">
+<thead><tr>
+<th aria-sort="{{ 'descending' if filtry.sortowanie == '-data' else 'ascending' }}"><a href="{{ url_for(request.endpoint, **dict(parametry_meczow, sortowanie=('data' if filtry.sortowanie == '-data' else '-data'), strona=1)) }}">Data {{ '▼' if filtry.sortowanie == '-data' else '▲' }}</a></th>
+<th>Sezon / rozgrywki</th><th>Miejsce</th><th>Przeciwnik</th><th>Wynik drużyny</th><th>Rezultat</th><th>Wynik meczu</th><th class="team-num">Widzowie</th><th>Akcje</th>
+</tr></thead><tbody>
+{% for pozycja in strona.pozycje %}
+<tr>
+<td>{{ pozycja.termin }}</td>
+<td>{{ pozycja.mecz.sezon or '—' }}<br><span class="note">{{ pozycja.mecz.rozgrywki or '—' }}</span></td>
+<td>{{ pozycja.miejsce }}</td>
+<td class="player-teams">{{ pozycja.przeciwnik }}</td>
+<td class="team-score"><span class="score">{{ pozycja.wynik_druzyny }}</span></td>
+<td><span class="badge {{ pozycja.rezultat_klasa }}">{{ pozycja.rezultat }}</span>{% if pozycja.rozstrzygniecie %}<br><span class="note">{{ pozycja.rozstrzygniecie }}</span>{% endif %}</td>
+<td><span class="score">{{ pozycja.mecz.wynik }}</span><br><span class="note">{{ pozycja.mecz.gospodarz or '—' }} — {{ pozycja.mecz.gosc or '—' }}{% if pozycja.mecz.dopisek_wyniku %}<br>{{ pozycja.mecz.dopisek_wyniku }}{% endif %}</span></td>
+<td class="team-num">{{ pozycja.widzowie }}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=pozycja.mecz.id_mecz) }}" target="_blank" rel="noopener">◈ Szczegóły meczu</a></td>
+</tr>
+{% else %}<tr><td colspan="9" class="note">Brak meczów drużyny spełniających wybrane filtry.</td></tr>{% endfor %}
+</tbody></table></div>
+{% with parametry_paginacji=parametry_meczow %}{% include "partials/pagination.html" %}{% endwith %}
+</div></section>
+
+<section class="panel" id="team-panel-zawodnicy" data-team-panel="zawodnicy" aria-labelledby="team-tab-zawodnicy">
+<h2>Zawodnicy</h2>
+<form class="panel-body filters team-player-filters" method="get" action="{{ url_for('administracja.szczegoly_druzyny', id_zespol=szczegoly.id_zespol) }}">
+<input type="hidden" name="zakladka" value="zawodnicy"><input type="hidden" name="rozmiar_strony" value="{{ filtry_zawodnikow.rozmiar_strony }}">
+<label>Sezon{{ formularz.id_sezon() }}</label><label>Rozgrywki{{ formularz.rozgrywki() }}</label><label>Zawodnik{{ formularz.zawodnik(placeholder="imię lub nazwisko...") }}</label><label>Sortowanie{{ formularz.sortowanie_zawodnikow() }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=szczegoly.id_zespol, zakladka='zawodnicy') }}">Wyczyść filtry</a></div>
+</form>
+<div class="panel-body">
+<p class="note">Zawodnicy z wpisem w protokole meczu po stronie tej drużyny (<code>mecze_zawodnicy</code>), nie potwierdzone minuty gry. Średnia dzieli bramki przez mecze ze znaną liczbą bramek. Karne: trafione/próby.</p>
+{% macro sortowalny(pole, etykieta) %}{% set malejaco = '-' + pole %}<th aria-sort="{{ 'descending' if filtry_zawodnikow.sortowanie == malejaco else ('ascending' if filtry_zawodnikow.sortowanie == pole else 'none') }}"><a href="{{ url_for(request.endpoint, **dict(parametry_zawodnikow, sortowanie_zawodnikow=(pole if filtry_zawodnikow.sortowanie == malejaco else malejaco), strona_zawodnikow=1)) }}">{{ etykieta }}{% if filtry_zawodnikow.sortowanie == pole %} ▲{% elif filtry_zawodnikow.sortowanie == malejaco %} ▼{% endif %}</a></th>{% endmacro %}
+<div class="table-wrap"><table class="team-players-table">
+<thead><tr><th>#</th>{{ sortowalny('nazwisko', 'Zawodnik') }}{{ sortowalny('mecze', 'Mecze') }}{{ sortowalny('bramki', 'Bramki') }}{{ sortowalny('srednia', 'Średnia') }}<th>Karne</th><th>Kary</th><th>Sezony w drużynie</th>{{ sortowalny('ostatni_mecz', 'Ostatni mecz') }}</tr></thead>
+<tbody>{% for zawodnik in zawodnicy.pozycje %}
+<tr><td class="team-num note">{{ (zawodnicy.strona - 1) * zawodnicy.rozmiar_strony + loop.index }}</td><td><a class="player-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=zawodnik.id_zawodnik) }}" target="_blank" rel="noopener" data-player-modal-link title="Kliknij: szczegóły zawodnika w oknie · dwuklik: karta w nowej karcie">{{ zawodnik.nazwa }}</a></td><td class="team-num">{{ zawodnik.mecze }}</td><td class="team-num"><b>{{ zawodnik.bramki }}</b></td><td class="team-num">{{ zawodnik.srednia }}</td><td class="team-num">{{ zawodnik.karne }}</td><td class="player-penalties">{{ zawodnik.kary }}</td><td>{{ zawodnik.sezony }}</td><td>{{ zawodnik.ostatni_mecz }}</td></tr>
+{% else %}<tr><td colspan="9" class="note">Brak zawodników spełniających wybrane filtry.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% with strona=zawodnicy, parametry_paginacji=parametry_zawodnikow, parametr_strony='strona_zawodnikow' %}{% include "partials/pagination.html" %}{% endwith %}
+</div></section>
+
+<section class="panel" id="team-panel-zestawienie" data-team-panel="zestawienie" aria-labelledby="team-tab-zestawienie">
+<h2>Zestawienie sezonu{% if zestawienie %} {{ zestawienie.sezon }}{% endif %}</h2>
+<form class="panel-body filters team-sheet-filters" method="get" action="{{ url_for('administracja.szczegoly_druzyny', id_zespol=szczegoly.id_zespol) }}">
+<input type="hidden" name="zakladka" value="zestawienie">
+<label>Sezon (wymagany){{ formularz.sezon_zestawienia(required=True) }}</label><label>Rozgrywki{{ formularz.rozgrywki_zestawienia() }}</label><label>Przeciwnik{{ formularz.przeciwnik_zestawienia(placeholder="nazwa drużyny...") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Pokaż</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=szczegoly.id_zespol, zakladka='zestawienie', sezon_zestawienia=sezon_zestawienia) }}">Wyczyść filtry</a></div>
+</form>
+<div class="panel-body">
+<p class="note team-sheet-legend">Kolumna meczu: <b>bramki</b> (pogrubione), kary (<b>2′</b> — dwie minuty, <b>U</b> — upomnienie, <b>D</b> — dyskwalifikacja) i rzuty karne <b>wykorzystane/wszystkie</b>. Ostatnie kolumny podsumowują sezon zawodnika: mecze, bramki, kary i karne. Zawodnicy są uporządkowani według pozycji (bramkarze, rozgrywający, skrzydłowi, obrotowi), a w pozycji według liczby bramek. Puste pole — brak wpisu zawodnika w protokole meczu, „—” — wpis bez liczby bramek. Mecze bez żadnego wpisu drużyny w protokole są pominięte. Kliknięcie zawodnika otwiera szczegóły w oknie, dwuklik — kartę w nowej karcie; nagłówek meczu otwiera szczegóły meczu.</p>
+{% if zestawienie and zestawienie.mecze %}
+<div class="table-wrap team-sheet-wrap"><table class="team-sheet-table">
+<caption class="sr-only">Zestawienie sezonu {{ zestawienie.sezon }}: zawodnicy w wierszach, mecze w kolumnach, podsumowanie w ostatniej kolumnie.</caption>
+<thead><tr><th scope="col" rowspan="2" class="team-sheet-player">Zawodnik</th><th scope="col" rowspan="2" class="team-sheet-pos">Pozycja</th>
+{% for mecz in zestawienie.mecze %}<th scope="col" rowspan="2" class="team-sheet-match"><a href="{{ url_for('administracja.szczegoly_meczu', id_mecz=mecz.id_mecz) }}" target="_blank" rel="noopener" title="{{ mecz.data }} · {{ mecz.przeciwnik }} · {{ mecz.miejsce }} · {{ mecz.wynik }} ({{ mecz.rezultat }})"><span class="team-sheet-vertical"><span class="team-sheet-date">{{ mecz.data[:5] }}</span> {{ mecz.przeciwnik }}</span></a><span class="team-sheet-place">{{ 'D' if mecz.miejsce == 'u siebie' else 'W' }}</span><span class="badge {{ mecz.rezultat_klasa }} team-sheet-result">{{ mecz.wynik }}</span></th>{% endfor %}
+<th scope="colgroup" colspan="4" class="team-sheet-sum team-sheet-sum-first team-sheet-sum-group">Podsumowanie sezonu</th></tr>
+<tr><th scope="col" class="team-sheet-sum team-sheet-sum-first" title="Mecze z wpisem w protokole">Mecze</th><th scope="col" class="team-sheet-sum" title="Bramki">Bramki</th><th scope="col" class="team-sheet-sum" title="Kary: 2′ — dwie minuty, U — upomnienia, D — dyskwalifikacje">Kary</th><th scope="col" class="team-sheet-sum" title="Rzuty karne wykorzystane/wszystkie">Karne<br><span class="team-sheet-sub">wyk./wsz.</span></th></tr></thead>
+<tbody>{% for wiersz in zestawienie.wiersze %}<tr><th scope="row" class="team-sheet-player"><a class="player-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=wiersz.id_zawodnik) }}" target="_blank" rel="noopener" data-player-modal-link title="Kliknij: szczegóły zawodnika w oknie · dwuklik: karta w nowej karcie">{{ wiersz.nazwa }}</a>{% if wiersz.numery %} <span class="note">#{{ wiersz.numery }}</span>{% endif %}</th><td class="team-sheet-pos">{{ wiersz.pozycje }}</td>{% for komorka in wiersz.komorki %}{{ komorka_zestawienia(komorka) }}{% endfor %}{{ suma_zestawienia(wiersz.suma, wiersz.mecze) }}</tr>
+{% endfor %}</tbody>
+<tfoot><tr><th scope="row" class="team-sheet-player">Suma drużyny</th><td class="team-sheet-pos"></td>{% for komorka in zestawienie.sumy_meczow %}{{ komorka_zestawienia(komorka) }}{% endfor %}{{ suma_zestawienia(zestawienie.suma, zestawienie.mecze|length) }}</tr></tfoot>
+</table></div>
+{% else %}<p class="notice">Brak meczów drużyny z protokołem w wybranym sezonie i zakresie.</p>{% endif %}
+</div>
+</section>
+
+<section class="panel" id="team-panel-podsumowanie" data-team-panel="podsumowanie" aria-labelledby="team-tab-podsumowanie">
+<h2>Podsumowanie analityczne</h2>
+{{ filtry_analizy('podsumowanie', 'Filtruj analizy') }}
+<div class="panel-body player-analytics">
+<p class="note">Miary bramek obejmują tylko mecze rozegrane (oba pełne wyniki, bez walkowera i wycofania). Bramki to pełny wynik, bez dogrywki i serii karnych.</p>
+<div class="player-kpi-grid">
+<div><span>Mecze rozegrane</span><b>{{ podsumowanie.bilans.rozegrane }}</b></div><div><span>Zwycięstwa</span><b>{{ podsumowanie.bilans.wygrane }}</b></div><div><span>Remisy</span><b>{{ podsumowanie.bilans.remisy }}</b></div><div><span>Porażki</span><b>{{ podsumowanie.bilans.porazki }}</b></div><div><span>% zwycięstw</span><b>{{ podsumowanie.bilans.procent_zwyciestw }}</b></div><div><span>Bramki (zdobyte:stracone)</span><b>{{ podsumowanie.bilans.bramki }}</b></div>
+<div><span>Różnica bramek</span><b>{{ podsumowanie.bilans.roznica }}</b></div><div><span>Średnia zdobytych</span><b>{{ podsumowanie.bilans.srednia_zdobytych }}</b></div><div><span>Średnia straconych</span><b>{{ podsumowanie.bilans.srednia_straconych }}</b></div><div><span>Najdłuższa seria zwycięstw</span><b>{{ podsumowanie.seria_zwyciestw }}</b></div><div><span>Najdłuższa seria bez porażki</span><b>{{ podsumowanie.seria_bez_porazki }}</b></div><div><span>Remisy rozstrzygnięte</span><b>{{ podsumowanie.bilans.rozstrzygniecia }}</b></div>
+</div>
+<p class="note">Pozostałe mecze w zakresie: {{ podsumowanie.bilans.inne }}.</p>
+<div class="team-records">
+{% for tytul, rekord in podsumowanie.rekordy %}
+<div class="team-record"><span>{{ tytul }}</span>{% if rekord %}<b><a href="{{ url_for('administracja.szczegoly_meczu', id_mecz=rekord.id_mecz) }}" target="_blank" rel="noopener">{{ rekord.opis }}</a></b><small>{{ rekord.szczegoly }}</small>{% else %}<b>—</b>{% endif %}</div>
+{% endfor %}
+</div>
+{% if podsumowanie.bilanse_sezonow %}
+<div class="player-chart-grid stacked">
+<figure><figcaption>Zwycięstwa, remisy i porażki według sezonu</figcaption><p class="player-chart-opis">Każdy słupek to jeden sezon (wszystkie rozgrywki w wybranym zakresie) podzielony na zwycięstwa, remisy i porażki według pełnego wyniku; segmenty różnią się kolorem i wzorem.</p><div class="player-chart player-chart-wide" data-team-results role="img" aria-label="Liczba zwycięstw, remisów i porażek drużyny w kolejnych sezonach"></div></figure>
+</div>
+<details class="player-chart-data"><summary>Dane bilansu według sezonu</summary><div class="table-wrap"><table><thead><tr><th>Sezon</th><th>Mecze</th><th>Zwycięstwa</th><th>Remisy</th><th>Porażki</th><th>Zdobyte</th><th>Stracone</th></tr></thead><tbody>{% for sezon in podsumowanie.bilanse_sezonow %}<tr><td>{{ sezon.sezon }}</td><td>{{ sezon.rozegrane }}</td><td>{{ sezon.wygrane }}</td><td>{{ sezon.remisy }}</td><td>{{ sezon.porazki }}</td><td>{{ sezon.zdobyte }}</td><td>{{ sezon.stracone }}</td></tr>{% endfor %}</tbody></table></div></details>
+<script type="application/json" data-team-results-data>{{ podsumowanie.bilanse_sezonow|tojson }}</script>
+{% endif %}
+<section class="team-goals-block" aria-labelledby="team-bramki-tytul">
+<h3 class="team-block-title" id="team-bramki-tytul">Bramki zdobyte i stracone</h3>
+{{ tabela_miar(bramki.miary, 'Miary bramek na mecz w rozegranych meczach') }}
+{% if bramki.sezony %}
+<div class="player-chart-grid stacked">
+<figure><figcaption class="player-chart-head"><span>Średnia, mediana i dominanta bramek zdobytych i straconych na mecz według sezonu</span><span class="player-chart-toggle" role="group" aria-label="Rodzaj wykresu średniej, mediany i dominanty" data-team-means-toggle hidden><button type="button" data-team-means-view="linie" aria-pressed="true">Linie</button><button type="button" data-team-means-view="slupki" aria-pressed="false">Słupki</button></span></figcaption><p class="player-chart-opis">Niebieskie serie to bramki zdobyte, czerwone to stracone: linia ciągła z kółkami to średnia, przerywana z kwadratami mediana, a romby dominanta. Okienko po najechaniu pokazuje oba zestawy miar, różnicę średnich i podział na rozgrywki; pusty znacznik oznacza sezon z mniej niż 5 meczami.</p><div class="player-chart player-chart-wide" data-team-season-means role="img" aria-label="Średnia, mediana i dominanta bramek zdobytych i straconych przez drużynę na mecz w kolejnych sezonach"></div></figure>
+<figure><figcaption>Bramki zdobyte i stracone w sezonie: suma i podział na rozgrywki</figcaption><p class="player-chart-opis">W każdym sezonie lewy słupek to bramki zdobyte, a prawy — stracone (z ukośnym wzorem). Segmenty słupka to kolejne rozgrywki w tym samym kolorze po obu stronach, a liczba nad słupkiem to suma sezonu. Kliknięcie nazwy rozgrywek w legendzie ukrywa je w obu słupkach.</p><div class="player-chart player-chart-wide" data-team-season-sums role="img" aria-label="Suma bramek zdobytych i straconych przez drużynę w kolejnych sezonach z podziałem na rozgrywki"></div></figure>
+</div>
+<details class="player-chart-data"><summary>Dane bramek według sezonu i rozgrywek</summary><div class="table-wrap"><table class="player-season-stats-table team-goals-season-table"><thead><tr><th rowspan="2">Sezon / rozgrywki</th><th rowspan="2">Mecze</th><th colspan="4">Bramki zdobyte</th><th colspan="4">Bramki stracone</th></tr><tr><th>Suma</th><th>Średnia</th><th>Mediana</th><th>Dominanta</th><th>Suma</th><th>Średnia</th><th>Mediana</th><th>Dominanta</th></tr></thead><tbody>{% for sezon in bramki.sezony %}{% for grupa in [sezon] + (sezon.rozgrywki if sezon.rozgrywki|length > 1 else []) %}<tr class="{{ 'player-season-stats-sezon' if loop.first else 'player-season-stats-rozgrywki' }}"><td>{{ sezon.sezon if loop.first else grupa.rozgrywki }}</td><td>{{ grupa.zdobyte.znane }}</td>{% for rodzaj in ('zdobyte', 'stracone') %}{% set miary = grupa[rodzaj] %}<td>{{ miary.suma if miary.suma is not none else '—' }}</td><td>{{ '%.2f'|format(miary.srednia) if miary.srednia is not none else '—' }}</td><td>{{ '%.1f'|format(miary.mediana) if miary.mediana is not none else '—' }}</td><td>{{ miary.dominanty|join(', ') or '—' }}</td>{% endfor %}</tr>{% endfor %}{% endfor %}</tbody></table></div></details>
+<script type="application/json" data-team-seasons-data>{{ bramki.sezony|tojson }}</script>
+{% endif %}
+{% if bramki.rozklad %}
+<div class="player-chart-grid stacked">
+<figure><figcaption class="player-chart-head"><span>Rozkład bramek zdobytych i straconych</span>{{ przelacznik_miejsca('distribution') }}</figcaption><p class="player-chart-opis">Dla każdej liczby bramek dwa słupki: w ilu meczach drużyna zdobyła tyle bramek (niebieski) i w ilu tyle straciła (czerwony, z wzorem). Przełącznik wybiera wszystkie mecze, mecze u siebie albo na wyjeździe.</p><div class="player-chart player-chart-wide" data-team-distribution role="img" aria-label="Liczba meczów według liczby bramek zdobytych i straconych przez drużynę"></div></figure>
+</div>
+<details class="player-chart-data"><summary>Dane rozkładu bramek</summary><div class="table-wrap"><table><thead><tr><th rowspan="2">Bramki</th><th colspan="3">Mecze z tyloma zdobytymi</th><th colspan="3">Mecze z tyloma straconymi</th></tr><tr><th>Wszystkie</th><th>U siebie</th><th>Na wyjeździe</th><th>Wszystkie</th><th>U siebie</th><th>Na wyjeździe</th></tr></thead><tbody>{% for punkt in bramki.rozklad %}<tr><td>{{ punkt.bramki }}</td>{% for rodzaj in ('zdobyte', 'stracone') %}<td>{{ punkt[rodzaj].wszystkie }}</td><td>{{ punkt[rodzaj].dom }}</td><td>{{ punkt[rodzaj].wyjazd }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div></details>
+<script type="application/json" data-team-distribution-data>{{ bramki.rozklad|tojson }}</script>
+{% else %}<p class="notice">Brak rozegranych meczów w wybranym zakresie analizy.</p>{% endif %}
+</section>
+<p class="note">Forma, bilans mecz po meczu i regularność bramek zdobytych i straconych są w zakładce Forma i regularność.</p>
+</div></section>
+
+<section class="panel" id="team-panel-forma" data-team-panel="forma" aria-labelledby="team-tab-forma">
+<h2>Forma i regularność</h2>
+{{ filtry_analizy('forma', 'Filtruj analizy') }}
+<div class="panel-body player-analytics">
+{% set sekcje_formy = [
+  ('statystyki', 'Statystyki opisowe', 'Zdobyte, stracone i różnica bramek: poziom, zakres i rozrzut', '13 miar × 3'),
+  ('mecze', 'Mecz po meczu', 'Bramki zdobyte i stracone oraz bilans bramek w każdym meczu', '2 wykresy'),
+  ('kroczaca', 'Forma krocząca', 'Średnia z 5 i mediana z 10 ostatnich meczów dla zdobytych i straconych', '1 wykres'),
+  ('sezony', 'Regularność według sezonu', 'Rozrzut bramek zdobytych i straconych w każdym sezonie', '1 wykres'),
+] %}
+{% macro naglowek_sekcji(nr) %}{% set sekcja = sekcje_formy[nr - 1] %}<header class="player-section-head"><span class="player-section-nr" aria-hidden="true">{{ nr }}</span><div><h3>{{ sekcja[1] }}</h3><p>{{ sekcja[2] }}</p></div><a class="player-section-top" href="#team-forma-spis" data-team-scroll>↑ Spis treści</a></header>{% endmacro %}
+<nav class="player-toc" id="team-forma-spis" tabindex="-1" aria-labelledby="team-forma-spis-tytul" data-team-toc>
+<div class="player-toc-head"><h3 id="team-forma-spis-tytul">Spis treści</h3><p>{{ sekcje_formy|length }} sekcje · kliknij, aby przejść</p></div>
+<ol class="player-toc-list">
+{% for klucz, tytul, opis, meta in sekcje_formy %}<li><a href="#team-forma-{{ klucz }}" data-team-scroll><span class="player-toc-nr" aria-hidden="true">{{ loop.index }}</span><span class="player-toc-text"><b>{{ tytul }}</b><small>{{ opis }}</small></span><span class="player-toc-meta">{{ meta }}</span></a></li>
+{% endfor %}</ol>
+</nav>
+<section class="player-section" id="team-forma-statystyki" tabindex="-1">
+{{ naglowek_sekcji(1) }}
+<p class="note">Statystyki liczone są wyłącznie z rozegranych meczów w wybranym zakresie ({{ bramki.liczba_meczow }}). Różnica to bramki zdobyte minus stracone w meczu; współczynnik zmienności nie jest dla niej liczony, bo średnia różnicy bywa bliska zeru lub ujemna.</p>
+<div class="team-stat-groups">
+{% for grupa in bramki.grupy %}{{ tabela_miar(grupa.miary, grupa.nazwa) }}{% endfor %}
+</div>
+</section>
+<section class="player-section" id="team-forma-mecze" tabindex="-1">
+{{ naglowek_sekcji(2) }}
+{% if bramki.mecze.wszystkie.punkty %}
+<p class="note">Przełącznik nad wykresem wybiera wszystkie mecze, mecze u siebie albo na wyjeździe. Linie przerywane to mediany zdobytych i straconych w wybranym zakresie. Kliknięcie punktu lub słupka otwiera kartę meczu.</p>
+<div class="player-chart-grid stacked">
+<figure><figcaption class="player-chart-head"><span>Bramki zdobyte i stracone mecz po meczu</span>{{ przelacznik_miejsca('matches') }}</figcaption><div class="player-chart player-chart-wide" data-team-matches role="img" aria-label="Bramki zdobyte i stracone przez drużynę w kolejnych meczach z medianami"></div></figure>
+<figure><figcaption class="player-chart-head"><span>Bilans bramek mecz po meczu i średnia krocząca różnicy (5 meczów)</span>{{ przelacznik_miejsca('balance') }}</figcaption><div class="player-chart player-chart-wide" data-team-balance role="img" aria-label="Różnica bramek drużyny w kolejnych meczach ze średnią kroczącą z 5 meczów"></div></figure>
+</div>
+{% for miejsce, etykieta in [('wszystkie', 'wszystkie mecze'), ('dom', 'u siebie'), ('wyjazd', 'na wyjeździe')] %}
+<details class="player-chart-data"><summary>Dane mecz po meczu i formy kroczącej: {{ etykieta }} ({{ bramki.mecze[miejsce].liczba }})</summary><div class="table-wrap"><table><thead><tr><th>Data</th><th>Sezon</th><th>Przeciwnik</th><th>Miejsce</th><th>Wynik</th><th>Zdobyte</th><th>Stracone</th><th>Różnica</th><th>Śr. 5 zdobytych</th><th>Med. 10 zdobytych</th><th>Śr. 5 straconych</th><th>Med. 10 straconych</th><th>Śr. 5 różnicy</th></tr></thead><tbody>{% for punkt in bramki.mecze[miejsce].punkty %}<tr><td>{{ punkt.etykieta }}</td><td>{{ punkt.sezon }}</td><td>{{ punkt.przeciwnik or '—' }}</td><td>{{ punkt.miejsce_etykieta }}</td><td>{{ punkt.wynik }} <span class="note">{{ punkt.rezultat }}</span></td><td>{{ punkt.zdobyte }}</td><td>{{ punkt.stracone }}</td><td>{{ '%+d'|format(punkt.roznica) if punkt.roznica is not none else '—' }}</td>{% for pole in ('zdobyte_srednia_5', 'zdobyte_mediana_10', 'stracone_srednia_5', 'stracone_mediana_10', 'roznica_srednia_5') %}<td>{{ '%.1f'|format(punkt[pole]) if punkt[pole] is not none else '—' }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div></details>
+{% endfor %}
+<script type="application/json" data-team-matches-data>{{ bramki.mecze|tojson }}</script>
+{% else %}<p class="notice">Brak rozegranych meczów w wybranym zakresie analizy.</p>{% endif %}
+</section>
+<section class="player-section" id="team-forma-kroczaca" tabindex="-1">
+{{ naglowek_sekcji(3) }}
+{% if bramki.mecze.wszystkie.punkty %}
+{% for miejsce, etykieta in [('wszystkie', 'Wszystkie mecze'), ('dom', 'U siebie'), ('wyjazd', 'Na wyjeździe')] %}{% if not bramki.mecze[miejsce].trend_5 %}<p class="notice">{{ etykieta }}: za mało rozegranych meczów (mniej niż 5), aby pokazać wiarygodny trend pięciomeczowy.</p>{% endif %}{% endfor %}
+<p class="note">Okna liczone są po kolejności meczów w wybranym zakresie miejsca: forma u siebie pomija mecze wyjazdowe rozgrywane pomiędzy. Mediana z 10 pojawia się od dziesiątego meczu. Dane liczbowe są w tabelach sekcji 2.</p>
+<div class="player-chart-grid stacked">
+<figure><figcaption class="player-chart-head"><span>Forma krocząca: bramki zdobyte i stracone</span>{{ przelacznik_miejsca('rolling') }}</figcaption><div class="player-chart player-chart-wide" data-team-rolling role="img" aria-label="Średnia krocząca z 5 i mediana krocząca z 10 meczów dla bramek zdobytych i straconych przez drużynę"></div></figure>
+</div>
+{% else %}<p class="notice">Brak rozegranych meczów w wybranym zakresie analizy.</p>{% endif %}
+</section>
+<section class="player-section" id="team-forma-sezony" tabindex="-1">
+{{ naglowek_sekcji(4) }}
+{% if bramki.rozstepy %}
+<p class="note">Przy każdym sezonie dwa pudełka: zdobyte (niebieskie) i stracone (czerwone, przerywane). Pudełko to Q1–Q3 z medianą, wąsy sięgają do 1,5 IQR, a osobne punkty to wartości odstające.</p>
+<div class="player-chart-grid stacked">
+<figure><figcaption>Regularność bramek zdobytych i straconych według sezonu</figcaption><div class="player-chart player-chart-wide" data-team-boxplot role="img" aria-label="Rozstęp ćwiartkowy bramek zdobytych i straconych przez drużynę na mecz według sezonu"></div></figure>
+</div>
+<details class="player-chart-data"><summary>Dane rozstępu sezonów</summary><div class="table-wrap"><table><thead><tr><th rowspan="2">Sezon</th><th rowspan="2">n</th><th colspan="4">Zdobyte</th><th colspan="4">Stracone</th></tr><tr><th>Mediana</th><th>Q1–Q3</th><th>Min–maks</th><th>Odstające</th><th>Mediana</th><th>Q1–Q3</th><th>Min–maks</th><th>Odstające</th></tr></thead><tbody>{% for sezon in bramki.rozstepy %}<tr><td>{{ sezon.sezon }}{% if sezon.zdobyte.mala_proba %} <span class="note">(mała próba)</span>{% endif %}</td><td>{{ sezon.zdobyte.n }}</td>{% for rodzaj in ('zdobyte', 'stracone') %}{% set r = sezon[rodzaj] %}{% if r %}<td>{{ '%.1f'|format(r.mediana) }}</td><td>{{ '%.1f'|format(r.q1) }}–{{ '%.1f'|format(r.q3) }}</td><td>{{ r.minimum }}–{{ r.maksimum }}</td><td>{{ r.odstajace|join(', ') or '—' }}</td>{% else %}<td colspan="4">—</td>{% endif %}{% endfor %}</tr>{% endfor %}</tbody></table></div></details>
+<script type="application/json" data-team-spread-data>{{ bramki.rozstepy|tojson }}</script>
+{% else %}<p class="notice">Brak rozegranych meczów w wybranym zakresie analizy.</p>{% endif %}
+</section>
+</div></section>
+<dialog class="match-detail-dialog" data-player-modal-dialog aria-labelledby="team-player-title">
+<div class="modal-head"><h2 id="team-player-title">Szczegóły zawodnika</h2><button class="close" type="button" data-player-close aria-label="Zamknij szczegóły zawodnika" autofocus>×</button></div>
+<div class="modal-body" data-player-content aria-live="polite"></div>
+<div class="modal-foot"><a class="btn secondary" data-player-open-tab target="_blank" rel="noopener">Otwórz w nowej karcie</a><button class="btn secondary" type="button" data-player-close>Zamknij</button></div>
+</dialog>
+</div>
+<script src="{{ url_for('static', filename='js/goal_charts.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/player_details.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/team_details.js') }}" defer></script>
+{% endblock %}

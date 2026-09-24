@@ -6,6 +6,7 @@ from flask import abort
 
 from handball.domain.errors import (
     BladOdczytuDanych,
+    NieZnalezionoDruzyny,
     NieZnalezionoHali,
     NieZnalezionoMeczu,
     NieZnalezionoSedziego,
@@ -16,7 +17,13 @@ from handball.domain.errors import (
 def obsluz_blad_domeny(wyjatek: Exception) -> NoReturn:
     if isinstance(
         wyjatek,
-        (NieZnalezionoMeczu, NieZnalezionoZawodnika, NieZnalezionoHali, NieZnalezionoSedziego),
+        (
+            NieZnalezionoMeczu,
+            NieZnalezionoZawodnika,
+            NieZnalezionoHali,
+            NieZnalezionoSedziego,
+            NieZnalezionoDruzyny,
+        ),
     ):
         abort(404)
     if isinstance(wyjatek, BladOdczytuDanych):

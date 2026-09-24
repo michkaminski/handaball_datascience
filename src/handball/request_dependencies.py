@@ -16,10 +16,12 @@ from handball.contracts.player_detail_repository import SzczegolyZawodnikaReadRe
 from handball.contracts.player_repository import ZawodnikReadRepository
 from handball.contracts.referee_detail_repository import SzczegolySedziegoReadRepository
 from handball.contracts.season_repository import SezonReadRepository
+from handball.contracts.team_detail_repository import SzczegolyDruzynyReadRepository
 from handball.contracts.venue_catalog_repository import HalaKatalogReadRepository
 from handball.contracts.venue_detail_repository import SzczegolyHaliReadRepository
 from handball.contracts.venue_repository import HalaReadRepository
 from handball.domain.match_rules import MeczPolicy
+from handball.domain.team_details import KolejnoscPozycjiPolicy, WystepDruzynyPolicy
 from handball.extensions import baza_danych
 from handball.infrastructure.repositories.classification_repository import (
     KlasyfikacjaSQLAlchemyRepository,
@@ -46,6 +48,9 @@ from handball.infrastructure.repositories.referee_detail_repository import (
     SzczegolySedziegoSQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.season_repository import SezonSQLAlchemyRepository
+from handball.infrastructure.repositories.team_detail_repository import (
+    SzczegolyDruzynySQLAlchemyRepository,
+)
 from handball.infrastructure.repositories.venue_catalog_repository import (
     HalaKatalogSQLAlchemyRepository,
 )
@@ -54,6 +59,7 @@ from handball.infrastructure.repositories.venue_detail_repository import (
 )
 from handball.infrastructure.repositories.venue_repository import HalaSQLAlchemyRepository
 from handball.interface.presenters.classification_presenter import SkladPresenter
+from handball.interface.presenters.goal_statistics_presenter import StatystykiBramekPresenter
 from handball.interface.presenters.match_presenter import (
     MeczFormat,
     MeczPresenter,
@@ -64,9 +70,11 @@ from handball.interface.presenters.opponent_defense_presenter import DefensywaRy
 from handball.interface.presenters.player_detail_presenter import SzczegolyZawodnikaPresenter
 from handball.interface.presenters.player_presenter import ZawodnikPresenter
 from handball.interface.presenters.referee_detail_presenter import SzczegolySedziegoPresenter
+from handball.interface.presenters.team_detail_presenter import SzczegolyDruzynyPresenter
 from handball.interface.presenters.venue_detail_presenter import SzczegolyHaliPresenter
 from handball.services.catalog_service import KatalogService
 from handball.services.classification_service import KlasyfikacjaService
+from handball.services.goal_statistics import StatystykiBramekCalculator
 from handball.services.match_dictionary_service import SlownikiMeczowService
 from handball.services.match_service import MeczService
 from handball.services.news_service import AktualnosciService
@@ -78,6 +86,13 @@ from handball.services.player_detail_service import (
 from handball.services.player_dictionary_service import SlownikiZawodnikowService
 from handball.services.player_service import ZawodnikService
 from handball.services.referee_detail_service import SzczegolySedziegoService
+from handball.services.team_detail_service import (
+    AnalitykaDruzynyService,
+    BilansDruzynyCalculator,
+    FrekwencjaDruzynyCalculator,
+    SzczegolyDruzynyService,
+    ZestawienieDruzynyService,
+)
 from handball.services.venue_detail_service import SzczegolyHaliService
 from handball.services.venue_service import HalaService
 
@@ -99,7 +114,11 @@ class ZaleznosciZadaniaFactory:
         fabryka_klasyfikacji: Callable[[], KlasyfikacjaReadRepository] | None = None,
         fabryka_defensywy_rywala: Callable[[], DefensywaRywalaReadRepository] | None = None,
         fabryka_aktualnosci: Callable[[], AktualnosciReadRepository] | None = None,
+        fabryka_szczegolow_druzyny: Callable[[], SzczegolyDruzynyReadRepository] | None = None,
     ) -> None:
+        self._fabryka_szczegolow_druzyny = fabryka_szczegolow_druzyny or (
+            lambda: SzczegolyDruzynySQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
         self._fabryka_aktualnosci = fabryka_aktualnosci or (
             lambda: AktualnosciSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -181,10 +200,42 @@ class ZaleznosciZadaniaFactory:
         return SzczegolyZawodnikaService(self._fabryka_szczegolow_zawodnika())
 
     def utworz_analityke_szczegolow_zawodnika(self) -> SzczegolyZawodnikaAnalyticsService:
-        return SzczegolyZawodnikaAnalyticsService(self._fabryka_szczegolow_zawodnika())
+        return SzczegolyZawodnikaAnalyticsService(
+            self._fabryka_szczegolow_zawodnika(), StatystykiBramekCalculator()
+        )
 
     def utworz_presenter_szczegolow_zawodnika(self) -> SzczegolyZawodnikaPresenter:
-        return SzczegolyZawodnikaPresenter(MeczFormat(), self.utworz_presenter_meczow())
+        formatowanie = MeczFormat()
+        return SzczegolyZawodnikaPresenter(
+            formatowanie, self.utworz_presenter_meczow(), StatystykiBramekPresenter(formatowanie)
+        )
+
+    def utworz_serwis_szczegolow_druzyny(self) -> SzczegolyDruzynyService:
+        return SzczegolyDruzynyService(self._fabryka_szczegolow_druzyny())
+
+    def utworz_zestawienie_druzyny(self) -> ZestawienieDruzynyService:
+        return ZestawienieDruzynyService(
+            self._fabryka_szczegolow_druzyny(),
+            WystepDruzynyPolicy(MeczPolicy()),
+            KolejnoscPozycjiPolicy(),
+        )
+
+    def utworz_analityke_druzyny(self) -> AnalitykaDruzynyService:
+        return AnalitykaDruzynyService(
+            self._fabryka_szczegolow_druzyny(),
+            WystepDruzynyPolicy(MeczPolicy()),
+            BilansDruzynyCalculator(FrekwencjaDruzynyCalculator()),
+            StatystykiBramekCalculator(),
+        )
+
+    def utworz_presenter_szczegolow_druzyny(self) -> SzczegolyDruzynyPresenter:
+        formatowanie = MeczFormat()
+        return SzczegolyDruzynyPresenter(
+            formatowanie,
+            self.utworz_presenter_meczow(),
+            StatystykiBramekPresenter(formatowanie),
+            WystepDruzynyPolicy(MeczPolicy()),
+        )
 
     def utworz_serwis_defensywy_rywala(self) -> DefensywaRywalaService:
         return DefensywaRywalaService(self._fabryka_defensywy_rywala())

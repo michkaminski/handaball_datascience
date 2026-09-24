@@ -281,3 +281,21 @@ def test_tylko_zakonczone_jest_domyslnie_zaznaczone_i_zachowuje_stan() -> None:
 
     klient.get("/administracja/mecze?zakonczone=1&zakonczone=0")
     assert repozytorium.ostatnie_filtry.tylko_zakonczone is True
+
+
+def test_lista_meczow_pokazuje_widzow_z_separatorem_i_brak_danych() -> None:
+    z_widzami = replace(
+        POZYCJA_TESTOWA,
+        mecz=replace(POZYCJA_TESTOWA.mecz, widzowie=4250),
+    )
+    bez_danych = replace(POZYCJA_TESTOWA, id_mecz=12544, mecz=DaneMeczu(id=12544))
+    tresc = (
+        _aplikacja_z_repozytorium([z_widzami, bez_danych])
+        .test_client()
+        .get("/administracja/mecze")
+        .get_data(as_text=True)
+    )
+    assert ">Widzowie</th>" in tresc
+    assert '<td class="num">4 250</td>' in tresc
+    assert '<td class="num">—</td>' in tresc
+    assert 'colspan="11"' not in tresc

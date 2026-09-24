@@ -12,7 +12,7 @@ Przycisk „Szczegóły” otwiera `GET /administracja/tabele/<id_tabela_grupa>`
 
 `TabelaListView` korzysta z `KlasyfikacjaService` i `KlasyfikacjaReadRepository`. Lista odczytuje `tabele_grupy`, `tabele`, `rozgrywki` i `sezony`; pozycje drużyn są pobierane dopiero przez szczegóły. Paginacja dotyczy grup tabel, nie wierszy klasyfikacji.
 
-Obsługę modalu zapewnia `static/js/classification_details.js`. Wygląd tabeli, dialogu i klikalnego wiersza pochodzi z `static/css/admin.css`.
+Obsługę modalu zapewnia `static/js/classification_details.js`. Po wczytaniu szczegółów podłącza w nich linki drużyn (klik: okno karty drużyny nad modalem tabeli, dwuklik: nowa karta); dlatego lista ładuje też `goal_charts.js`, `player_details.js` i `team_details.js`. Wygląd tabeli, dialogu i klikalnego wiersza pochodzi z `static/css/admin.css`.
 
 ## Sprawdzenie zmiany
 
@@ -29,6 +29,7 @@ Tabele
 +-----------------------------------------------------------+
 [paginacja]
 [dwuklik/Enter: modal Szczegóły tabeli / ×]
+  [w modalu klik drużyny: modal Karta drużyny / × · dwuklik: nowa karta]
 ```
 
 | Element | Plik / dane |

@@ -64,6 +64,7 @@ class PozycjaTabeli:
     rozgrywki: str
     tabela: str | None
     grupa: str | None
+    id_zespol: int
     druzyna: str | None
     miejsce: int | None
     mecze: int | None
@@ -76,7 +77,6 @@ class PozycjaTabeli:
     bramki_stracone: int | None
     punkty: int | None
     punkty_bonusowe: int | None
-    kryteria: str | None
 
 
 @dataclass(frozen=True)
@@ -92,6 +92,10 @@ class Klasyfikacja:
 class SzczegolyTabeli:
     tabela: Klasyfikacja
     pozycje: list[PozycjaTabeli]
+
+    @property
+    def ma_punkty_bonusowe(self) -> bool:
+        return any(pozycja.punkty_bonusowe is not None for pozycja in self.pozycje)
 
 
 T = TypeVar("T")

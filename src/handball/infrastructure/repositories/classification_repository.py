@@ -268,6 +268,7 @@ class KlasyfikacjaSQLAlchemyRepository:
                     Rozgrywki.nazwa.label("rozgrywki"),
                     Tabela.tabela_nazwa.label("tabela"),
                     TabelaGrupa.grupa_nazwa.label("grupa"),
+                    TabelaWiersz.id_zespol.label("id_zespol"),
                     Zespol.nazwa.label("druzyna"),
                     TabelaWiersz.miejsce.label("miejsce"),
                     TabelaWiersz.mecze.label("mecze"),
@@ -280,7 +281,6 @@ class KlasyfikacjaSQLAlchemyRepository:
                     TabelaWiersz.bramki_stracone.label("bramki_stracone"),
                     TabelaWiersz.punkty_zdobyte.label("punkty"),
                     TabelaWiersz.punkty_bonusowe.label("punkty_bonusowe"),
-                    TabelaWiersz.kryteria.label("kryteria"),
                 )
                 .join(TabelaGrupa, TabelaGrupa.id == TabelaWiersz.id_tabela_grupa)
                 .join(Tabela, Tabela.id == TabelaGrupa.id_tabela)

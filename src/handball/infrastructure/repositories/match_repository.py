@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Date, and_, cast, func, or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, aliased
 
@@ -13,6 +13,7 @@ from handball.domain.matches import (
     SzczegolyMeczu,
     ZawodnikMeczu,
 )
+from handball.infrastructure.database.match_conditions import WarunkiMeczuSql
 from handball.infrastructure.database.models.competitions import Kolejka, Rozgrywki, Runda, Sezon
 from handball.infrastructure.database.models.matches import Mecz, MeczZawodnik
 from handball.infrastructure.database.models.teams import Zespol, ZespolSezon
@@ -90,14 +91,7 @@ class MeczSQLAlchemyRepository:
                 Mecz.data_faktyczna >= filtry.data_od, Mecz.data_faktyczna < filtry.data_do
             )
         if filtry.tylko_zakonczone:
-            dzisiaj = cast(func.timezone("Europe/Warsaw", func.now()), Date)
-            termin = func.coalesce(Mecz.data_faktyczna, Mecz.data_propozycji)
-            zapytanie = zapytanie.where(
-                or_(
-                    termin < dzisiaj,
-                    and_(Mecz.wynik_gosp_full.is_not(None), Mecz.wynik_gosc_full.is_not(None)),
-                )
-            )
+            zapytanie = zapytanie.where(WarunkiMeczuSql.zakonczony())
         if filtry.tylko_rozegrane:
             zapytanie = zapytanie.where(
                 Mecz.wynik_gosp_full.is_not(None),
@@ -247,6 +241,7 @@ class MeczSQLAlchemyRepository:
 
     def _zawodnik(self, z: MeczZawodnik) -> ZawodnikMeczu:
         return ZawodnikMeczu(
+            id_zawodnik=z.id_zawodnik,
             zawodnik=" ".join(filter(None, [z.imie, z.nazwisko])).strip() or None,
             nr_koszulki=z.nr_koszulki,
             pozycja=z.pozycja,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import case, func, select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, aliased
@@ -16,6 +16,7 @@ from handball.domain.news import (
     StrzelecAktualnosci,
     WystepAktualnosci,
 )
+from handball.infrastructure.database.match_sides import StronyMeczuSql
 from handball.infrastructure.database.models.competitions import Rozgrywki, Sezon
 from handball.infrastructure.database.models.matches import Mecz, MeczZawodnik
 from handball.infrastructure.database.models.players import Zawodnik
@@ -214,10 +215,7 @@ class AktualnosciSQLAlchemyRepository:
 
     @staticmethod
     def _warunek_druzyny(druzyna: type[ZespolSezon]) -> Any:
-        id_zespolu = case(
-            (MeczZawodnik.strona == "gosp", Mecz.id_zespol_gosp),
-            else_=Mecz.id_zespol_gosc,
-        )
+        id_zespolu = StronyMeczuSql.zespol(MeczZawodnik.strona)
         return (druzyna.id_zespol == id_zespolu) & (druzyna.id_sezon == Mecz.id_sezon)
 
     @staticmethod

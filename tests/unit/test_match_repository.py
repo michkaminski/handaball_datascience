@@ -12,7 +12,7 @@ from handball.infrastructure.repositories.match_repository import MeczSQLAlchemy
 from handball.request_dependencies import ZaleznosciZadaniaFactory
 
 
-def test_repozytorium_zachowuje_typy_braki_i_zrodlowe_strony() -> None:
+def test_repozytorium_zachowuje_typy_braki_i_strony_skladow_przy_zamianie() -> None:
     termin = datetime(2026, 9, 12, 18, 0)
     mecz = Mecz(id=1, zamiana=True, wynik_gosp_full=32, wynik_gosc_full=28, data_faktyczna=termin)
     gospodarz = MeczZawodnik(
@@ -62,9 +62,9 @@ def test_repozytorium_zachowuje_typy_braki_i_zrodlowe_strony() -> None:
     assert widok.termin == "12.09.2026 18:00"
     assert widok.kolejka == "Kolejka 3"
     assert widok.hala == "—"
-    assert widok.sklad_gospodarz[0].bramki == "—"
-    assert widok.sklad_gosc[0].bramki == "7"
-    assert widok.sklad_gosc[0].upomnienie == "Nie"
+    assert widok.sklad_gospodarz[0].bramki == "7"
+    assert widok.sklad_gospodarz[0].upomnienie == "Nie"
+    assert widok.sklad_gosc[0].bramki == "—"
 
 
 def test_szczegoly_brak_rekordu() -> None:

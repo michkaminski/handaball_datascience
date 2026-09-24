@@ -7,5 +7,8 @@
 {% for pozycja in strona.pozycje %}<tr data-detail-href="{{ url_for('administracja.szczegoly_tabeli', id_tabela_grupa=pozycja.id_tabela_grupa) }}" title="Kliknij dwukrotnie, aby otworzyć szczegóły tabeli"><td>{{ pozycja.sezon }}</td><td>{{ pozycja.rozgrywki }}</td><td>{{ pozycja.tabela or '—' }}</td><td>{{ pozycja.grupa or '—' }}</td><td><a class="icon-link" href="{{ url_for('administracja.szczegoly_tabeli', id_tabela_grupa=pozycja.id_tabela_grupa) }}" target="_blank" rel="noopener">Szczegóły</a></td></tr>{% else %}<tr><td colspan="5" class="note">Brak tabel spełniających wybrane filtry.</td></tr>{% endfor %}
 </tbody></table></div>{% include "partials/pagination.html" %}</div></section>
 <dialog class="match-detail-dialog" data-detail-dialog aria-labelledby="classification-detail-title"><div class="modal-head"><h2 id="classification-detail-title">Szczegóły tabeli</h2><button class="close" type="button" data-detail-close aria-label="Zamknij szczegóły tabeli" autofocus>×</button></div><div class="modal-body" data-detail-content aria-live="polite"></div><div class="modal-foot"><a class="btn secondary" data-detail-open-tab target="_blank" rel="noopener">Otwórz w nowej karcie</a><button class="btn secondary" type="button" data-detail-close>Zamknij</button></div></dialog>
+<script src="{{ url_for('static', filename='js/goal_charts.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/player_details.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/team_details.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/classification_details.js') }}" defer></script>
 {% endblock %}

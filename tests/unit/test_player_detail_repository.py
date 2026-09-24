@@ -116,7 +116,8 @@ def test_przeciwnik_uwzglednia_strone_zawodnika_i_parametry() -> None:
     ).compile(dialect=postgresql.dialect())
     assert {"gosp", "gosc", "Test/%/_", 195, "Liga", 7}.issubset(set(wynik.params.values()))
     sql = str(wynik)
-    assert "mecze.id_zespol_gosc IN" in sql and "mecze.id_zespol_gosp IN" in sql
+    assert "public.mecze.zamiana IS true" in sql and "public.mecze.zamiana IS NOT true" in sql
+    assert "THEN public.mecze.id_zespol_gosc WHEN" in sql and "END IN (" in sql
     assert "Test%_" not in sql
 
 
@@ -147,7 +148,7 @@ def test_analityka_agreguje_do_jednego_wiersza_na_mecz() -> None:
     assert "GROUP BY public.mecze.id" in sql
     assert "sum(public.mecze_zawodnicy.bramki)" in sql
     assert "public.mecze.id_sezon" in sql and "public.rozgrywki.nazwa" in sql
-    assert "public.mecze.id_zespol_gosc IN" in sql
+    assert "public.mecze.zamiana IS true" in sql and "END IN (" in sql
     sesja.commit.assert_not_called()
     sesja.flush.assert_not_called()
 

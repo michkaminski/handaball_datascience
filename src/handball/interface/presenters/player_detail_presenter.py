@@ -1,20 +1,17 @@
-from collections import Counter
 from urllib.parse import urlsplit
 
+from handball.domain.goal_statistics import FormaIRegularnosc
 from handball.domain.matches import StronaMeczow
 from handball.domain.player_details import (
-    FormaIRegularnoscZawodnika,
-    FormaWedlugMiejscaZawodnika,
     PodsumowanieAnalityczneZawodnika,
-    StatystykiBramekGrupy,
     StronaMeczowZawodnika,
     SzczegolyZawodnika,
 )
+from handball.interface.presenters.goal_statistics_presenter import StatystykiBramekPresenter
 from handball.interface.presenters.match_presenter import MeczFormat, MeczPresenter
+from handball.interface.view_models.goal_statistics import FormaIRegularnoscViewModel
 from handball.interface.view_models.player_details import (
     DaneSezonoweZawodnikaViewModel,
-    FormaIRegularnoscZawodnikaViewModel,
-    FormaWedlugMiejscaZawodnikaViewModel,
     MeczZawodnikaViewModel,
     PodsumowanieAnalityczneZawodnikaViewModel,
     StronaMeczowZawodnikaViewModel,
@@ -24,9 +21,15 @@ from handball.interface.view_models.player_details import (
 
 
 class SzczegolyZawodnikaPresenter:
-    def __init__(self, formatowanie: MeczFormat, mecze: MeczPresenter) -> None:
+    def __init__(
+        self,
+        formatowanie: MeczFormat,
+        mecze: MeczPresenter,
+        statystyki: StatystykiBramekPresenter,
+    ) -> None:
         self._format = formatowanie
         self._mecze = mecze
+        self._statystyki = statystyki
 
     def przygotuj_szczegoly(self, dane: SzczegolyZawodnika) -> SzczegolyZawodnikaViewModel:
         adres = dane.foto_url
@@ -79,9 +82,9 @@ class SzczegolyZawodnikaPresenter:
             for wpis in dane_meczu.wpisy:
                 druzyna = przeciwnik = None
                 if wpis.strona == "gosp":
-                    druzyna, przeciwnik = dane_meczu.mecz.gospodarz, dane_meczu.mecz.gosc
+                    druzyna, przeciwnik = mecz.gospodarz, mecz.gosc
                 elif wpis.strona == "gosc":
-                    druzyna, przeciwnik = dane_meczu.mecz.gosc, dane_meczu.mecz.gospodarz
+                    druzyna, przeciwnik = mecz.gosc, mecz.gospodarz
                 stat = wpis.statystyki
                 wpisy.append(
                     WpisMeczowyZawodnikaViewModel(
@@ -113,13 +116,6 @@ class SzczegolyZawodnikaPresenter:
     def przygotuj_podsumowanie(
         self, dane: PodsumowanieAnalityczneZawodnika
     ) -> PodsumowanieAnalityczneZawodnikaViewModel:
-        rozklad = Counter(m.bramki for m in dane.mecze if m.bramki is not None)
-        rozklad_dom = Counter(
-            m.bramki for m in dane.mecze if m.bramki is not None and m.miejsce == "dom"
-        )
-        rozklad_wyjazd = Counter(
-            m.bramki for m in dane.mecze if m.bramki is not None and m.miejsce == "wyjazd"
-        )
         proby = dane.karne_liczba
         skutecznosc = (
             f"{100 * dane.karne_bramki / proby:.1f}%"
@@ -137,12 +133,8 @@ class SzczegolyZawodnikaPresenter:
             bramki=self._liczba(dane.suma_bramek),
             srednia=self._liczba(dane.srednia_bramek),
             mediana=self._liczba(dane.mediana_bramek),
-            dominanta=", ".join(str(w) for w in dane.dominanty_bramek) or "—",
-            kwartyle=(
-                f"{self._liczba(dane.kwartyl_pierwszy)}–{self._liczba(dane.kwartyl_trzeci)}"
-                if dane.kwartyl_pierwszy is not None and dane.kwartyl_trzeci is not None
-                else "—"
-            ),
+            dominanta=self._statystyki.dominanta(dane.dominanty_bramek),
+            kwartyle=self._statystyki.kwartyle(dane.kwartyl_pierwszy, dane.kwartyl_trzeci),
             mecze_z_bramka=udzial_z_bramka,
             karne=f"{self._liczba(dane.karne_bramki)}/{self._liczba(proby)}",
             skutecznosc_karnych=skutecznosc,
@@ -168,26 +160,8 @@ class SzczegolyZawodnikaPresenter:
                 }
                 for mecz in dane.mecze
             ],
-            rozklad=[
-                {
-                    "bramki": wartosc,
-                    "mecze": rozklad[wartosc],
-                    "dom": rozklad_dom.get(wartosc, 0),
-                    "wyjazd": rozklad_wyjazd.get(wartosc, 0),
-                }
-                for wartosc in sorted(rozklad)
-            ],
-            statystyki_sezonow=[
-                {
-                    "sezon": sezon.sezon,
-                    **self._statystyki_grupy(sezon.statystyki),
-                    "rozgrywki": [
-                        {"rozgrywki": grupa.rozgrywki, **self._statystyki_grupy(grupa.statystyki)}
-                        for grupa in sezon.rozgrywki
-                    ],
-                }
-                for sezon in dane.statystyki_sezonow
-            ],
+            rozklad=self._statystyki.rozklad(dane.mecze),
+            statystyki_sezonow=self._statystyki.statystyki_sezonow(dane.statystyki_sezonow),
             mediana_wartosc=dane.mediana_bramek,
             mediana_dom_wartosc=dane.mediana_bramek_dom,
             mediana_wyjazd_wartosc=dane.mediana_bramek_wyjazd,
@@ -210,107 +184,14 @@ class SzczegolyZawodnikaPresenter:
             jakosc=self._przygotuj_jakosc(dane),
         )
 
-    @staticmethod
-    def _statystyki_grupy(statystyki: StatystykiBramekGrupy) -> dict[str, object]:
-        return {
-            "mecze": statystyki.liczba_meczow,
-            "znane": statystyki.liczba_znanych,
-            "suma": statystyki.suma,
-            "srednia": statystyki.srednia,
-            "mediana": statystyki.mediana,
-            "dominanty": list(statystyki.dominanty),
-            "q1": statystyki.kwartyl_pierwszy,
-            "q3": statystyki.kwartyl_trzeci,
-            "minimum": statystyki.minimum,
-            "maksimum": statystyki.maksimum,
-        }
+    def przygotuj_forme(self, dane: FormaIRegularnosc) -> FormaIRegularnoscViewModel:
+        return self._statystyki.przygotuj_forme(dane)
 
-    def przygotuj_forme(
-        self, dane: FormaIRegularnoscZawodnika
-    ) -> FormaIRegularnoscZawodnikaViewModel:
-        return FormaIRegularnoscZawodnikaViewModel(
-            liczba_meczow=str(dane.liczba_meczow),
-            liczba_znanych=str(dane.liczba_znanych),
-            srednia=self._liczba(dane.srednia),
-            mediana=self._liczba(dane.mediana),
-            dominanta=", ".join(str(w) for w in dane.dominanty) or "—",
-            minimum=self._liczba(dane.minimum),
-            maksimum=self._liczba(dane.maksimum),
-            kwartyle=(
-                f"{self._liczba(dane.kwartyl_pierwszy)}–{self._liczba(dane.kwartyl_trzeci)}"
-                if dane.kwartyl_pierwszy is not None and dane.kwartyl_trzeci is not None
-                else "—"
-            ),
-            iqr=self._liczba(dane.rozstep_miedzykwartylowy),
-            odchylenie_standardowe=self._liczba(dane.odchylenie_standardowe),
-            mad=self._liczba(dane.mad),
-            wspolczynnik_zmiennosci=(
-                f"{dane.wspolczynnik_zmiennosci:.1f}%"
-                if dane.wspolczynnik_zmiennosci is not None
-                else "—"
-            ),
-            percentyl_10=self._liczba(dane.percentyl_10),
-            percentyl_90=self._liczba(dane.percentyl_90),
-            srednia_ucieta=self._liczba(dane.srednia_ucieta),
-            udzial_0_bramek=self._procent(dane.udzial_0_bramek),
-            udzial_1_2_bramki=self._procent(dane.udzial_1_2_bramki),
-            udzial_3_5_bramek=self._procent(dane.udzial_3_5_bramek),
-            udzial_6_plus_bramek=self._procent(dane.udzial_6_plus_bramek),
-            wszystkie=self._przygotuj_forme_wedlug_miejsca(dane.wszystkie),
-            dom=self._przygotuj_forme_wedlug_miejsca(dane.dom),
-            wyjazd=self._przygotuj_forme_wedlug_miejsca(dane.wyjazd),
-            sezony=[
-                {
-                    "sezon": sezon.sezon,
-                    "n": sezon.liczba_znanych,
-                    "mala_proba": sezon.mala_proba,
-                    "mediana": sezon.mediana,
-                    "q1": sezon.kwartyl_pierwszy,
-                    "q3": sezon.kwartyl_trzeci,
-                    "minimum": sezon.minimum,
-                    "maksimum": sezon.maksimum,
-                    "odstajace": list(sezon.wartosci_odstajace),
-                }
-                for sezon in dane.sezony
-            ],
-        )
+    def _miejsce_etykieta(self, miejsce: str | None) -> str:
+        return self._statystyki.miejsce_etykieta(miejsce)
 
-    def _przygotuj_forme_wedlug_miejsca(
-        self, dane: FormaWedlugMiejscaZawodnika
-    ) -> FormaWedlugMiejscaZawodnikaViewModel:
-        return FormaWedlugMiejscaZawodnikaViewModel(
-            liczba_znanych=str(dane.liczba_znanych),
-            wystarczajaco_na_trend_5=dane.wystarczajaco_na_trend_5,
-            wystarczajaco_na_trend_10=dane.wystarczajaco_na_trend_10,
-            punkty=[
-                {
-                    "id_mecz": punkt.id_mecz,
-                    "etykieta": self._format.data(punkt.termin),
-                    "sezon": punkt.sezon,
-                    "bramki": punkt.bramki,
-                    "mediana_5": punkt.mediana_kroczaca_5,
-                    "srednia_5": punkt.srednia_kroczaca_5,
-                    "mediana_10": punkt.mediana_kroczaca_10,
-                }
-                for punkt in dane.punkty
-            ],
-        )
-
-    @staticmethod
-    def _miejsce_etykieta(miejsce: str | None) -> str:
-        return {"dom": "U siebie", "wyjazd": "Na wyjeździe"}.get(miejsce or "", "—")
-
-    @staticmethod
-    def _procent(wartosc: float | None) -> str:
-        return f"{wartosc:.1f}%" if wartosc is not None else "—"
-
-    @staticmethod
-    def _liczba(wartosc: int | float | None) -> str:
-        if wartosc is None:
-            return "—"
-        if isinstance(wartosc, float):
-            return f"{wartosc:.1f}"
-        return str(wartosc)
+    def _liczba(self, wartosc: int | float | None) -> str:
+        return self._statystyki.liczba(wartosc)
 
     @staticmethod
     def _przygotuj_jakosc(

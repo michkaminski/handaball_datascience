@@ -15,6 +15,7 @@ class PozycjaListyMeczowViewModel:
     runda: str | None = None
     kolejka: str | None = None
     dopisek_wyniku: str | None = None
+    widzowie: str = "—"
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,7 @@ class ZawodnikMeczuViewModel:
     karne_seria: str
     kolor_pozycji: int | None = None
     najlepszy_strzelec: bool = False
+    id_zawodnik: int | None = None
 
 
 @dataclass(frozen=True)

@@ -28,6 +28,11 @@ class MeczFormat:
             return BRAK
         return wartosc.strftime("%d.%m.%Y %H:%M")
 
+    def widzowie(self, wartosc: int | float | None) -> str:
+        if wartosc is None:
+            return BRAK
+        return f"{round(wartosc):,}".replace(",", "\u00a0")
+
     def ulamek(self, licznik: int | None, mianownik: int | None) -> str:
         if licznik is None and mianownik is None:
             return BRAK
@@ -66,6 +71,7 @@ class SkladMeczuPresenter:
                 karne_seria=self._format.ulamek(z.karne_bramki_seria, z.karne_liczba_seria),
                 kolor_pozycji=kolory.get((z.pozycja or "").strip().casefold()),
                 najlepszy_strzelec=maksimum is not None and maksimum > 0 and z.bramki == maksimum,
+                id_zawodnik=z.id_zawodnik,
             )
             for z in sorted(sklad, key=self._kolejnosc)
         ]
@@ -103,9 +109,7 @@ class MeczPresenter:
         nazwa_zespol_wycofany = szczegoly.nazwa_zespol_wycofany
         nazwa_zespol_walkower = szczegoly.nazwa_zespol_walkower
         gospodarz_nazwa, gosc_nazwa = self._reguly.para(mecz, nazwa_gospodarz, nazwa_gosc)
-        sklad_gospodarz, sklad_gosc = self._reguly.para(
-            mecz, szczegoly.sklad_gospodarz, szczegoly.sklad_gosc
-        )
+        sklad_gospodarz, sklad_gosc = szczegoly.sklad_gospodarz, szczegoly.sklad_gosc
         pozycje = sorted(
             {
                 (z.pozycja or "").strip().casefold()
@@ -254,6 +258,7 @@ class MeczPresenter:
                     kolejka=pozycja.kolejka,
                     wynik=f"{a} : {b}" if a is not None and b is not None else "- : -",
                     dopisek_wyniku=self._format.dopisek(mecz, self._reguly),
+                    widzowie=self._format.widzowie(mecz.widzowie),
                 )
             )
         return StronaMeczowViewModel(

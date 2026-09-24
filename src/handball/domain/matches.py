@@ -173,6 +173,7 @@ class ZawodnikMeczu:
     karne_liczba: int | None = None
     karne_bramki_seria: int | None = None
     karne_liczba_seria: int | None = None
+    id_zawodnik: int | None = None
 
 
 @dataclass(frozen=True)

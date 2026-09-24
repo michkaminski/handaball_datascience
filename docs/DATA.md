@@ -44,7 +44,7 @@ Nie naprawiaj danych ani nie uruchamiaj ponownie importu na podstawie tych obser
 
 ## Prezentacja zmiany gospodarza — 2026-09-19
 
-Na polecenie użytkownika lista meczów uwzględnia `mecze.zamiana=True`: odwraca nazwy obu drużyn oraz części wyniku `wynik_gosp_full` / `wynik_gosc_full`. Dla `False` lub `NULL` pozostawia kolejność. Po refaktoryzacji 2026-09-19 reguła jest stosowana raz przez `MeczPresenter` z użyciem `MeczPolicy`, bez zmiany danych źródłowych. Nie rozszerza automatycznie tej interpretacji na składy ani przyszłe statystyki.
+Na polecenie użytkownika lista meczów uwzględnia `mecze.zamiana=True`: odwraca nazwy obu drużyn oraz części wyniku `wynik_gosp_full` / `wynik_gosc_full`. Dla `False` lub `NULL` pozostawia kolejność. Po refaktoryzacji 2026-09-19 reguła jest stosowana raz przez `MeczPresenter` z użyciem `MeczPolicy`, bez zmiany danych źródłowych. Składów nie odwraca: `strona` wpisów zawodników ma już docelową stronę (zob. [Strona wpisów zawodników przy `zamiana`](#strona-wpisów-zawodników-przy-zamiana--2026-09-23)).
 
 ## Kontrakt odczytu po refaktoryzacji — 2026-09-19
 
@@ -78,3 +78,26 @@ Analizy hali obejmują tylko rozegrane mecze z oboma polami `wynik_gosp_full` i 
 Frekwencja pochodzi z `mecze.widzowie`. Brak wartości nie jest zerem i nie wchodzi do średniej ani mediany. Widok zawsze pokazuje liczbę meczów z frekwencją względem wszystkich rozegranych meczów hali. Średnie wypełnienie to średnia frekwencja podzielona przez `hale.pojemnosc`; przy braku lub zerowej pojemności pozostaje nieznane.
 
 Porównanie hali ze średnią innych hal ma charakter opisowy. Obejmuje hale z co najmniej jednym rozegranym meczem i nie służy do wskazywania najlepszej hali. Liczba meczów na sezon ma mianownik równy liczbie różnych sezonów danej hali.
+
+## Karta drużyny — 2026-09-23
+
+Drużyna to `zespoly.id`. Nazwy, miasta i statusy w sezonach pochodzą z `zespoly_sezony` (jedna migawka na zespół i sezon). Tabela `zespoly` nie ma kolumny `miasto`; model ORM mapuje teraz rzeczywistą kolumnę `nr_klubu`.
+
+Bramki drużyny to pełny wynik jej kolumny (`id_zespol_gosp` ↔ `wynik_gosp_full`, `id_zespol_gosc` ↔ `wynik_gosc_full`). `zamiana` przestawia nazwy i wyniki razem, więc nie zmienia tego powiązania, a jedynie miejsce meczu. Kolumna gospodarza bez `zamiana` albo kolumna gościa z `zamiana=true` oznacza mecz u siebie. Kolumna `zwyciezca` (1 = kolumna gospodarza, 2 = kolumna gościa, 0 = remis) jest w rozegranych meczach zgodna z tą regułą, ale nie jest używana.
+
+Na bazie (READ ONLY, 2026-09-23) `wynik_*_full` to zwykle wynik po czasie regulaminowym. Z 1141 meczów z serią karnych 1134 mają remis w pełnym wyniku, a dogrywka jest w osobnych polach. W 9 z 21 meczów z dogrywką pełny wynik równa się jednak wynikowi dogrywki. Dlatego Z/R/P liczymy z pełnego wyniku, a rozstrzygnięcie remisu (dogrywka, potem seria karnych) pokazujemy osobno. W sezonach 2007/2008–2016/2017 jest ok. 750 meczów z remisem bez karnych i dogrywki (`zwyciezca=0`).
+
+Zawodnicy drużyny to wpisy `mecze_zawodnicy` ze stroną zgodną z kolumną drużyny w meczu. Opis zakładek i mapa zmian: [teams/detail.md](../src/handball/interface/templates/admin/teams/detail.md).
+
+Frekwencja drużyny i listy meczów pochodzi z `mecze.widzowie`. Na bazie (READ ONLY, 2026-09-23) 25 880 z 32 216 rozegranych meczów ma liczbę widzów; sezony do 2010/2011 nie mają jej wcale. 1527 meczów ma 0, z czego 1450 w sezonie 2020/2021 (mecze bez publiczności). Zero traktujemy jako znaną wartość, a brak jako brak danych. Frekwencję drużyny liczymy tylko z rozegranych meczów, osobno u siebie (miejsce po `zamiana`) i na wyjeździe.
+
+## Strona wpisów zawodników przy `zamiana` — 2026-09-23
+
+`mecze_zawodnicy.strona` wskazuje stronę **po** zamianie gospodarza. Przy `zamiana=true` wpis `gosp` należy do drużyny z kolumny `mecze.id_zespol_gosc` (wyświetlanego gospodarza), a `gosc` do drużyny z `id_zespol_gosp`. Przy `false`/`NULL` strona odpowiada kolumnie wprost. Potwierdza to stary README (składy mają już docelową stronę) i dane (READ ONLY): w każdym sezonie od 2007/2008 zawodnicy z `strona='gosp'` w meczach z zamianą są w `sklady` drużyny z kolumny gościa (np. 2025/2026: 2370 z 2402 wpisów, 0 w składzie drużyny z kolumny gospodarza). Przykład: mecz #189180 (wyświetlany Galiczanka Lwów – KGHM MKS Zagłębie Lubin), wpis `gosp` = zawodniczka Galiczanki.
+
+Skutki:
+
+- Szczegóły meczu nie zamieniają składów; zamieniane są tylko nazwy i wyniki (`MeczPolicy.para`).
+- Każde powiązanie wpisu zawodnika z drużyną lub rywalem korzysta z `StronyMeczuSql` (`infrastructure/database/match_sides.py`): `zespol()`, `rywal()`, `wedlug_kolumny()`, `kolumna_gospodarza()`. Dotyczy to karty zawodnika (drużyny sezonów, filtr przeciwnika), listy zawodników (drużyny), defensywy rywali (drużyna, przeciwnik i wynik zawodnika), karty hali (drużyny zawodników), aktualności (drużyny strzelców) i zakładki Zawodnicy karty drużyny.
+- Miejsce „u siebie / na wyjeździe” z `strona` (`gosp` → u siebie) było i pozostaje poprawne, bo `strona` opisuje stronę wyświetlaną.
+- Przed poprawką przy 1830 meczach z zamianą zawodnicy byli przypisywani drużynie rywala. Przykład: lista zawodników Wisły Płock (#272) liczyła 329 osób, z czego 152 to zawodnicy rywali z jej 21 meczów z zamianą (tylko jeden z nich był kiedykolwiek w składzie Wisły). Po poprawce lista ma 178 osób, w tym 148 ze składu sezonowego Wisły.
