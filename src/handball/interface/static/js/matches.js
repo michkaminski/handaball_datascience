@@ -43,11 +43,13 @@
     }
   }
 
-  const otworzKarteZawodnika = adres => window.open(adres, '_blank', 'noopener');
+  const otworzKarte = adres => window.open(adres, '_blank', 'noopener');
   const uruchomSzczegolyMeczu = korzen => {
     new ZakladkiMeczuController(korzen).uruchom();
     const Linki = globalThis.HandballZawodnik?.LinkiZawodnikowController;
-    if (Linki) new Linki(korzen, (adres, opcje) => window.fetch(adres, opcje), otworzKarteZawodnika).uruchom();
+    if (Linki) new Linki(korzen, (adres, opcje) => window.fetch(adres, opcje), otworzKarte).uruchom();
+    const LinkiDruzyn = globalThis.HandballKlasyfikacja?.LinkiDruzynController;
+    if (LinkiDruzyn) new LinkiDruzyn(korzen, (adres, opcje) => window.fetch(adres, opcje), otworzKarte).uruchom();
   };
 
   const szczegolyStrony = document.querySelector('[data-match-detail]');

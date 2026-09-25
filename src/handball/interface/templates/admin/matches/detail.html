@@ -4,6 +4,7 @@
 
 {% block tresc %}
 {% macro wiersz_zawodnika(zawodnik) %}<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{% if zawodnik.id_zawodnik %}<a class="player-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=zawodnik.id_zawodnik) }}" target="_blank" rel="noopener" data-player-modal-link title="Kliknij: szczegóły zawodnika w oknie · dwuklik: karta w nowej karcie">{{ zawodnik.zawodnik }}</a>{% else %}{{ zawodnik.zawodnik }}{% endif %}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>{% endmacro %}
+{% macro nazwa_druzyny(nazwa, id_zespol) %}{% if id_zespol %}<a class="team-link" href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=id_zespol) }}" target="_blank" rel="noopener" data-team-modal-link title="Kliknij: karta drużyny w oknie · dwuklik: karta w nowej karcie">{{ nazwa }}</a>{% else %}{{ nazwa }}{% endif %}{% endmacro %}
 <div class="match-detail" data-match-detail>
 <section class="pagehead">
 <div class="crumb">Start › Dane › Mecze › Szczegóły</div>
@@ -13,7 +14,7 @@
 <section class="hero">
 <div class="score-hero">
 <div class="team-box home">
-<div class="team-name">{{ szczegoly.gospodarz }}</div>
+<div class="team-name">{{ nazwa_druzyny(szczegoly.gospodarz, szczegoly.id_gospodarz) }}</div>
 <div class="team-meta">gospodarz</div>
 </div>
 <div class="result-box">
@@ -22,7 +23,7 @@
 {% if szczegoly.dopisek_wyniku %}<div class="result-sub">{{ szczegoly.dopisek_wyniku }}</div>{% endif %}
 </div>
 <div class="team-box right away">
-<div class="team-name">{{ szczegoly.gosc }}</div>
+<div class="team-name">{{ nazwa_druzyny(szczegoly.gosc, szczegoly.id_gosc) }}</div>
 <div class="team-meta">gość</div>
 </div>
 </div>
@@ -111,15 +112,22 @@
 </div>
 </section>
 {% endif %}
-<p class="roster-legend"><span class="roster-legend-swatch" aria-hidden="true"></span>Składy według pozycji. Czerwone pole bramek: najlepszy strzelec danej drużyny (także ex aequo). Kliknięcie nazwiska otwiera szczegóły zawodnika w oknie, a dwuklik — kartę zawodnika w nowej karcie.</p>
+<p class="roster-legend"><span class="roster-legend-swatch" aria-hidden="true"></span>Składy według pozycji. Czerwone pole bramek: najlepszy strzelec danej drużyny (także ex aequo). Kliknięcie nazwiska otwiera szczegóły zawodnika w oknie, a dwuklik — kartę zawodnika w nowej karcie. Tak samo działają nazwy drużyn w nagłówku wyniku.</p>
 </div>
 <dialog class="match-detail-dialog match-player-dialog" data-player-modal-dialog aria-labelledby="match-player-title-{{ szczegoly.id_mecz }}">
 <div class="modal-head"><h2 id="match-player-title-{{ szczegoly.id_mecz }}">Szczegóły zawodnika</h2><button class="close" type="button" data-player-close aria-label="Zamknij szczegóły zawodnika" autofocus>×</button></div>
 <div class="modal-body" data-player-content aria-live="polite"></div>
 <div class="modal-foot"><a class="btn secondary" data-player-open-tab target="_blank" rel="noopener">Otwórz w nowej karcie</a><button class="btn secondary" type="button" data-player-close>Zamknij</button></div>
 </dialog>
+<dialog class="match-detail-dialog match-team-dialog" data-team-modal-dialog aria-labelledby="match-team-title-{{ szczegoly.id_mecz }}">
+<div class="modal-head"><h2 id="match-team-title-{{ szczegoly.id_mecz }}">Karta drużyny</h2><button class="close" type="button" data-team-close aria-label="Zamknij kartę drużyny" autofocus>×</button></div>
+<div class="modal-body" data-team-content aria-live="polite"></div>
+<div class="modal-foot"><a class="btn secondary" data-team-open-tab target="_blank" rel="noopener">Otwórz w nowej karcie</a><button class="btn secondary" type="button" data-team-close>Zamknij</button></div>
+</dialog>
 </div>
 <script src="{{ url_for('static', filename='js/goal_charts.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/player_details.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/team_details.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/classification_details.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/matches.js') }}" defer></script>
 {% endblock %}

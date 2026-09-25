@@ -109,6 +109,7 @@ class MeczPresenter:
         nazwa_zespol_wycofany = szczegoly.nazwa_zespol_wycofany
         nazwa_zespol_walkower = szczegoly.nazwa_zespol_walkower
         gospodarz_nazwa, gosc_nazwa = self._reguly.para(mecz, nazwa_gospodarz, nazwa_gosc)
+        id_gospodarz, id_gosc = self._reguly.para(mecz, mecz.id_zespol_gosp, mecz.id_zespol_gosc)
         sklad_gospodarz, sklad_gosc = szczegoly.sklad_gospodarz, szczegoly.sklad_gosc
         pozycje = sorted(
             {
@@ -237,6 +238,8 @@ class MeczPresenter:
             sklad_gospodarz=self._sklady.przygotuj(sklad_gospodarz, kolory),
             sklad_gosc=self._sklady.przygotuj(sklad_gosc, kolory),
             sklad_inne=self._sklady.przygotuj(szczegoly.sklad_inne, kolory, False),
+            id_gospodarz=id_gospodarz,
+            id_gosc=id_gosc,
         )
 
     def przygotuj_liste(self, strona: StronaMeczow) -> StronaMeczowViewModel:

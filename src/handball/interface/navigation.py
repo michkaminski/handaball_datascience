@@ -16,6 +16,7 @@ class PozycjaMenu:
 GORNY_PASEK: list[PozycjaMenu] = [
     PozycjaMenu("start", "Start", "administracja.start"),
     PozycjaMenu("mecze", "Dane", "administracja.lista_meczow"),
+    PozycjaMenu("raporty", "Raporty", "administracja.lista_raportow"),
     PozycjaMenu("import", "Import", "administracja.import_danych"),
     PozycjaMenu("kontrola", "Kontrola danych", None),
     PozycjaMenu("logi", "Logi", None),
@@ -35,6 +36,18 @@ SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
             PozycjaMenu("strzelcy", "Strzelcy", "administracja.lista_strzelcow", "★"),
             PozycjaMenu("hale", "Hale", "administracja.lista_hal", "⌂"),
             PozycjaMenu("sedziowie", "Sędziowie", "administracja.lista_sedziow", "⚑"),
+        ],
+    ),
+    (
+        "Raporty",
+        [
+            PozycjaMenu("raporty", "Katalog raportów", "administracja.lista_raportow", "▦"),
+            PozycjaMenu(
+                "prognozy_meczow",
+                "Prognozy meczów",
+                "administracja.raport_prognoz_meczow",
+                "↗",
+            ),
         ],
     ),
     (

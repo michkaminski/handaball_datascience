@@ -16,7 +16,7 @@ Opcjonalne `parametry_paginacji` zastępują `request.args` podczas budowy adres
 
 ## Powiązania
 
-Używany przez `admin/matches/list.html`, `admin/players/list.html`, `admin/players/detail.html` i `admin/teams/detail.html` (dwukrotnie: mecze i zawodnicy); przyszłe listy mogą dołączać ten sam fragment, jeśli będą zwracać obiekt z tymi samymi czterema polami.
+Używany przez `admin/matches/list.html`, `admin/players/list.html`, `admin/players/detail.html`, `admin/teams/detail.html` (dwukrotnie: mecze i zawodnicy) i `admin/reports/match_predictions/list.html` (`StronaPrognozViewModel`); przyszłe listy mogą dołączać ten sam fragment, jeśli będą zwracać obiekt z tymi samymi czterema polami.
 
 ## Gdzie wprowadzać zmiany
 

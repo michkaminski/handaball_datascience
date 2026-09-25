@@ -62,3 +62,5 @@ class SzczegolyMeczuViewModel:
     sklad_gospodarz: list[ZawodnikMeczuViewModel]
     sklad_gosc: list[ZawodnikMeczuViewModel]
     sklad_inne: list[ZawodnikMeczuViewModel]
+    id_gospodarz: int | None = None
+    id_gosc: int | None = None

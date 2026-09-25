@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block tytul %}Prognoza: {{ szczegoly.naglowek }} — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead prediction-head">
+<div class="crumb">Start › Raporty › Prognozy meczów › Szczegóły prognozy meczu</div>
+<div class="venue-title-row">
+<div>
+<h1>Szczegóły prognozy meczu</h1>
+<p><b>{{ szczegoly.naglowek }}</b> · {{ szczegoly.kontekst }}</p>
+<p class="note">Model: {{ szczegoly.tytul_modelu }} (<code>{{ szczegoly.wersja_modelu }}</code>). Wszystkie wartości pochodzą ze stanu modelu zapisanego w chwili prognozy tego meczu.</p>
+</div>
+<div class="prediction-head-actions">
+<a class="btn secondary small" href="{{ url_for('administracja.raport_prognoz_meczow', **parametry_powrotu) }}">← Powrót do raportu</a>
+<a class="btn secondary small" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=szczegoly.id_mecz) }}">Szczegóły meczu</a>
+</div>
+</div>
+</section>
+
+<section class="panel" id="wynik-prognozy">
+<h2>Wynik prognozy</h2>
+<div class="panel-body">
+<p class="prediction-matchup">{{ szczegoly.naglowek }}</p>
+<div class="prediction-kpis prediction-outcome">
+{% for wskaznik in szczegoly.wynik_prognozy %}<div{% if wskaznik.etykieta == 'Trafiony' %} class="{{ 'kpi-hit' if szczegoly.trafiony else 'kpi-miss' }}"{% elif wskaznik.etykieta == 'Ocena wyniku' %} class="{{ szczegoly.klasa_oceny_wyniku }}"{% elif wskaznik.etykieta == 'Typ prognozy' %} class="{{ 'kpi-hit' if wskaznik.wartosc.endswith('Poprawny') else 'kpi-miss' }}"{% endif %}><span>{{ wskaznik.etykieta }}</span><b>{{ wskaznik.wartosc }}</b></div>{% endfor %}
+{% for wskaznik in szczegoly.bledy %}<div{% if wskaznik.etykieta == 'Ocena' %} class="{{ szczegoly.klasa_oceny }}"{% endif %}><span>{{ wskaznik.etykieta }}</span><b>{{ wskaznik.wartosc }}</b></div>{% endfor %}
+</div>
+<p class="note">{{ szczegoly.okres }}</p>
+{% if szczegoly.zamiana %}<p class="notice">{{ szczegoly.zamiana }}</p>{% endif %}
+</div>
+</section>
+
+<nav class="panel prediction-toc" aria-label="Spis treści obliczenia">
+<ol>
+<li><a href="#dane-wejsciowe">Dane wejściowe przed meczem</a></li>
+{% for krok in szczegoly.kroki %}<li><a href="#{{ krok.kotwica }}">{{ krok.tytul }}</a></li>{% endfor %}
+<li><a href="#znaczenie">Co oznacza aktualizacja?</a></li>
+<li><a href="#ratingi">Stan ratingów przed i po</a></li>
+<li><a href="#historia">Historia ratingu</a></li>
+<li><a href="#definicje">Definicje modelu</a></li>
+</ol>
+</nav>
+
+<section class="panel" id="dane-wejsciowe">
+<h2>Dane wejściowe przed meczem</h2>
+<div class="panel-body">
+<dl class="prediction-inputs">
+{% for wskaznik in szczegoly.dane_wejsciowe %}<dt>{{ wskaznik.etykieta }}{% if wskaznik.opis %} <small>{{ wskaznik.opis }}</small>{% endif %}</dt><dd>{{ wskaznik.wartosc }}</dd>{% endfor %}
+</dl>
+{% for uwaga in szczegoly.uwagi_ratingow %}<p class="notice prediction-note">{{ uwaga }}</p>{% endfor %}
+</div>
+</section>
+
+{% for krok in szczegoly.kroki %}
+<section class="panel prediction-step" id="{{ krok.kotwica }}">
+<h2>{{ krok.tytul }}</h2>
+<div class="panel-body">
+<p class="prediction-definition"><b>Definicja.</b> {{ krok.definicja }}</p>
+<div class="prediction-step-grid">
+<div><h3 class="prediction-label">Wzór</h3><pre class="defense-formula">{{ krok.wzor }}</pre></div>
+<div><h3 class="prediction-label">Podstawienie wartości</h3><pre class="defense-formula">{{ krok.podstawienie }}</pre></div>
+</div>
+<div class="prediction-result"><span>Wynik obliczenia</span><pre>{{ krok.wynik }}</pre></div>
+<p class="prediction-interpretation"><b>Interpretacja.</b> {{ krok.interpretacja }}</p>
+{% if krok.kotwica == 'krok-3' and szczegoly.ostatnie_ewma %}
+<h3 class="prediction-label">Ostatnie aktualizacje EWMA ligi przed meczem</h3>
+<ol class="prediction-ewma">{% for wpis in szczegoly.ostatnie_ewma %}<li><code>{{ wpis }}</code></li>{% endfor %}</ol>
+{% endif %}
+</div>
+</section>
+{% endfor %}
+
+<section class="panel" id="znaczenie">
+<h2>Co oznacza aktualizacja?</h2>
+<div class="panel-body prediction-meaning">
+{% for zdanie in szczegoly.znaczenie_aktualizacji %}<p>{{ zdanie }}</p>{% endfor %}
+</div>
+</section>
+
+<section class="panel" id="ratingi">
+<h2>Stan ratingów przed i po</h2>
+<div class="panel-body">
+<div class="table-wrap"><table class="prediction-ratings">
+<thead><tr><th scope="col">Drużyna</th><th scope="col" class="num">Rating przed</th><th scope="col" class="num">Zmiana</th><th scope="col" class="num">Rating po</th></tr></thead>
+<tbody>{% for wiersz in szczegoly.ratingi %}<tr><td>{{ wiersz.druzyna }}</td><td class="num">{{ wiersz.przed }}</td><td class="num {{ wiersz.klasa_zmiany }}">{{ wiersz.zmiana }}</td><td class="num"><b>{{ wiersz.po }}</b></td></tr>{% endfor %}</tbody>
+</table></div>
+</div>
+</section>
+
+<section class="panel" id="historia">
+<h2>Historia ratingu — 10 poprzednich meczów</h2>
+<div class="panel-body prediction-history">
+{% for historia in szczegoly.historia %}
+<div>
+<h3 class="section-heading">{{ historia.druzyna }}</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Data</th><th scope="col">Rywal</th><th scope="col">Miejsce</th><th scope="col" class="num">Wynik</th><th scope="col" class="num">Przed</th><th scope="col" class="num">Zmiana</th><th scope="col" class="num">Po</th></tr></thead>
+<tbody>
+{% for wiersz in historia.wiersze %}<tr><td>{{ wiersz.data }}</td><td><a href="{{ url_for('administracja.szczegoly_prognozy_meczu', id_mecz=wiersz.id_mecz, model=szczegoly.wersja_modelu, sezony_raportu=sezony_raportu) }}">{{ wiersz.rywal }}</a></td><td>{{ wiersz.miejsce }}</td><td class="num">{{ wiersz.wynik }}</td><td class="num">{{ wiersz.przed }}</td><td class="num {{ wiersz.klasa_zmiany }}">{{ wiersz.zmiana }}</td><td class="num">{{ wiersz.po }}</td></tr>{% else %}<tr><td colspan="7" class="note">Brak wcześniejszych meczów drużyny w modelu.</td></tr>{% endfor %}
+</tbody>
+</table></div>
+</div>
+{% endfor %}
+</div>
+<p class="note prediction-history-note">Wynik z perspektywy drużyny (jej bramki pierwsze). Między sezonami rating „po” ostatniego meczu może różnić się od „przed” kolejnego o regresję do średniej.</p>
+</section>
+
+<section class="panel" id="parametry">
+<h2>Parametry modelu użyte w obliczeniu</h2>
+<div class="panel-body"><pre class="defense-formula">{{ szczegoly.parametry }}</pre></div>
+</section>
+
+<section class="panel" id="definicje">
+<h2>Definicje modelu</h2>
+<div class="panel-body">
+<dl class="prediction-definitions">
+{% for definicja in szczegoly.definicje %}<dt>{{ definicja.pojecie }}</dt><dd>{{ definicja.opis }}</dd>{% endfor %}
+</dl>
+</div>
+</section>
+{% endblock %}

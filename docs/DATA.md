@@ -101,3 +101,23 @@ Skutki:
 - Każde powiązanie wpisu zawodnika z drużyną lub rywalem korzysta z `StronyMeczuSql` (`infrastructure/database/match_sides.py`): `zespol()`, `rywal()`, `wedlug_kolumny()`, `kolumna_gospodarza()`. Dotyczy to karty zawodnika (drużyny sezonów, filtr przeciwnika), listy zawodników (drużyny), defensywy rywali (drużyna, przeciwnik i wynik zawodnika), karty hali (drużyny zawodników), aktualności (drużyny strzelców) i zakładki Zawodnicy karty drużyny.
 - Miejsce „u siebie / na wyjeździe” z `strona` (`gosp` → u siebie) było i pozostaje poprawne, bo `strona` opisuje stronę wyświetlaną.
 - Przed poprawką przy 1830 meczach z zamianą zawodnicy byli przypisywani drużynie rywala. Przykład: lista zawodników Wisły Płock (#272) liczyła 329 osób, z czego 152 to zawodnicy rywali z jej 21 meczów z zamianą (tylko jeden z nich był kiedykolwiek w składzie Wisły). Po poprawce lista ma 178 osób, w tym 148 ze składu sezonowego Wisły.
+
+## Ligi w raportach prognoz — 2026-09-25
+
+Na polecenie użytkownika poziom rozgrywek rozpoznajemy po nazwie (`rozgrywki.nazwa`), wyrażeniem regularnym bez rozróżniania wielkości liter (`~*` w PostgreSQL, `re.IGNORECASE` w domenie; te same wzorce w `WzorceNazwLig`, `domain/match_predictions.py`). Pierwszy pasujący wzorzec wyznacza poziom:
+
+- **Superliga** — „Superliga”, „Superligę” lub „Ekstraklasa”, np. „Ekstraklasa Mężczyzn” (2007/2008–2009/2010), „PGNiG Superliga Kobiet”, „ORLEN Superliga”, „LOTTO Superliga kobiet”. Pasują też baraże „Baraż o … Superligę” (11 meczów).
+- **Liga Centralna** (od 2026-09-25) — „Liga Centralna”: „Liga Centralna” (M, 2021/2022–2022/2023), „Liga Centralna Kobiet” i „Liga Centralna Mężczyzn” (od 2023/2024). „Baraż o Ligę Centralną Mężczyzn” (4 mecze) nie pasuje, bo nie zawiera tego napisu.
+- **I Liga** (od 2026-09-25) — „I Liga” jako osobne słowa: przed „I” musi być początek nazwy albo znak niebędący literą. Dzięki temu „II Liga”, „II liga … gr. III A”, „Pomorska II LIGA” i wszystkie „III Liga” nie pasują. Pasują grupy A–D, „I Liga Kobiet” (do 2016/2017) i „Rozgrywki Finałowe” 2011/2012.
+
+Ligę dla modelu tworzy para poziom × płeć (`Liga`), płeć pochodzi z `rozgrywki.plec`. Na bazie (READ ONLY, 2026-09-25) wzorce wybierają 24 nazwy rozgrywek i SQL daje ten sam zbiór co domena. Poziom w nazwie nie jest stały w czasie: do 2020/2021 I Liga była drugim poziomem, od 2021/2022 u mężczyzn i od 2023/2024 u kobiet jest nim Liga Centralna.
+
+Reguły backtestu `team_strength_v1`:
+
+- Do modelu nie wchodzą mecze wycofane (`wycofany=true`), z walkowerem (`id_zespol_walkower`), bez gospodarza lub gościa, bez obu `wynik_*_full` albo bez `data_faktyczna`. `data_propozycji` nie zastępuje daty. Wykluczone są też 2 mecze z 2015/2016 z datą 1970-01-01. Reguła: rok `data_faktyczna` musi być rokiem rozpoczęcia sezonu (`rok_rozpoczecia`) albo rokiem następnym.
+- Wynik zawsze pozostaje przy kolumnach drużyn (`wynik_gosp_full` → `id_zespol_gosp`). `zamiana=true` oznacza tylko, że faktycznym gospodarzem, któremu przysługuje przewaga parkietu, jest drużyna z `id_zespol_gosc`.
+- Kolejność: `data_faktyczna`, potem `mecze.id`. Sumy bramek (EWMA) i ratingi są prowadzone osobno dla każdej ligi (poziom × płeć). Drużyna, która awansuje lub spada, zaczyna w nowej lidze od ratingu początkowego. Grupy I Ligi są jedną ligą ze wspólną średnią sumy bramek.
+- Wynik to pełny wynik po 60 minutach. Dogrywki i serie karnych nie wchodzą do różnicy ani sumy, więc remis rozstrzygnięty karnymi jest dla modelu remisem.
+- Nazwa drużyny pochodzi z `zespoly_sezony` dla sezonu meczu, z rezerwą w `zespoly.nazwa`.
+
+Stan z 2026-09-25 po dodaniu Ligi Centralnej i I Ligi: 19 172 prognozy, w raporcie 12 156 (2016/2017–2026/2027): Superliga M 2072, K 1381; Liga Centralna M 952, K 385; I Liga M 4879, K 2487. Trafność 1X2 w raporcie: Superliga M 67,4%, K 68,9%; Liga Centralna M 54,1%, K 65,2%; I Liga M 64,6%, K 66,2%. Pominięte: 2034 bez wyniku, 317 bez gospodarza, 317 bez gościa, 182 wycofane, 52 walkowery, 3 z nieprawidłową datą. Wcześniejszy stan samej Superligi z 2026-09-24: 7006 meczów Superligi, z czego 6541 w modelu. Pominięte: 374 bez wyniku (głównie nierozegrane mecze bieżącego sezonu), 38 wycofanych, 15 walkowerów, 18 bez gospodarza, 18 bez gościa i 2 z nieprawidłową datą. Raport obejmuje sezony 2016/2017–2025/2026 i rozegrane mecze 2026/2027 (3453 prognozy). Rozgrzewka to 2007/2008–2015/2016.

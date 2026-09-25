@@ -156,6 +156,8 @@ class DaneMeczu:
     po_para_id_gosp: int | None = None
     po_para_id_gosc: int | None = None
     rozgrywki_code: str | None = None
+    id_zespol_gosp: int | None = None
+    id_zespol_gosc: int | None = None
 
 
 @dataclass(frozen=True)

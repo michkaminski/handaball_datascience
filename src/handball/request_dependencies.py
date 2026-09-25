@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from handball.contracts.classification_repository import KlasyfikacjaReadRepository
 from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
+from handball.contracts.match_prediction_repository import MeczeLigoweReadRepository
 from handball.contracts.match_repository import MeczReadRepository
 from handball.contracts.match_stage_repository import EtapMeczowReadRepository
 from handball.contracts.news_repository import AktualnosciReadRepository
@@ -20,6 +21,13 @@ from handball.contracts.team_detail_repository import SzczegolyDruzynyReadReposi
 from handball.contracts.venue_catalog_repository import HalaKatalogReadRepository
 from handball.contracts.venue_detail_repository import SzczegolyHaliReadRepository
 from handball.contracts.venue_repository import HalaReadRepository
+from handball.domain.match_predictions import (
+    KwalifikacjaMeczuPolicy,
+    OcenaPrognozyPolicy,
+    ProgiTrafnosci,
+    WzorceNazwLig,
+    ZakresBacktestu,
+)
 from handball.domain.match_rules import MeczPolicy
 from handball.domain.team_details import KolejnoscPozycjiPolicy, WystepDruzynyPolicy
 from handball.extensions import baza_danych
@@ -31,6 +39,9 @@ from handball.infrastructure.repositories.competition_repository import (
 )
 from handball.infrastructure.repositories.core_catalog_repository import (
     KatalogPodstawowySQLAlchemyRepository,
+)
+from handball.infrastructure.repositories.match_prediction_repository import (
+    MeczeLigoweSQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.match_repository import MeczSQLAlchemyRepository
 from handball.infrastructure.repositories.match_stage_repository import (
@@ -60,6 +71,10 @@ from handball.infrastructure.repositories.venue_detail_repository import (
 from handball.infrastructure.repositories.venue_repository import HalaSQLAlchemyRepository
 from handball.interface.presenters.classification_presenter import SkladPresenter
 from handball.interface.presenters.goal_statistics_presenter import StatystykiBramekPresenter
+from handball.interface.presenters.match_prediction_presenter import (
+    PrognozaFormat,
+    PrognozaMeczuPresenter,
+)
 from handball.interface.presenters.match_presenter import (
     MeczFormat,
     MeczPresenter,
@@ -76,6 +91,14 @@ from handball.services.catalog_service import KatalogService
 from handball.services.classification_service import KlasyfikacjaService
 from handball.services.goal_statistics import StatystykiBramekCalculator
 from handball.services.match_dictionary_service import SlownikiMeczowService
+from handball.services.match_prediction_service import (
+    BacktestPrognozService,
+    KatalogModeliPrognoz,
+    PodsumowaniePrognozCalculator,
+    PodzialSezonowPolicy,
+    RaportPrognozService,
+    SzczegolyPrognozyService,
+)
 from handball.services.match_service import MeczService
 from handball.services.news_service import AktualnosciService
 from handball.services.opponent_defense_service import DefensywaRywalaService
@@ -115,7 +138,13 @@ class ZaleznosciZadaniaFactory:
         fabryka_defensywy_rywala: Callable[[], DefensywaRywalaReadRepository] | None = None,
         fabryka_aktualnosci: Callable[[], AktualnosciReadRepository] | None = None,
         fabryka_szczegolow_druzyny: Callable[[], SzczegolyDruzynyReadRepository] | None = None,
+        fabryka_meczow_ligowych: Callable[[], MeczeLigoweReadRepository] | None = None,
+        katalog_modeli_prognoz: KatalogModeliPrognoz | None = None,
     ) -> None:
+        self._fabryka_meczow_ligowych = fabryka_meczow_ligowych or (
+            lambda: MeczeLigoweSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
+        self._katalog_modeli_prognoz = katalog_modeli_prognoz or KatalogModeliPrognoz()
         self._fabryka_szczegolow_druzyny = fabryka_szczegolow_druzyny or (
             lambda: SzczegolyDruzynySQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -266,3 +295,32 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_presenter_skladu(self) -> SkladPresenter:
         return SkladPresenter()
+
+    def utworz_katalog_modeli_prognoz(self) -> KatalogModeliPrognoz:
+        return self._katalog_modeli_prognoz
+
+    def utworz_backtest_prognoz(self) -> BacktestPrognozService:
+        wzorce = WzorceNazwLig()
+        return BacktestPrognozService(
+            self._fabryka_meczow_ligowych(),
+            self._katalog_modeli_prognoz,
+            KwalifikacjaMeczuPolicy(wzorce),
+            OcenaPrognozyPolicy(ProgiTrafnosci()),
+            PodzialSezonowPolicy(ZakresBacktestu()),
+            wzorce,
+        )
+
+    def utworz_raport_prognoz_meczow(self) -> RaportPrognozService:
+        return RaportPrognozService(
+            self.utworz_backtest_prognoz(),
+            self._katalog_modeli_prognoz,
+            PodsumowaniePrognozCalculator(ProgiTrafnosci()),
+        )
+
+    def utworz_szczegoly_prognozy_meczu(self) -> SzczegolyPrognozyService:
+        return SzczegolyPrognozyService(
+            self.utworz_backtest_prognoz(), self._katalog_modeli_prognoz
+        )
+
+    def utworz_presenter_prognoz_meczow(self) -> PrognozaMeczuPresenter:
+        return PrognozaMeczuPresenter(MeczFormat(), PrognozaFormat())

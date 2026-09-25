@@ -318,5 +318,7 @@ class MeczSQLAlchemyRepository:
             po_para_id=mecz.po_para_id,
             po_para_id_gosp=mecz.po_para_id_gosp,
             po_para_id_gosc=mecz.po_para_id_gosc,
+            id_zespol_gosp=mecz.id_zespol_gosp,
+            id_zespol_gosc=mecz.id_zespol_gosc,
             rozgrywki_code=mecz.rozgrywki_code,
         )

@@ -18,6 +18,11 @@ from handball.interface.admin.views.opponent_defense_views import DefensywaRywal
 from handball.interface.admin.views.player_detail_views import ZawodnikSzczegolyView
 from handball.interface.admin.views.player_views import ZawodnikListView
 from handball.interface.admin.views.referee_detail_views import SedziaSzczegolyView
+from handball.interface.admin.views.report_views import (
+    PrognozaMeczuSzczegolyView,
+    PrognozyMeczowListView,
+    RaportyListView,
+)
 from handball.interface.admin.views.start import StartView
 from handball.interface.admin.views.team_detail_views import DruzynaSzczegolyView
 from handball.interface.admin.views.venue_detail_views import HalaSzczegolyView
@@ -97,5 +102,18 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/tabele/<int:id_tabela_grupa>",
         view_func=TabelaSzczegolyView.as_view("szczegoly_tabeli", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/raporty", view_func=RaportyListView.as_view("lista_raportow", fabryka_zaleznosci)
+    )
+    blueprint.add_url_rule(
+        "/raporty/prognozy-meczow",
+        view_func=PrognozyMeczowListView.as_view("raport_prognoz_meczow", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/raporty/prognozy-meczow/<int:id_mecz>",
+        view_func=PrognozaMeczuSzczegolyView.as_view(
+            "szczegoly_prognozy_meczu", fabryka_zaleznosci
+        ),
     )
     return blueprint

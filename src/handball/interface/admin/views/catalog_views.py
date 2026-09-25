@@ -27,7 +27,7 @@ class KatalogListView(MethodView):
         ]
         try:
             serwis = self._fabryka.utworz_serwis_katalogu()
-            formularz.id_sezon.choices = [(None, "Wszystkie")] + [
+            formularz.id_sezon.choices = [("", "Wszystkie")] + [
                 (opcja.wartosc, opcja.etykieta) for opcja in serwis.pobierz_opcje_sezonow()
             ]
             if not request.args.get("sortowanie"):

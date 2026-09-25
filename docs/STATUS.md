@@ -1,6 +1,31 @@
 # Stan projektu
 
-Aktualizacja: 2026-09-23.
+Aktualizacja: 2026-09-25.
+
+## Szczegóły meczu: okno drużyny — 2026-09-25
+
+Na zlecenie użytkownika nazwy gospodarza i gościa w nagłówku szczegółów meczu otwierają kartę drużyny: kliknięcie w oknie modalnym, dwuklik w nowej karcie. Działa na pełnej stronie i w modalu listy meczów. Identyfikatory drużyn (`mecze.id_zespol_gosp`/`id_zespol_gosc`) przechodzą przez `DaneMeczu` do modelu widoku i są zamieniane razem z nazwami przy `zamiana=true`. Mechanikę okna przejęto bez zmian z tabel ligowych (`classification_details.js`). Kontrakt: [matches/detail.md](../src/handball/interface/templates/admin/matches/detail.md#okno-drużyny).
+
+Weryfikacja: 2 nowe testy interfejsu (linki z zamianą, brak linku bez identyfikatora, kolejność skryptów) i 2 testy JavaScript (klik, dwuklik). Pełny zestaw: 457 testów Pythona (poza istniejącym błędem `SECRET_KEY`) i 50 testów JavaScript; mypy bez błędów, Ruff bez nowych uwag (istniejące E501 w `tests/integration/test_import_repository.py`). Nie sprawdzano w przeglądarce. Bazy nie zmieniano.
+
+## Raporty: Prognozy meczów — siła drużyn — 2026-09-24
+
+Na zlecenie użytkownika dodano główną zakładkę **Raporty** (górny pasek i grupa sidebara) z katalogiem raportów oraz pierwszy raport: historyczny backtest modelu **Dynamic Team Strength V1** (`team_strength_v1`) dla Superligi mężczyzn i kobiet, a od 2026-09-25 także Ligi Centralnej i I Ligi.
+
+- `/administracja/raporty` — katalog raportów; kolejne raporty dodaje się bez przebudowy sekcji.
+- `/administracja/raporty/prognozy-meczow` — gęsta tabela z 28 kolumnami: ratingi przed meczem, Δ rating, prognoza i wynik, błędy H/A/różnicy/sumy, typ 1X2, trafienie, score error i klasa. Nad nią podsumowanie: trafność 1X2, MAE, średni i medianowy score error oraz progi ≤ 2/4/6. Filtry: model, rozgrywki (Superliga, Liga Centralna, I Liga), płeć, sezon, liczba sezonów raportu (3/5/10/15/wszystkie, domyślnie 10), drużyna, trafność i ocena. Na końcu parametry modelu i liczby pominiętych meczów.
+- `/administracja/raporty/prognozy-meczow/<id_mecz>` — pełna strona szczegółów. Zawiera wynik prognozy, dane wejściowe i 8 kroków (definicja, wzór, podstawienie, wynik, interpretacja). Dalej: znaczenie aktualizacji, ratingi przed i po, historia 10 meczów obu drużyn, snapshot parametrów i definicje.
+- Poziom rozpoznajemy po nazwie: „Superliga”/„Superligę”/„Ekstraklasa”, „Liga Centralna” oraz „I Liga” jako osobne słowa (bez II i III Ligi); płeć po `rozgrywki.plec`. Każda liga ma osobny model. Na bazie z 2026-09-25: 12 156 prognoz w raporcie, backtest ok. 1,1 s na żądanie. Reguły danych: [DATA](DATA.md#ligi-w-raportach-prognoz--2026-09-25), decyzje: [ARCHITECTURE](ARCHITECTURE.md#raport-prognoz-meczów--2026-09-24).
+
+Wynik na bazie z 2026-09-24: 3453 prognozy z sezonów 2016/2017–2026/2027, rozgrzewka 2007/2008–2015/2016. Trafność 1X2 wynosi 68,0%. MAE gospodarza 3,65, gościa 3,50, różnicy 4,11, sumy 5,86. Średni score error to 7,16, mediana 6,44. Parametry to wartości startowe ze specyfikacji, bez strojenia. Model punktowy prawie nigdy nie typuje remisu.
+
+Ograniczenia: snapshoty są liczone w pamięci przy każdym żądaniu, a nie zapisywane w bazie (zob. ARCHITECTURE). Zamiast wykresu historii ratingu jest tabela.
+
+Weryfikacja: 32 testy modelu, 16 testów serwisów, 9 testów interfejsu i 5 testów JavaScript. Pełny zestaw: 428 testów Pythona (poza istniejącym błędem `SECRET_KEY`) i 48 testów JavaScript; mypy i Ruff bez błędów. Na bazie (tryb tylko do odczytu) sprawdzono odpowiedzi 200/400/404 oraz wygląd w Edge headless: listę i szczegóły meczu #206654. Bazy nie zmieniano.
+
+Uzupełnienie tego samego dnia (na prośbę użytkownika): kolumna **Ocena wyniku** porównuje zaokrągloną prognozę z wynikiem. Klasy: Dokładny wynik, Dokładna różnica (np. 29:30 przy 30:31), Różnica ±1, ±2–3, ±4+. Filtry mają checkboxy „Dokładny wynik”, „Poprawna różnica bramek”, a obie oceny wybiera się checkboxami z wieloma wartościami. Na bazie: dokładny wynik 24 (0,7%), dokładna różnica 275 (8,0%), różnica ±1 lub lepiej 851 (24,6%) z 3453 prognoz. Kolejne uzupełnienie: kolumna **Typ prognozy** (typ 1X2 z zaokrąglonego wyniku prognozy i czy się sprawdził; 38:20 przy 20:38 to „Nieprzewidziany”) z filtrem checkboxowym; dawna kolumna „Typ” nazywa się teraz „Typ modelu”, filtr **Wynik 1X2** (H/X/A) i filtr „Trafiony” (TAK/NIE). Na bazie poprawny typ prognozy ma 2415 z 3453 prognoz (69,9%).
+
+Następny krok (propozycja): strojenie parametrów na okresie rozgrzewki i porównanie z prostymi punktami odniesienia (zawsze gospodarz, średnia ligi), a potem probabilistyczny typ 1X2.
 
 ## Karta drużyny: Zestawienie sezonu, „Tylko zakończone”, okno zawodnika — 2026-09-23
 

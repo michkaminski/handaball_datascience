@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block tytul %}Raporty — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Raporty</div>
+<h1>Raporty</h1>
+<p>Raporty analityczne, modele statystyczne i modele predykcyjne. Każdy raport jest tylko do odczytu i opisuje swoje założenia.</p>
+</section>
+<section class="panel">
+<h2>Katalog raportów</h2>
+<div class="panel-body">
+<div class="table-wrap">
+<table class="report-catalog">
+<thead><tr><th scope="col">Raport</th><th scope="col">Kategoria</th><th scope="col">Opis</th><th scope="col">Akcje</th></tr></thead>
+<tbody>
+{% for raport in raporty %}
+<tr>
+<td><a class="player-link" href="{{ url_for(raport.punkt_koncowy) }}">{{ raport.tytul }}</a></td>
+<td><span class="badge plan">{{ raport.kategoria }}</span></td>
+<td class="report-description">{{ raport.opis }}</td>
+<td><a class="icon-link" href="{{ url_for(raport.punkt_koncowy) }}">Otwórz</a></td>
+</tr>
+{% else %}
+<tr><td colspan="4" class="note">Brak raportów.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</section>
+{% endblock %}

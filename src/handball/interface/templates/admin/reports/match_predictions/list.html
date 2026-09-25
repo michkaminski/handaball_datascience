@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block tytul %}Prognozy meczów — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<div data-prediction-report>
+<section class="pagehead">
+<div class="crumb">Start › Raporty › Prognozy meczów</div>
+<h1>Prognozy meczów — siła drużyn</h1>
+<p>Historyczny backtest: dla każdego meczu Superligi, Ligi Centralnej i I Ligi model najpierw prognozuje wynik z ratingów sprzed spotkania, potem poznaje wynik i dopiero wtedy aktualizuje ratingi. Model: <b>{{ raport.tytul_modelu }}</b> (<code>{{ raport.wersja_modelu }}</code>).</p>
+<div class="stats-strip prediction-scope">
+<span class="stat-pill">Zakres raportu: <b>{{ raport.zakres_raportu }}</b></span>
+<span class="stat-pill">Rozgrzewka: <b>{{ raport.zakres_rozgrzewki }}</b></span>
+{% if raport.sezon_w_toku %}<span class="stat-pill">Sezon w toku: <b>{{ raport.sezon_w_toku }}</b> (rozegrane mecze)</span>{% endif %}
+</div>
+</section>
+
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body filters prediction-filters" method="get">
+<label>Model{{ formularz.model() }}</label>
+<label>Rozgrywki{{ formularz.poziom() }}</label>
+<label>Płeć{{ formularz.plec() }}</label>
+<label>Sezon{{ formularz.sezon() }}</label>
+<label title="Ile ostatnich pełnych sezonów wchodzi do metryk; starsze są rozgrzewką modelu">Sezonów w raporcie{{ formularz.sezony_raportu() }}</label>
+<label>Drużyna{{ formularz.druzyna(placeholder="nazwa drużyny...") }}</label>
+<label title="Czy typ modelu zgadza się z Wynikiem 1X2">Trafiony{{ formularz.trafnosc() }}</label>
+<label>Wierszy{{ formularz.rozmiar() }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.raport_prognoz_meczow') }}">Wyczyść filtry</a></div>
+<fieldset class="prediction-checks">
+<legend>Wynik prezentowany</legend>
+<label><input type="checkbox" name="dokladny_wynik" value="y"{% if formularz.dokladny_wynik.data %} checked{% endif %}> Dokładny wynik</label>
+<label><input type="checkbox" name="poprawna_roznica" value="y"{% if formularz.poprawna_roznica.data %} checked{% endif %}> Poprawna różnica bramek</label>
+</fieldset>
+<fieldset class="prediction-checks">
+<legend>Typ prognozy (z zaokrąglonego wyniku)</legend>
+{% for wartosc, etykieta in formularz.typ_prognozy.choices %}<label><input type="checkbox" name="typ_prognozy" value="{{ wartosc }}"{% if wartosc in (formularz.typ_prognozy.data or []) %} checked{% endif %}> <span class="prediction-hit {{ 'hit' if wartosc == 'poprawny' else 'miss' }}">{{ '✓' if wartosc == 'poprawny' else '✕' }} {{ etykieta }}</span></label>{% endfor %}
+</fieldset>
+<fieldset class="prediction-checks">
+<legend>Wynik 1X2 (rzeczywisty)</legend>
+{% for wartosc, etykieta in formularz.wynik_1x2.choices %}<label><input type="checkbox" name="wynik_1x2" value="{{ wartosc }}"{% if wartosc in (formularz.wynik_1x2.data or []) %} checked{% endif %}> {{ etykieta }}</label>{% endfor %}
+</fieldset>
+<fieldset class="prediction-checks">
+<legend>Ocena wyniku</legend>
+{% for wartosc, etykieta in formularz.ocena_wyniku.choices %}<label><input type="checkbox" name="ocena_wyniku" value="{{ wartosc }}"{% if wartosc in (formularz.ocena_wyniku.data or []) %} checked{% endif %}> <span class="prediction-grade wynik-{{ wartosc|replace('_', '-') }}">{{ etykieta }}</span></label>{% endfor %}
+</fieldset>
+<fieldset class="prediction-checks">
+<legend>Ocena score error</legend>
+{% for wartosc, etykieta in formularz.ocena.choices %}<label><input type="checkbox" name="ocena" value="{{ wartosc }}"{% if wartosc in (formularz.ocena.data or []) %} checked{% endif %}> <span class="prediction-grade ocena-{{ wartosc|replace('_', '-') }}">{{ etykieta }}</span></label>{% endfor %}
+</fieldset>
+</form>
+</section>
+
+<section class="panel">
+<h2>Podsumowanie wybranego zakresu</h2>
+<div class="panel-body">
+<div class="prediction-kpis">
+{% for wskaznik in raport.wskazniki %}<div><span>{{ wskaznik.etykieta }}</span><b>{{ wskaznik.wartosc }}</b></div>{% endfor %}
+{% for wskaznik in raport.progi %}<div class="prediction-kpi-threshold"><span>{{ wskaznik.etykieta }}</span><b>{{ wskaznik.wartosc }}</b></div>{% endfor %}
+</div>
+<p class="note">MAE — średni błąd bezwzględny w bramkach. Metryki liczone są na wartościach zmiennoprzecinkowych prognozy, dla meczów spełniających filtry.</p>
+</div>
+</section>
+
+<section class="panel">
+<h2>Historia prognoz</h2>
+<div class="panel-body">
+<div class="table-wrap prediction-table-wrap">
+<table class="prediction-table" id="predictions-table">
+<thead>
+<tr>
+<th scope="col">Data</th>
+<th scope="col">Sezon</th>
+<th scope="col" title="SL — Superliga, LC — Liga Centralna, 1L — I Liga; M — mężczyźni, K — kobiety">Liga</th>
+<th scope="col" class="num">Kol.</th>
+<th scope="col">Gospodarz</th>
+<th scope="col">Gość</th>
+<th scope="col" class="num grp" title="Rating faktycznego gospodarza przed meczem">Rating H</th>
+<th scope="col" class="num" title="Rating gościa przed meczem">Rating A</th>
+<th scope="col" class="num" title="rating_home − rating_away + HOME_ADVANTAGE">Δ rating</th>
+<th scope="col" class="num grp" title="Zaokrąglony przewidywany wynik">Prognoza</th>
+<th scope="col" class="num">Wynik</th>
+<th scope="col" title="Zaokrąglona prognoza a wynik: dokładny wynik, dokładna różnica bramek albo odchylenie różnicy">Ocena wyniku</th>
+<th scope="col" title="Typ 1X2 z zaokrąglonego wyniku prognozy i czy się sprawdził (np. 38:20 przy wyniku 20:38 — nieprzewidziany)">Typ prognozy</th>
+<th scope="col" class="num grp" title="Dokładna wartość pred_home">Prog. H</th>
+<th scope="col" class="num">Real H</th>
+<th scope="col" class="num">Błąd H</th>
+<th scope="col" class="num grp" title="Dokładna wartość pred_away">Prog. A</th>
+<th scope="col" class="num">Real A</th>
+<th scope="col" class="num">Błąd A</th>
+<th scope="col" class="num grp" title="predicted_margin">Prog. różn.</th>
+<th scope="col" class="num">Real różn.</th>
+<th scope="col" class="num">Błąd różn.</th>
+<th scope="col" class="num grp" title="predicted_total">Prog. suma</th>
+<th scope="col" class="num">Real suma</th>
+<th scope="col" class="num">Błąd sumy</th>
+<th scope="col" class="grp" title="Typ modelu H/X/A: próg DRAW_MARGIN_THRESHOLD dla predicted_margin">Typ modelu</th>
+<th scope="col" title="Rzeczywisty typ H/X/A">Wynik 1X2</th>
+<th scope="col" title="Czy typ modelu zgadza się z Wynikiem 1X2">Trafiony</th>
+<th scope="col" class="num grp" title="|pred_home − real_home| + |pred_away − real_away|">Score error</th>
+<th scope="col" title="Klasa score error">Ocena</th>
+</tr>
+</thead>
+<tbody>
+{% for p in raport.strona.pozycje %}
+{% set adres = url_for('administracja.szczegoly_prognozy_meczu', id_mecz=p.id_mecz, **parametry) %}
+<tr data-href="{{ adres }}" title="Kliknij, aby zobaczyć szczegóły prognozy meczu">
+<td>{{ p.data }}</td>
+<td>{{ p.sezon }}</td>
+<td>{{ p.liga }}</td>
+<td class="num">{{ p.kolejka }}</td>
+<td><a class="player-link" href="{{ adres }}">{{ p.gospodarz }}</a></td>
+<td>{{ p.gosc }}</td>
+<td class="num grp">{{ p.rating_gospodarza }}</td>
+<td class="num">{{ p.rating_goscia }}</td>
+<td class="num">{{ p.roznica_ratingow }}</td>
+<td class="num grp score">{{ p.prognoza }}</td>
+<td class="num score">{{ p.wynik }}</td>
+<td><span class="prediction-grade {{ p.klasa_oceny_wyniku }}" title="{{ p.opis_oceny_wyniku }}">{{ p.ocena_wyniku }}</span></td>
+<td><span class="prediction-hit {{ 'hit' if p.poprawny_typ_prognozy else 'miss' }}">{{ '✓' if p.poprawny_typ_prognozy else '✕' }} {{ p.typ_prognozy }} · {{ p.ocena_typu_prognozy }}</span></td>
+<td class="num grp">{{ p.prognoza_gospodarza }}</td>
+<td class="num">{{ p.bramki_gospodarza }}</td>
+<td class="num muted">{{ p.blad_gospodarza }}</td>
+<td class="num grp">{{ p.prognoza_goscia }}</td>
+<td class="num">{{ p.bramki_goscia }}</td>
+<td class="num muted">{{ p.blad_goscia }}</td>
+<td class="num grp">{{ p.prognoza_roznicy }}</td>
+<td class="num">{{ p.roznica }}</td>
+<td class="num muted">{{ p.blad_roznicy }}</td>
+<td class="num grp">{{ p.prognoza_sumy }}</td>
+<td class="num">{{ p.suma }}</td>
+<td class="num muted">{{ p.blad_sumy }}</td>
+<td class="grp"><b>{{ p.typ }}</b></td>
+<td>{{ p.typ_rzeczywisty }}</td>
+<td><span class="prediction-hit {{ 'hit' if p.trafiony else 'miss' }}">{{ '✓' if p.trafiony else '✕' }} {{ p.trafiony_tekst }}</span></td>
+<td class="num grp"><b>{{ p.blad_wyniku }}</b></td>
+<td><span class="prediction-grade {{ p.klasa_oceny }}">{{ p.ocena }}</span></td>
+</tr>
+{% else %}
+<tr><td colspan="30" class="note">Brak prognoz spełniających wybrane filtry.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% set parametry_paginacji = parametry %}
+{% include "partials/pagination.html" %}
+</div>
+</section>
+
+<section class="panel">
+<h2>Założenia i dane wejściowe</h2>
+<div class="panel-body prediction-assumptions">
+<div>
+<h3 class="section-heading">Parametry modelu</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Parametr</th><th scope="col" class="num">Wartość</th><th scope="col">Znaczenie</th></tr></thead><tbody>
+{% for parametr in raport.parametry %}<tr><td><code>{{ parametr.etykieta }}</code></td><td class="num">{{ parametr.wartosc }}</td><td>{{ parametr.opis }}</td></tr>{% endfor %}
+</tbody></table></div>
+</div>
+<div>
+<h3 class="section-heading">Mecze pominięte w modelu</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Powód</th><th scope="col" class="num">Mecze</th></tr></thead><tbody>
+{% for wykluczenie in raport.wykluczenia %}<tr><td>{{ wykluczenie.etykieta }}</td><td class="num">{{ wykluczenie.wartosc }}</td></tr>{% else %}<tr><td colspan="2" class="note">Brak pominiętych meczów.</td></tr>{% endfor %}
+</tbody></table></div>
+<p class="note">Poziom rozgrywek rozpoznajemy po nazwie: Superliga — „Superliga”, „Superligę” lub „Ekstraklasa”; Liga Centralna — „Liga Centralna”; I Liga — „I Liga” jako osobne słowa, więc II i III Liga nie pasują. Płeć bierzemy z rozgrywek. Każda liga (poziom i płeć) ma osobny model: drużyna, która zmienia poziom, zaczyna w nowej lidze od ratingu początkowego. Grupy I Ligi tworzą jedną ligę. Liczby pominiętych obejmują wszystkie sezony, także rozgrzewkę i mecze jeszcze nierozegrane. Kolejność meczów: data_faktyczna, potem ID meczu.</p>
+</div>
+</div>
+</section>
+</div>
+<script src="{{ url_for('static', filename='js/match_predictions.js') }}" defer></script>
+{% endblock %}

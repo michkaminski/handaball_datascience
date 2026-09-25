@@ -9,6 +9,7 @@ from handball.domain.errors import (
     NieZnalezionoDruzyny,
     NieZnalezionoHali,
     NieZnalezionoMeczu,
+    NieZnalezionoPrognozy,
     NieZnalezionoSedziego,
     NieZnalezionoZawodnika,
 )
@@ -23,6 +24,7 @@ def obsluz_blad_domeny(wyjatek: Exception) -> NoReturn:
             NieZnalezionoHali,
             NieZnalezionoSedziego,
             NieZnalezionoDruzyny,
+            NieZnalezionoPrognozy,
         ),
     ):
         abort(404)

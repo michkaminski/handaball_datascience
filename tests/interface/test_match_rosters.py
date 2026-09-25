@@ -118,3 +118,30 @@ def test_zawodnik_w_skladzie_otwiera_okno_i_karte() -> None:
     assert tresc.index("js/player_details.js") < tresc.index("js/matches.js")
     lista = klient.get("/administracja/mecze").get_data(as_text=True)
     assert "js/goal_charts.js" in lista and "js/player_details.js" in lista
+
+
+def test_druzyny_w_naglowku_otwieraja_okno_i_karte_z_uwzglednieniem_zamiany() -> None:
+    szczegoly = replace(
+        SZCZEGOLY_TESTOWE,
+        mecz=replace(SZCZEGOLY_TESTOWE.mecz, id_zespol_gosp=11, id_zespol_gosc=22, zamiana=True),
+    )
+    klient = _aplikacja_z_repozytorium([], {12543: szczegoly}).test_client()
+    tresc = klient.get("/administracja/mecze/12543").get_data(as_text=True)
+    gospodarz = tresc.split('class="team-box home"')[1].split('class="result-box"')[0]
+    gosc = tresc.split('class="team-box right away"')[1].split('class="hero-meta"')[0]
+    assert 'href="/administracja/druzyny/22"' in gospodarz and ">Orlen Wisła Płock</a>" in gospodarz
+    assert 'href="/administracja/druzyny/11"' in gosc and ">Industria Kielce</a>" in gosc
+    assert tresc.count("data-team-modal-link ") == 2
+    korzen = tresc.split("data-match-detail>")[1]
+    assert "data-team-modal-dialog" in korzen and "data-team-content" in korzen
+    assert tresc.index("js/team_details.js") < tresc.index("js/classification_details.js")
+    assert tresc.index("js/classification_details.js") < tresc.index("js/matches.js")
+    lista = klient.get("/administracja/mecze").get_data(as_text=True)
+    assert "js/team_details.js" in lista and "js/classification_details.js" in lista
+
+
+def test_druzyna_bez_identyfikatora_nie_jest_linkiem() -> None:
+    klient = _aplikacja_z_repozytorium([], {12543: SZCZEGOLY_TESTOWE}).test_client()
+    tresc = klient.get("/administracja/mecze/12543").get_data(as_text=True)
+    assert "data-team-modal-link " not in tresc
+    assert '<div class="team-name">Industria Kielce</div>' in tresc

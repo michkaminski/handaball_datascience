@@ -85,3 +85,16 @@ def test_filtry_sedziow_docieraja_do_repozytorium() -> None:
 def test_bledne_parametry_zwracaja_400(adres: str) -> None:
     klient = aplikacja_z_katalogiem(KatalogPodstawowyInMemoryRepository()).test_client()
     assert klient.get(adres).status_code == 400
+
+
+@pytest.mark.parametrize("adres", ["/administracja/rozgrywki", "/administracja/druzyny"])
+def test_opcja_wszystkie_sezony_ma_pusta_wartosc_i_przechodzi_walidacje(adres: str) -> None:
+    repo = KatalogPodstawowyInMemoryRepository()
+    klient = aplikacja_z_katalogiem(repo).test_client()
+    tresc = klient.get(adres).get_data(as_text=True)
+    assert '<option selected value="">Wszystkie</option>' in tresc
+    assert 'value="None"' not in tresc
+    odpowiedz = klient.get(f"{adres}?sortowanie=nazwa&rozmiar_strony=20&szukaj=centralna&id_sezon=")
+    assert odpowiedz.status_code == 200
+    assert repo.filtry is not None
+    assert repo.filtry.szukaj == "centralna" and repo.filtry.id_sezon is None

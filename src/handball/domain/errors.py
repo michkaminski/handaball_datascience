@@ -23,3 +23,11 @@ class NieZnalezionoSedziego(Exception):
 
 class NieZnalezionoDruzyny(Exception):
     pass
+
+
+class NieZnalezionoPrognozy(Exception):
+    pass
+
+
+class NieznanyModelPrognoz(ValueError):
+    pass

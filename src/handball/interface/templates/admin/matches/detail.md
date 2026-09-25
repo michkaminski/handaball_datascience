@@ -10,7 +10,7 @@ Przepływ: `MeczSzczegolyView` → `MeczService` → `MeczReadRepository`, nast�
 
 ## Dane wejściowe
 
-`szczegoly: SzczegolyMeczuViewModel` zawiera nazwy gospodarza i gościa, wynik nagłówka, wynik do przerwy, dopisek wyniku, rozgrywki, kolejkę, termin, halę, status, pary danych podstawowych, statystyki porównawcze i trzy listy `ZawodnikMeczuViewModel`: `sklad_gospodarz`, `sklad_gosc`, `sklad_inne`. `sekcja_aktywna="mecze"` podświetla nawigację.
+`szczegoly: SzczegolyMeczuViewModel` zawiera nazwy gospodarza i gościa, ich `id_gospodarz` i `id_gosc` (`int | None`), wynik nagłówka, wynik do przerwy, dopisek wyniku, rozgrywki, kolejkę, termin, halę, status, pary danych podstawowych, statystyki porównawcze i trzy listy `ZawodnikMeczuViewModel`: `sklad_gospodarz`, `sklad_gosc`, `sklad_inne`. `sekcja_aktywna="mecze"` podświetla nawigację.
 
 Zawodnik zawiera numer koszulki, nazwę, pozycję, bramki, kary dwuminutowe, upomnienie, dyskwalifikację, KD, wyjście, karne i serię karnych. Repozytorium dostarcza typowane dane domenowe; teksty i wyróżnienia przygotowują presentery. Szablon nie wykonuje zapytań. Dane tekstowe są automatycznie escapowane przez Jinja2.
 
@@ -18,7 +18,7 @@ Repozytorium i serwis zwracają `SzczegolyMeczu` z `DaneMeczu` oraz składami `Z
 
 ## Kolejność, kolory i najlepsi strzelcy
 
-Składy nie są zamieniane przy `zamiana=true`: `mecze_zawodnicy.strona` wskazuje już stronę po zamianie, więc `sklad_gospodarz` (wpisy `gosp`) należy do wyświetlanego gospodarza. `MeczPolicy.para` odwraca tylko nazwy drużyn i wyniki. Uzasadnienie i dane: [DATA](../../../../../../docs/DATA.md#strona-wpisów-zawodników-przy-zamiana--2026-09-23).
+Składy nie są zamieniane przy `zamiana=true`: `mecze_zawodnicy.strona` wskazuje już stronę po zamianie, więc `sklad_gospodarz` (wpisy `gosp`) należy do wyświetlanego gospodarza. `MeczPolicy.para` odwraca tylko nazwy drużyn, ich identyfikatory (`mecze.id_zespol_gosp`/`id_zespol_gosc` w `DaneMeczu`) i wyniki. Uzasadnienie i dane: [DATA](../../../../../../docs/DATA.md#strona-wpisów-zawodników-przy-zamiana--2026-09-23).
 
 
 `SkladMeczuPresenter` grupuje składy alfabetycznie według źródłowego tekstu pozycji (bez rozróżniania wielkości liter), następnie według liczbowego numeru koszulki i nazwy. Nie zgaduje znaczenia skrótów. Brak pozycji trafia na koniec i pozostaje bez koloru. Różne pozycje mają delikatne pastelowe tła; ta sama pozycja ma ten sam kolor w obu zespołach danego meczu. Kolor może różnić się między meczami o innym zestawie pozycji.
@@ -31,7 +31,13 @@ Czerwone tło jest uzupełnione pogrubieniem, opisem przy najechaniu, etykietą 
 
 Nazwisko w składzie jest linkiem do karty zawodnika (`a[data-player-modal-link]`, `id_zawodnik` z `mecze_zawodnicy` przez `ZawodnikMeczu` i `ZawodnikMeczuViewModel`). Pojedyncze kliknięcie otwiera kartę w oknie modalnym `dialog[data-player-modal-dialog]`, umieszczonym wewnątrz `[data-match-detail]`, więc działa także wtedy, gdy szczegóły meczu są już w modalu listy. Okno leży nad oknem meczu, a Escape zamyka najpierw okno zawodnika. Dwuklik otwiera kartę w nowej karcie. Kliknięcie jest opóźnione o 250 ms, żeby odróżnić je od dwukliku. Enter otwiera okno od razu. Ctrl, Shift, Alt i środkowy przycisk zostawiają zwykłe zachowanie przeglądarki, a bez JavaScriptu link otwiera kartę w nowej karcie.
 
-Mechanika jest wspólna z kartą drużyny: `LinkiZawodnikowController` i `OknoZawodnikaController` w [player_details.js](../../../static/js/player_details.js), eksportowane jako `HandballZawodnik`. Strona i lista meczów ładują `goal_charts.js` i `player_details.js` przed `matches.js`.
+Mechanika jest wspólna z kartą drużyny: `LinkiZawodnikowController` i `OknoZawodnikaController` w [player_details.js](../../../static/js/player_details.js), eksportowane jako `HandballZawodnik`. Kolejność skryptów opisuje sekcja „Okno drużyny”.
+
+## Okno drużyny
+
+Nazwy gospodarza i gościa w nagłówku wyniku są linkami `a.team-link[data-team-modal-link]` do `administracja.szczegoly_druzyny` (makro `nazwa_druzyny`). Pojedyncze kliknięcie otwiera kartę drużyny w oknie `dialog[data-team-modal-dialog]` wewnątrz `[data-match-detail]`, a dwuklik otwiera ją w nowej karcie. Opóźnienie 250 ms, Enter, modyfikatory i zachowanie bez JavaScriptu działają tak samo jak w oknie zawodnika. Drużyna bez identyfikatora pozostaje zwykłym tekstem.
+
+Okno używa istniejących `LinkiDruzynController` i `OknoDruzynyController` z [classification_details.js](../../../static/js/classification_details.js) (`HandballKlasyfikacja`), tych samych co w tabelach ligowych. Okno pobiera `[data-team-detail]`, uruchamia zakładki drużyny (`team_details.js`) i okno zawodnika, a filtry, sortowanie i paginację karty wczytuje w tym samym oknie. Kolejność skryptów na stronie i liście meczów: `goal_charts.js`, `player_details.js`, `team_details.js`, `classification_details.js`, `matches.js`.
 
 ## Zakładki
 
@@ -47,7 +53,7 @@ Wynik stoi w ciemnym polu, chipy metadanych mają wyciszone etykiety (poza kolej
 
 ## Weryfikacja
 
-`tests/interface/test_match_rosters.py` sprawdza kolejność pozycji i numerów, braki, osobne maksima drużyn i remis liderów, oddzielność serii karnych oraz renderowanie wyróżnień i struktury modalu. Dotychczasowe testy szczegółów pozostają w `tests/interface/test_matches.py`. Dane testowe są pamięciowe; nie wymagają bazy. `node --test tests/javascript/match_detail.test.cjs` sprawdza otwieranie, zamykanie, fokus, Enter, błąd HTTP, anulowanie pobierania i pomijanie dwukliku na linku. Testy JS korzystają z atrap DOM; nie zastępują kontroli wizualnej w przeglądarce.
+`tests/interface/test_match_rosters.py` sprawdza kolejność pozycji i numerów, braki, osobne maksima drużyn i remis liderów, oddzielność serii karnych oraz renderowanie wyróżnień i struktury modalu, a także linki drużyn w nagłówku (z zamianą i bez identyfikatora) i kolejność skryptów. Dotychczasowe testy szczegółów pozostają w `tests/interface/test_matches.py`. Dane testowe są pamięciowe; nie wymagają bazy. `node --test tests/javascript/match_detail.test.cjs` sprawdza otwieranie, zamykanie, fokus, Enter, błąd HTTP, anulowanie pobierania i pomijanie dwukliku na linku. `tests/javascript/match_team_links.test.cjs` sprawdza, że kliknięcie drużyny otwiera okno po opóźnieniu, a dwuklik nową kartę. Testy JS korzystają z atrap DOM; nie zastępują kontroli wizualnej w przeglądarce.
 
 ## Układ tekstowy i mapa zmian
 
@@ -55,7 +61,8 @@ Rzeczywisty układ strony; w modalu pomijana jest wspólna rama i przycisk powro
 
 ```text
 [Szczegóły meczu #ID]
-[▌Gospodarz        [ Wynik / do przerwy / dopisek ]        Gość▐]
+[▌Gospodarz*       [ Wynik / do przerwy / dopisek ]       Gość*▐]
+  * link: klik → okno karty drużyny, dwuklik → nowa karta
 [Rozgrywki …] [Kolejka N] [Termin …] [Hala …]            [Status]
 [← Powrót do listy] (tylko pełna strona)
 [Zakładki: Dane podstawowe | Wynik i statystyki | Składy]
@@ -67,6 +74,11 @@ Rzeczywisty układ strony; w modalu pomijana jest wspólna rama i przycisk powro
 [Wiersze grupowane po pozycji; pastelowe tło; liderzy: czerwone Br.]
 [Pozostałe osoby przypisane do meczu — opcjonalnie]
 [■ Legenda wyróżnień pod tabelami składów]
+
+Okno drużyny (nad stroną lub modalem meczu):
+[Karta drużyny                                           ×]
+[karta drużyny z zakładkami, bez „Powrót do listy drużyn”]
+[Otwórz w nowej karcie] [Zamknij]
 
 Modal na liście:
 [Szczegóły meczu                                         ×]
@@ -83,6 +95,7 @@ Poniżej 1100px nagłówek wyniku układa się pionowo, a akcenty drużyn stają
 | Statystyki | [detail.html](detail.html): `table.match-stats`, `.home`, `.away`, `tr.empty`; dane `statystyki` |
 | Fragment do modalu | [detail.html](detail.html): `[data-match-detail]`, `[data-detail-navigation]` |
 | Składy i komórki bramek | [detail.html](detail.html): `.panel.roster.home/.away`, `.roster-table`, `.roster-player`, `.top-scorer`, `.roster-legend`, `.roster-legend-swatch` |
+| Okno drużyny | [detail.html](detail.html): makro `nazwa_druzyny`, `a.team-link[data-team-modal-link]`, `dialog[data-team-modal-dialog]`; dane `id_gospodarz`, `id_gosc`; [classification_details.js](../../../static/js/classification_details.js): `LinkiDruzynController`, `OknoDruzynyController`; CSS `.match-detail .team-name .team-link` |
 | Okno zawodnika | [detail.html](detail.html): `dialog[data-player-modal-dialog]`; [player_details.js](../../../static/js/player_details.js): `LinkiZawodnikowController`, `OknoZawodnikaController`; [matches.js](../../../static/js/matches.js): `uruchomSzczegolyMeczu()` |
 | Kolejność i wyróżnienia | [match_presenter.py](../../../presenters/match_presenter.py): `SkladMeczuPresenter` |
 | Źródło danych | [match_repository.py](../../../../infrastructure/repositories/match_repository.py): `pobierz_szczegoly`, `_zawodnik` |

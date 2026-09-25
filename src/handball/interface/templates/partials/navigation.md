@@ -6,11 +6,11 @@ Docelowy szablon względem katalogu szablony: `partials/navigation.html`.
 
 ## Przeznaczenie
 
-Górne menu sekcji i oznaczenie bieżącego ekranu, zgodne z prototypem v6 (`.nav`/`.nav-inner` z index.html): Start, Dane, Import, Kontrola danych, Logi.
+Górne menu sekcji i oznaczenie bieżącego ekranu, zgodne z prototypem v6 (`.nav`/`.nav-inner` z index.html): Start, Dane, Raporty, Import, Kontrola danych, Logi. Pozycji „Raporty” nie ma w prototypie; dodano ją 2026-09-24 na polecenie użytkownika.
 
 ## Dane wejściowe
 
-Stała `GORNY_PASEK` z `interface/navigation.py` (lista `PozycjaMenu`: `klucz`, `etykieta`, `punkt_koncowy` — nazwa endpointu Flask albo `None`), wstrzykiwana globalnie do wszystkich szablonów przez `zarejestruj_kontekst_nawigacji()`. Zmienna `sekcja_aktywna` (string) przekazywana przez widok określa, która pozycja ma klasę `active`. Dla `sekcja_aktywna="zawodnicy"` aktywna jest górna pozycja „Dane”; sidebar wyróżnia „Zawodnicy”. Szablon tylko renderuje, nie decyduje o uprawnieniach ani dostępności pozycji.
+Stała `GORNY_PASEK` z `interface/navigation.py` (lista `PozycjaMenu`: `klucz`, `etykieta`, `punkt_koncowy` — nazwa endpointu Flask albo `None`), wstrzykiwana globalnie do wszystkich szablonów przez `zarejestruj_kontekst_nawigacji()`. Zmienna `sekcja_aktywna` (string) przekazywana przez widok określa, która pozycja ma klasę `active`. Dla `sekcja_aktywna="zawodnicy"` aktywna jest górna pozycja „Dane”; sidebar wyróżnia „Zawodnicy”. Opcjonalna zmienna `sekcja_glowna` wskazuje górną pozycję niezależnie od pozycji sidebara: widoki raportów przekazują `sekcja_glowna="raporty"`, a `sekcja_aktywna` pozostaje kluczem sidebara (np. `"prognozy_meczow"`). Szablon tylko renderuje, nie decyduje o uprawnieniach ani dostępności pozycji.
 
 ## Powiązania
 
@@ -36,20 +36,21 @@ Stan: fragment istniejącego menu, dołączany pod nagłówkiem w `base.html`.
 
 ```text
 <nav class="nav">
-  (1) [Start] [Dane] [Import] [Kontrola danych] [Logi]
-         ^       ^
+  (1) [Start] [Dane] [Raporty] [Import] [Kontrola danych] [Logi]
+         ^       ^       ^
+         |       |       aktywne dla sekcja_aktywna lub sekcja_glowna = "raporty"
          |       aktywne dla sekcja_aktywna="mecze" lub "zawodnicy"
          aktywne dla sekcja_aktywna="start"
 </nav>
 ```
 
-Kolejność wynika z `GORNY_PASEK`. „Start”, „Dane” i „Import” mają realne adresy; dwie pozostałe pozycje mają `href="#"`. Klasa `.active` wyróżnia bieżącą sekcję. Na wąskim ekranie `.nav-inner` przewija się poziomo i nie zawija pozycji. Fragment nie zawiera sidebara ani przycisku „☰ Menu”.
+Kolejność wynika z `GORNY_PASEK`. „Start”, „Dane”, „Raporty” i „Import” mają realne adresy; dwie pozostałe pozycje mają `href="#"`. Klasa `.active` wyróżnia bieżącą sekcję. Na wąskim ekranie `.nav-inner` przewija się poziomo i nie zawija pozycji. Fragment nie zawiera sidebara ani przycisku „☰ Menu”.
 
 ### Mapa zmian
 
 | Element rysunku / zmiana | Gdzie zmieniać | Co zmieniać |
 | --- | --- | --- |
 | 1. Etykiety, kolejność i adresy | [navigation.py](../../navigation.py) | Lista `GORNY_PASEK`; `punkt_koncowy` określa cel, a `klucz` porównanie z aktywną sekcją. |
-| Znacznik pojedynczej pozycji | [navigation.html](navigation.html) | Pętla po `gorny_pasek`, `<a>` i warunek `class="active"`. |
+| Znacznik pojedynczej pozycji | [navigation.html](navigation.html) | Pętla po `gorny_pasek`, `<a>` i warunek `class="active"` (`sekcja_aktywna`, `sekcja_glowna`). |
 | Kolory, odstępy i poziome przewijanie | [admin.css](../../static/css/admin.css) | `.nav`, `.nav-inner`, `.nav a`, `.nav a.active`. |
 | Miejsce menu na stronie | [base.html](../base.html) | Include `partials/navigation.html`, pomiędzy nagłówkiem a `.layout`. |
