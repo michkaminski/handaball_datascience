@@ -51,11 +51,33 @@ class PozycjaPrognozyViewModel:
 
 
 @dataclass(frozen=True)
+class PrognozaPrzyszlaViewModel:
+    liga: str
+    rating_gospodarza: str
+    rating_goscia: str
+    roznica_ratingow: str
+    prognoza: str
+    prognoza_gospodarza: str
+    prognoza_goscia: str
+    prognoza_roznicy: str
+    prognoza_sumy: str
+    typ: str
+    typ_prognozy: str
+
+
+@dataclass(frozen=True)
 class StronaPrognozViewModel:
     pozycje: tuple[PozycjaPrognozyViewModel, ...]
     liczba_wszystkich: int
     strona: int
     rozmiar_strony: int
+
+    @property
+    def zakres_wierszy(self) -> str:
+        if not self.pozycje:
+            return f"0 z {self.liczba_wszystkich}"
+        poczatek = (self.strona - 1) * self.rozmiar_strony + 1
+        return f"{poczatek}–{poczatek + len(self.pozycje) - 1} z {self.liczba_wszystkich}"
 
 
 @dataclass(frozen=True)
@@ -148,3 +170,27 @@ class SzczegolyPrognozyViewModel:
     historia: tuple[HistoriaDruzynyViewModel, ...]
     parametry: str
     definicje: tuple[DefinicjaPojeciaViewModel, ...]
+
+
+@dataclass(frozen=True)
+class WskaznikZapowiedziViewModel:
+    etykieta: str
+    wartosc: str
+    klasa: str = ""
+
+
+@dataclass(frozen=True)
+class PrognozaZapowiedziViewModel:
+    tryb: str
+    tytul_modelu: str
+    wersja_modelu: str
+    opis: str
+    wskazniki: tuple[WskaznikZapowiedziViewModel, ...] = ()
+    ratingi: tuple[WierszRatinguViewModel, ...] = ()
+    uwagi: tuple[str, ...] = ()
+    kroki: tuple[KrokObliczeniaViewModel, ...] = ()
+    id_mecz_raportu: int | None = None
+
+    @property
+    def dostepna(self) -> bool:
+        return self.tryb != "brak"

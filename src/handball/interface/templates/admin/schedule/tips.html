@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block tytul %}Typowania: {{ typowania.tytul }} — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead" data-tips-navigation>
+<div class="crumb">Start › Dane › <a href="{{ url_for('administracja.terminarz', **parametry_powrotu) }}">Terminarz</a> › Typowania</div>
+<h1>Typowania — {{ typowania.tytul }}</h1>
+</section>
+<section class="tips" data-schedule-tips data-tips-title="{{ typowania.tytul }}">
+{% for mecz in typowania.mecze %}
+<article class="tips-match" aria-labelledby="tips-match-{{ mecz.id_mecz }}">
+<h3 id="tips-match-{{ mecz.id_mecz }}">{{ mecz.naglowek }}</h3>
+{% if mecz.wskazniki %}
+<dl class="tips-kpis">
+{% for wskaznik in mecz.wskazniki %}<div><dt>{{ wskaznik.etykieta }}</dt><dd>{{ wskaznik.wartosc }}</dd></div>{% endfor %}
+</dl>
+{% else %}
+<p class="note">{{ mecz.opis_braku }}</p>
+{% endif %}
+</article>
+{% else %}
+<p class="note" data-tips-empty>Brak meczów w tej kolejce.</p>
+{% endfor %}
+</section>
+{% endblock %}

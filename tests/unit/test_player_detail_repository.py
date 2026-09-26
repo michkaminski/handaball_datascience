@@ -40,13 +40,13 @@ def test_historia_zachowuje_sezony_liczby_i_braki() -> None:
     )
     historia = Mock()
     historia.all.return_value = [
-        (nowszy, "2026/2027", "A", "Rozgrywający", 195, 10),
-        (starszy, "2025/2026", "B", "BR", 194, 11),
+        (starszy, "2025/2026", "B", "BR", 194, 11, 2025),
+        (nowszy, "2026/2027", "A", "Rozgrywający", 195, 10, 2026),
     ]
     statystyki = Mock()
     statystyki.all.return_value = [
-        (195, 10, "Liga", 120, 20, 30, 10, 2, 1),
-        (195, 10, "Puchar", 15, 1, 2, 2, 0, 0),
+        (195, 10, "Liga", 120, 20, 30, 10, 2, 1, "2026/2027", 2026, "A", 9, "Rozgrywający"),
+        (195, 10, "Puchar", 15, 1, 2, 2, 0, 0, "2026/2027", 2026, "A", 9, "Rozgrywający"),
     ]
     sesja.execute.side_effect = [historia, statystyki]
     wynik = SzczegolyZawodnikaSQLAlchemyRepository(sesja).pobierz_szczegoly(7)
@@ -73,6 +73,31 @@ def test_historia_zachowuje_sezony_liczby_i_braki() -> None:
     assert "mecze.id_sezon" in statystyki_sql
     assert "rozgrywki.nazwa" in statystyki_sql
     sesja.commit.assert_not_called()
+
+
+def test_druzyna_z_protokolow_bez_skladu_sezonowego_jest_w_historii() -> None:
+    sesja = Mock(spec=Session)
+    sesja.get.return_value = Zawodnik(id=7, imie="Jan", nazwisko="Test")
+    sklad = SkladSezonowy(id_zespol_sezon=1, id_zawodnik=7, nr_koszulki=34, pozycja_nazwa="RO")
+    historia = Mock()
+    historia.all.return_value = [(sklad, "2025/2026", "AZS UW", None, 194, 10, 2025)]
+    statystyki = Mock()
+    statystyki.all.return_value = [
+        (194, 10, "Liga Centralna", 43, 2, 5, 5, 1, 0, "2025/2026", 2025, "AZS UW", 34, "RO"),
+        (194, 20, "Liga Centralna", 9, 0, 0, 1, 0, 0, "2025/2026", 2025, "Gwardia", 17, "Roz."),
+        (193, 30, "Liga Centralna", 20, 0, 0, 2, 0, 0, "2024/2025", 2024, "Koszalin", 5, None),
+        (194, None, "Liga", 1, 0, 0, 0, 0, 0, "2025/2026", 2025, None, None, None),
+    ]
+    sesja.execute.side_effect = [historia, statystyki]
+    wynik = SzczegolyZawodnikaSQLAlchemyRepository(sesja).pobierz_szczegoly(7)
+    assert [(s.sezon, s.druzyna, s.bramki) for s in wynik.sezony] == [
+        ("2025/2026", "AZS UW", 43),
+        ("2025/2026", "Gwardia", 9),
+        ("2024/2025", "Koszalin", 20),
+    ]
+    gwardia = wynik.sezony[1]
+    assert (gwardia.id_zespol_sezon, gwardia.nr_koszulki, gwardia.pozycja) == (None, 17, "Roz.")
+    assert gwardia.wzrost is None
 
 
 def test_brak_zawodnika_i_awaria_nie_sa_pusta_karta() -> None:

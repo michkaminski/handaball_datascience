@@ -36,7 +36,11 @@ Błędne parametry (nieznany poziom rozgrywek lub płeć, ocena, rozmiar, model,
 
 ## Weryfikacja
 
-`tests/interface/test_match_predictions.py`: tabela, podsumowanie, nawigacja, filtry, 400, 405 i 503. JavaScript: `tests/javascript/match_predictions.test.cjs`. Logika: `tests/unit/test_match_prediction_service.py` i `tests/unit/test_team_strength_model.py`. Wygląd sprawdzono 2026-09-24 w Edge (headless) na rzeczywistej bazie, w trybie tylko do odczytu.
+`tests/interface/test_match_predictions.py`: tabela, podsumowanie, nawigacja, filtry, 400, 405 i 503. JavaScript: `tests/javascript/match_predictions.test.cjs` i `tests/javascript/print_table.test.cjs` (druk tabeli). Logika: `tests/unit/test_match_prediction_service.py` i `tests/unit/test_team_strength_model.py`. Wygląd sprawdzono 2026-09-24 w Edge (headless) na rzeczywistej bazie, w trybie tylko do odczytu.
+
+## Druk tabeli
+
+Przycisk „Drukuj tabelę” nad tabelą (`[data-print-table]`, polecenie użytkownika z 2026-09-26) otwiera nową kartę z samą tabelą jako czystym tekstem: bez grafiki, kolorów, pigułek i linków, z cienkimi czarnymi ramkami. Nad tabelą jest tytuł (`data-print-title`) i opis (`data-print-subtitle`). Tabelę kopiuje `DrukTabeliController` w [print_table.js](../../../../static/js/print_table.js): bierze `textContent` każdej komórki i zachowuje `th`/`td` oraz `colspan`. Kartę drukuje się poleceniem przeglądarki (Ctrl+P). Wydruk obejmuje wiersze bieżącej strony; opis podaje model, zakres raportu i zakres wierszy (`StronaPrognozViewModel.zakres_wierszy`, np. „Wiersze 1–100 z 2 431”). Aby wydrukować więcej, zwiększ „Wierszy”.
 
 ## Układ tekstowy i mapa zmian
 
@@ -59,6 +63,7 @@ Błędne parametry (nieznany poziom rozgrywek lub płeć, ocena, rozmiar, model,
     [Poprawny typ prognozy][Dokładny wynik][Dokładna różnica bramek][Różnica ±1 lub lepiej]
     [score_error ≤ 2][score_error ≤ 4][score_error ≤ 6]
 (4) Historia prognoz (przewijana, nagłówek sticky; rysunek zawija szeroką tabelę)
+                                                              [Drukuj tabelę] → nowa karta
     Data | Sezon | Liga | Kol. | Gospodarz (link) | Gość | Rating H | Rating A | Δ rating
     | Prognoza | Wynik | Ocena wyniku (pigułka) | Typ prognozy (✓/✕ H/X/A) | Prog. H | Real H | Błąd H | Prog. A | Real A | Błąd A
     | Prog. różn. | Real różn. | Błąd różn. | Prog. suma | Real suma | Błąd sumy
@@ -77,6 +82,7 @@ Błędne parametry (nieznany poziom rozgrywek lub płeć, ocena, rozmiar, model,
 | 3. Wskaźniki | [match_prediction_service.py](../../../../../services/match_prediction_service.py), presenter | `PodsumowaniePrognozCalculator`, `_wskazniki()` |
 | 3. Progi | [match_predictions.py](../../../../../domain/match_predictions.py) | `ProgiTrafnosci.progi_podsumowania` |
 | 4. Wiersze tabeli | presenter | `_pozycja()`, `PozycjaPrognozyViewModel`, skrót ligi z `SKROTY_POZIOMOW` |
+| 4. Druk tabeli | [list.html](list.html), [print_table.js](../../../../static/js/print_table.js), [admin.css](../../../../static/css/admin.css) | `.print-actions`, `[data-print-table]`, `data-print-subtitle`; `WydrukTabeliBuilder` (HTML i style karty druku), `DrukTabeliController` |
 | 4. Filtrowanie i strony | serwis | `RaportPrognozService.pobierz_raport()`, `_pasuje()` |
 | 4. Kliknięcie wiersza | [match_predictions.js](../../../../static/js/match_predictions.js) | `WierszePrognozController` |
 | 4. Klasy trafności | domena, presenter | `ProgiTrafnosci.klasyfikuj()`, `ETYKIETY_KLAS`, `.ocena-*` |

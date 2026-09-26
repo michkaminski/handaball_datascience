@@ -41,3 +41,5 @@ class WierszePrognozController {
 
 const tabelaPrognoz = document.querySelector('[data-prediction-report] #predictions-table');
 if (tabelaPrognoz) new WierszePrognozController(tabelaPrognoz, window).uruchom();
+const tabelaTypowan = document.querySelector('[data-tips-report] #tips-table');
+if (tabelaTypowan) new WierszePrognozController(tabelaTypowan, window).uruchom();

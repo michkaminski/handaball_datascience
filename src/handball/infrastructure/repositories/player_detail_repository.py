@@ -1,5 +1,5 @@
 from collections import defaultdict
-from dataclasses import fields
+from dataclasses import dataclass, fields
 
 from sqlalchemy import Integer, Select, and_, case, func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -21,7 +21,20 @@ from handball.infrastructure.database.models.competitions import Rozgrywki, Sezo
 from handball.infrastructure.database.models.matches import Mecz, MeczZawodnik
 from handball.infrastructure.database.models.players import Zawodnik
 from handball.infrastructure.database.models.rosters import Pozycja, SkladSezonowy
-from handball.infrastructure.database.models.teams import ZespolSezon
+from handball.infrastructure.database.models.teams import Zespol, ZespolSezon
+
+PodsumowanieSezonu = tuple[
+    str, int | None, int | None, int | None, int | None, int | None, int | None
+]
+
+
+@dataclass(frozen=True)
+class OpisDruzynySezonu:
+    sezon: str
+    rok: int | None
+    druzyna: str | None
+    nr_koszulki: int | None
+    pozycja: str | None
 
 
 class SzczegolyZawodnikaSQLAlchemyRepository:
@@ -41,63 +54,77 @@ class SzczegolyZawodnikaSQLAlchemyRepository:
                     Pozycja.nazwa,
                     ZespolSezon.id_sezon,
                     ZespolSezon.id_zespol,
+                    Sezon.rok_rozpoczecia,
                 )
                 .join(ZespolSezon, ZespolSezon.id == SkladSezonowy.id_zespol_sezon)
                 .join(Sezon, Sezon.id == ZespolSezon.id_sezon)
                 .outerjoin(Pozycja, Pozycja.id == SkladSezonowy.id_pozycja)
                 .where(SkladSezonowy.id_zawodnik == id_zawodnik)
-                .order_by(
-                    Sezon.rok_rozpoczecia.desc().nulls_last(),
-                    Sezon.id.desc(),
-                    ZespolSezon.nazwa.asc().nulls_last(),
-                    SkladSezonowy.id_zespol_sezon,
-                )
             ).all()
-            statystyki = self._pobierz_statystyki_sezonowe(id_zawodnik)
-            sezony = []
-            for sklad, sezon, druzyna, pozycja, id_sezon, id_zespol in wiersze:
-                podsumowania = statystyki.get((id_sezon, id_zespol), [None])
-                for podsumowanie in podsumowania:
+            statystyki, opisy = self._pobierz_statystyki_sezonowe(id_zawodnik)
+            sezony: list[tuple[tuple[int, int, str], DaneSezonoweZawodnika]] = []
+            w_skladach: set[tuple[int, int]] = set()
+            for sklad, sezon, druzyna, pozycja, id_sezon, id_zespol, rok in wiersze:
+                w_skladach.add((id_sezon, id_zespol))
+                klucz = (rok or 0, id_sezon, (druzyna or "").casefold())
+                for podsumowanie in statystyki.get((id_sezon, id_zespol), [None]):
                     sezony.append(
-                        DaneSezonoweZawodnika(
-                            sklad.id_zespol_sezon,
-                            sezon,
-                            druzyna,
-                            sklad.nr_koszulki,
-                            sklad.pozycja_nazwa or pozycja,
-                            sklad.wzrost,
-                            sklad.waga,
-                            *(podsumowanie or (None,) * 7),
+                        (
+                            klucz,
+                            DaneSezonoweZawodnika(
+                                sklad.id_zespol_sezon,
+                                sezon,
+                                druzyna,
+                                sklad.nr_koszulki,
+                                sklad.pozycja_nazwa or pozycja,
+                                sklad.wzrost,
+                                sklad.waga,
+                                *(podsumowanie or (None,) * 7),
+                            ),
                         )
                     )
+            for (id_sezon, id_zespol), podsumowania in statystyki.items():
+                if (id_sezon, id_zespol) in w_skladach:
+                    continue
+                opis = opisy[(id_sezon, id_zespol)]
+                klucz = (opis.rok or 0, id_sezon, (opis.druzyna or "").casefold())
+                for podsumowanie in podsumowania:
+                    sezony.append(
+                        (
+                            klucz,
+                            DaneSezonoweZawodnika(
+                                None,
+                                opis.sezon,
+                                opis.druzyna,
+                                opis.nr_koszulki,
+                                opis.pozycja,
+                                None,
+                                None,
+                                *podsumowanie,
+                            ),
+                        )
+                    )
+            sezony.sort(key=lambda wpis: (-wpis[0][0], -wpis[0][1], wpis[0][2]))
             return SzczegolyZawodnika(
                 id_zawodnik=zawodnik.id,
                 imie=zawodnik.imie,
                 nazwisko=zawodnik.nazwisko,
                 data_urodzenia=zawodnik.data_urodzenia,
                 foto_url=zawodnik.foto_url,
-                sezony=tuple(sezony),
+                sezony=tuple(dane for _, dane in sezony),
             )
         except SQLAlchemyError as wyjatek:
             raise BladOdczytuDanych("Nie udało się odczytać karty zawodnika.") from wyjatek
 
     def _pobierz_statystyki_sezonowe(
         self, id_zawodnik: int
-    ) -> dict[
-        tuple[int, int],
-        list[
-            tuple[
-                str,
-                int | None,
-                int | None,
-                int | None,
-                int | None,
-                int | None,
-                int | None,
-            ]
-        ],
+    ) -> tuple[
+        dict[tuple[int, int], list[PodsumowanieSezonu]],
+        dict[tuple[int, int], OpisDruzynySezonu],
     ]:
         id_zespol = StronyMeczuSql.zespol(MeczZawodnik.strona)
+        zespol_sezon = aliased(ZespolSezon)
+        zespol = aliased(Zespol)
         zapytanie = (
             select(
                 Mecz.id_sezon,
@@ -109,9 +136,20 @@ class SzczegolyZawodnikaSQLAlchemyRepository:
                 func.sum(MeczZawodnik.dwie_minuty),
                 func.sum(func.cast(MeczZawodnik.upomnienie, Integer)),
                 func.sum(func.cast(MeczZawodnik.dyskwalifikacja, Integer)),
+                func.max(Sezon.nazwa),
+                func.max(Sezon.rok_rozpoczecia),
+                func.max(func.coalesce(zespol_sezon.nazwa, zespol.nazwa)),
+                func.mode().within_group(MeczZawodnik.nr_koszulki.asc()),
+                func.mode().within_group(MeczZawodnik.pozycja.asc()),
             )
             .join(Mecz, Mecz.id == MeczZawodnik.id_mecz)
             .join(Rozgrywki, Rozgrywki.id == Mecz.id_rozgrywki)
+            .join(Sezon, Sezon.id == Mecz.id_sezon)
+            .outerjoin(
+                zespol_sezon,
+                (zespol_sezon.id_zespol == id_zespol) & (zespol_sezon.id_sezon == Mecz.id_sezon),
+            )
+            .outerjoin(zespol, zespol.id == id_zespol)
             .where(
                 MeczZawodnik.id_zawodnik == id_zawodnik,
                 MeczZawodnik.strona.in_(("gosp", "gosc")),
@@ -119,11 +157,18 @@ class SzczegolyZawodnikaSQLAlchemyRepository:
             .group_by(Mecz.id_sezon, id_zespol, Rozgrywki.nazwa)
             .order_by(Rozgrywki.nazwa)
         )
-        wynik = defaultdict(list)
-        for id_sezon, zespol, *wartosci in self._sesja.execute(zapytanie).all():
-            if zespol is not None:
-                wynik[(id_sezon, zespol)].append(tuple(wartosci))
-        return dict(wynik)
+        wynik: dict[tuple[int, int], list[PodsumowanieSezonu]] = defaultdict(list)
+        opisy: dict[tuple[int, int], OpisDruzynySezonu] = {}
+        for wiersz in self._sesja.execute(zapytanie).all():
+            id_sezon, zespol_meczu = wiersz[0], wiersz[1]
+            if zespol_meczu is None:
+                continue
+            wynik[(id_sezon, zespol_meczu)].append(tuple(wiersz[2:9]))
+            opisy.setdefault(
+                (id_sezon, zespol_meczu),
+                OpisDruzynySezonu(wiersz[9], wiersz[10], wiersz[11], wiersz[12], wiersz[13]),
+            )
+        return dict(wynik), opisy
 
     def pobierz_mecze(
         self, id_zawodnik: int, filtry: FiltryMeczowZawodnika

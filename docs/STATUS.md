@@ -1,6 +1,38 @@
 # Stan projektu
 
-Aktualizacja: 2026-09-25.
+Aktualizacja: 2026-09-26.
+
+## Karta zawodnika: drużyny spoza składów sezonowych — 2026-09-26
+
+Zakładka „Sezony i drużyny” pokazuje też drużyny, w których zawodnik ma wpisy meczowe, ale nie ma rekordu w `sklady` (zgłoszenie użytkownika: zawodnik 62101 w 2025/2026 grał w AZS UW Warszawa i ENERGA GWARDIA Koszalin, a skład sezonowy ma tylko AZS UW). Numer i pozycja takiego wiersza pochodzą z protokołów. Zakładka „Mecze” już wcześniej pokazywała obie drużyny. Kontrakt: [players/detail.md](../src/handball/interface/templates/admin/players/detail.md).
+
+## Zapowiedź meczu: kadra, nowa kolejność sekcji — 2026-09-26
+
+Na zlecenie użytkownika zapowiedź ma sekcje w kolejności: 1 Kadra w sezonie, 2 Forma, 3 Porównanie drużyn, 4 Mecze bezpośrednie, 5 Prognoza modelu. „Najlepszych strzelców sezonu” zastąpiła **Kadra w sezonie**: wszyscy zawodnicy z protokołów meczów drużyny w sezonie przed meczem, pogrupowani od bramkarzy, z numerem na koszulce, pozycją, liczbą meczów i bramkami. Kadra ma średnią bramek na mecz oraz kolumnę poprzedniego sezonu: bramki / średnia zawodnika we wszystkich klubach i rozgrywkach, z małą adnotacją „inny klub — bramki, mecze” i „inna liga” (inny poziom ligi niż mecz); u zawodników dodanych z poprzedniego sezonu wartości dotyczą tylko tej drużyny. Opcja dołącza zawodników, którzy w poprzednim sezonie zagrali w tej drużynie co najmniej 1 mecz (wejście na boisko, `wyjscie = true`). Przy nazwisku jest data urodzenia, a przycisk „Drukuj składy” otwiera nową kartę z kolorowymi składami obu drużyn jeden pod drugim na jednej kartce A4 (proporcje jak na stronie, całość skalowana do kartki, uwagi w jednej linii). Checkbox „Ukryj informacje o innym klubie i innej lidze” chowa te uwagi na stronie i w druku; wtedy druk ma tabele obok siebie na kartce A4 w poziomie. Pięciu najlepszych strzelców drużyny w sezonie jest oznaczonych „★ miejsce” i czerwonym polem bramek (ex aequo to samo miejsce). **Mecze bezpośrednie** pokazują wszystkie spotkania z wybranego okresu (domyślnie 10 lat; 5/15/20/wszystkie) bez limitu liczby. Kontrakt: [schedule/preview.md](../src/handball/interface/templates/admin/schedule/preview.md).
+
+Weryfikacja: 523 testy Pythona (poza istniejącym błędem `SECRET_KEY`) i 66 testów JavaScript; mypy bez błędów, Ruff bez nowych uwag. Na bazie (tylko odczyt) mecz 206529 (ok. 1,7 s): kadry 15 i 16 zawodników (26 i 22 z poprzednim sezonem), mecze bezpośrednie 22 z 10 lat. Wygląd sprawdzony w Edge headless. Bazy nie zmieniano.
+
+## Typowania: okno kolejki w terminarzu i raport — 2026-09-26
+
+Na zlecenie użytkownika nazwa kolejki w **Terminarzu** otwiera okno dialogowe z typowaniami wszystkich meczów kolejki (`/administracja/terminarz/typowania`). Każdy mecz pokazuje tylko nagłówek i sześć wartości: prognoza wyniku, typ modelu, typ prognozy, przewidywana różnica, przewidywana suma i Δ rating (z HOME_ADVANTAGE). Mecz nierozegrany dostaje prognozę na teraz, a rozegrany prognozę sprzed meczu. Kontrakt: [schedule/tips.md](../src/handball/interface/templates/admin/schedule/tips.md).
+
+Nowy raport **Typowania meczów** (Raporty › Typowania meczów, `/administracja/raporty/typowania-meczow`) ma filtry daty od–do (także przyszłe) i wielowybór rozgrywek. Domyślnie pokazuje dzisiejsze mecze wszystkich lig modelu. Wynikiem jest jedna tabela z kolumnami „Historii prognoz”, pogrupowana według ligi, rundy i kolejki, a w grupie według czasu. Ligi idą według poziomu: Superliga, Liga Centralna, I Liga, II Liga itd. Mecz rozegrany jest liczony jak w Historii prognoz, nierozegrany ma prognozę na teraz. Kontrakt: [reports/match_tips/list.md](../src/handball/interface/templates/admin/reports/match_tips/list.md).
+
+Obie tabele raportów (Typowania meczów i Historia prognoz) mają przycisk „Drukuj tabelę”. Otwiera on nową kartę z samą tabelą jako czystym tekstem, bez grafiki i linków ([print_table.js](../src/handball/interface/static/js/print_table.js)). Historia prognoz drukuje bieżącą stronę.
+
+Oba widoki liczą model raz na żądanie dla wszystkich meczów (`PrognozaZapowiedziService.pobierz_wiele()`). Zapytanie meczów terminarza jest wspólne (`ZapytanieMeczowTerminarza`).
+
+Weryfikacja: 8 nowych testów jednostkowych, 9 testów interfejsu i 3 testy JavaScript. Pełny zestaw: 506 testów Pythona (poza istniejącym błędem `SECRET_KEY`) i 58 testów JavaScript; mypy bez błędów, Ruff bez nowych uwag. Na bazie (tryb tylko do odczytu) 26.09.2026: dzisiaj 38 meczów w 10 grupach; 19.09–04.10.2026 — 136 meczów (50 rozegranych, 86 przyszłych). Raport odpowiada w 1,3–1,9 s, okno kolejki w ok. 1 s. Wygląd sprawdzony w Edge headless. Bazy nie zmieniano.
+
+## Terminarz i zapowiedź meczu — 2026-09-25
+
+Na zlecenie użytkownika w sidebarze Dane, zaraz po „Mecze”, jest **Terminarz** (`/administracja/terminarz`). Sezon i rozgrywki są wymagane (domyślnie najnowszy sezon), runda i kolejka opcjonalne; filtry są kaskadowe. Terminarz grupuje mecze według rundy, kolejki i dnia, z godziną, halą, statusem i wynikiem zakończonych meczów. Kontrakt: [schedule/list.md](../src/handball/interface/templates/admin/schedule/list.md).
+
+Każdy mecz ma **zapowiedź** (`/administracja/terminarz/<id_mecz>`), czyli program meczowy: nagłówek meczu, prognoza modelu `team_strength_v1`, porównanie drużyn w rozgrywkach, forma z 5 ostatnich meczów, mecze bezpośrednie i najlepsi strzelcy sezonu. Wszystkie statystyki pochodzą sprzed terminu meczu. Prognoza nierozegranego meczu to „prognoza na teraz” ze stanu modelu po wszystkich wpisanych wynikach ligi. Dla meczu zakończonego pokazujemy prognozę z raportu „Prognozy meczów” z oceną i linkiem do pełnego wyliczenia. Kontrakt: [schedule/preview.md](../src/handball/interface/templates/admin/schedule/preview.md).
+
+Weryfikacja: 20 testów jednostkowych (serwis terminarza, statystyki zapowiedzi, prognoza bieżąca i po meczu), 8 testów interfejsu i 3 testy JavaScript. Pełny zestaw: 485 testów Pythona (poza istniejącym błędem `SECRET_KEY`) i 53 testy JavaScript; mypy bez błędów, Ruff bez nowych uwag. Na bazie (tryb tylko do odczytu): LOTTO Superliga 2026/2027 ma 132 mecze w 22 kolejkach; zapowiedzi meczów nierozegranych, zakończonych i z `zamiana` zwracają 200, brak meczu 404. Wygląd sprawdzony w Edge headless. Zapowiedź ładuje się 2–4 s, bo backtest jest liczony przy każdym żądaniu. Bazy nie zmieniano.
+
+Następny krok (propozycja): cache wyniku backtestu na czas żądania/procesu, jeśli czas zapowiedzi będzie przeszkadzał, oraz tabela ligowa „przed meczem” w zapowiedzi (wymaga ustalenia reguł punktacji).
 
 ## Szczegóły meczu: okno drużyny — 2026-09-25
 

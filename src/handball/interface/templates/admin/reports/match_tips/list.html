@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block tytul %}Typowania meczów — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<div data-tips-report>
+<section class="pagehead">
+<div class="crumb">Start › Raporty › Typowania meczów</div>
+<h1>Typowania meczów</h1>
+<p>Prognozy meczów Superligi, Ligi Centralnej i I Ligi z wybranego okresu, także przyszłych. Mecz rozegrany ma prognozę sprzed meczu i ocenę jak w historii prognoz. Mecz nierozegrany ma prognozę ze stanu modelu po wszystkich wpisanych wynikach ligi. Model: <b>{{ raport.tytul_modelu }}</b> (<code>{{ raport.wersja_modelu }}</code>).</p>
+<div class="stats-strip prediction-scope">
+<span class="stat-pill">Okres: <b>{{ raport.okres }}</b></span>
+<span class="stat-pill">Meczów: <b>{{ raport.liczba_meczow }}</b></span>
+<span class="stat-pill">Rozegrane: <b>{{ raport.liczba_rozegranych }}</b></span>
+<span class="stat-pill">Przed meczem: <b>{{ raport.liczba_przyszlych }}</b></span>
+</div>
+</section>
+
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body tips-filters" method="get">
+<label>Data od<input type="date" name="data_od" value="{{ filtry.data_od.isoformat() }}" required></label>
+<label>Data do<input type="date" name="data_do" value="{{ filtry.data_do.isoformat() }}" required></label>
+<label class="tips-filter-competitions">Rozgrywki <small>(brak wyboru — wszystkie)</small>
+<select name="rozgrywki" multiple size="{{ [[raport.rozgrywki|length, 3]|max, 8]|min }}">
+{% for opcja in raport.rozgrywki %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc in filtry.rozgrywki %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+{% if raport.modele|length > 1 %}<label>Model<select name="model">{% for opcja in raport.modele %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == filtry.wersja_modelu %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}</select></label>{% endif %}
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.raport_typowan_meczow') }}">Dzisiaj, wszystkie ligi</a></div>
+</form>
+</section>
+
+<section class="panel">
+<h2>Typowania</h2>
+<div class="panel-body">
+<div class="print-actions"><button class="btn secondary small" type="button" data-print-table="#tips-table" data-print-title="Typowania meczów" data-print-subtitle="Okres: {{ raport.okres }} · Rozgrywki: {{ filtry.rozgrywki|sort|join(', ') if filtry.rozgrywki else 'wszystkie ligi' }} · Model: {{ raport.tytul_modelu }} ({{ raport.wersja_modelu }}) · Meczów: {{ raport.liczba_meczow }}" title="Otwiera tabelę w nowej karcie jako zwykły tekst do druku">Drukuj tabelę</button></div>
+<div class="table-wrap prediction-table-wrap">
+<table class="prediction-table tips-table" id="tips-table">
+<thead>
+<tr>
+<th scope="col">Data</th>
+<th scope="col">Godz.</th>
+<th scope="col">Sezon</th>
+<th scope="col" title="SL — Superliga, LC — Liga Centralna, 1L — I Liga; M — mężczyźni, K — kobiety">Liga</th>
+<th scope="col" class="num">Kol.</th>
+<th scope="col">Gospodarz</th>
+<th scope="col">Gość</th>
+<th scope="col" title="Rozegrany — prognoza sprzed meczu jak w historii prognoz; Przed meczem — prognoza na teraz">Stan</th>
+<th scope="col" class="num grp" title="Rating faktycznego gospodarza przed meczem">Rating H</th>
+<th scope="col" class="num" title="Rating gościa przed meczem">Rating A</th>
+<th scope="col" class="num" title="rating_home − rating_away + HOME_ADVANTAGE">Δ rating</th>
+<th scope="col" class="num grp" title="Zaokrąglony przewidywany wynik">Prognoza</th>
+<th scope="col" class="num">Wynik</th>
+<th scope="col" title="Zaokrąglona prognoza a wynik: dokładny wynik, dokładna różnica bramek albo odchylenie różnicy">Ocena wyniku</th>
+<th scope="col" title="Typ 1X2 z zaokrąglonego wyniku prognozy i czy się sprawdził">Typ prognozy</th>
+<th scope="col" class="num grp" title="Dokładna wartość pred_home">Prog. H</th>
+<th scope="col" class="num">Real H</th>
+<th scope="col" class="num">Błąd H</th>
+<th scope="col" class="num grp" title="Dokładna wartość pred_away">Prog. A</th>
+<th scope="col" class="num">Real A</th>
+<th scope="col" class="num">Błąd A</th>
+<th scope="col" class="num grp" title="predicted_margin">Prog. różn.</th>
+<th scope="col" class="num">Real różn.</th>
+<th scope="col" class="num">Błąd różn.</th>
+<th scope="col" class="num grp" title="predicted_total">Prog. suma</th>
+<th scope="col" class="num">Real suma</th>
+<th scope="col" class="num">Błąd sumy</th>
+<th scope="col" class="grp" title="Typ modelu H/X/A: próg DRAW_MARGIN_THRESHOLD dla predicted_margin">Typ modelu</th>
+<th scope="col" title="Rzeczywisty typ H/X/A">Wynik 1X2</th>
+<th scope="col" title="Czy typ modelu zgadza się z Wynikiem 1X2">Trafiony</th>
+<th scope="col" class="num grp" title="|pred_home − real_home| + |pred_away − real_away|">Score error</th>
+<th scope="col" title="Klasa score error">Ocena</th>
+</tr>
+</thead>
+{% for grupa in raport.grupy %}
+<tbody>
+<tr class="tips-group"><th scope="colgroup" colspan="32">{{ grupa.naglowek }}</th></tr>
+{% for w in grupa.wiersze %}
+{% if w.po_meczu %}
+{% set p = w.po_meczu %}
+{% set adres = url_for('administracja.szczegoly_prognozy_meczu', id_mecz=w.id_mecz) %}
+<tr data-href="{{ adres }}" data-tips-mode="po_meczu" title="Kliknij, aby zobaczyć szczegóły prognozy meczu">
+<td>{{ w.data }}</td>
+<td>{{ w.godzina }}</td>
+<td>{{ w.sezon }}</td>
+<td>{{ p.liga }}</td>
+<td class="num">{{ w.kolejka }}</td>
+<td><a class="player-link" href="{{ adres }}">{{ w.gospodarz }}</a></td>
+<td>{{ w.gosc }}</td>
+<td><span class="tips-state tips-state-played">Rozegrany</span></td>
+<td class="num grp">{{ p.rating_gospodarza }}</td>
+<td class="num">{{ p.rating_goscia }}</td>
+<td class="num">{{ p.roznica_ratingow }}</td>
+<td class="num grp score">{{ p.prognoza }}</td>
+<td class="num score">{{ p.wynik }}</td>
+<td><span class="prediction-grade {{ p.klasa_oceny_wyniku }}" title="{{ p.opis_oceny_wyniku }}">{{ p.ocena_wyniku }}</span></td>
+<td><span class="prediction-hit {{ 'hit' if p.poprawny_typ_prognozy else 'miss' }}">{{ '✓' if p.poprawny_typ_prognozy else '✕' }} {{ p.typ_prognozy }} · {{ p.ocena_typu_prognozy }}</span></td>
+<td class="num grp">{{ p.prognoza_gospodarza }}</td>
+<td class="num">{{ p.bramki_gospodarza }}</td>
+<td class="num muted">{{ p.blad_gospodarza }}</td>
+<td class="num grp">{{ p.prognoza_goscia }}</td>
+<td class="num">{{ p.bramki_goscia }}</td>
+<td class="num muted">{{ p.blad_goscia }}</td>
+<td class="num grp">{{ p.prognoza_roznicy }}</td>
+<td class="num">{{ p.roznica }}</td>
+<td class="num muted">{{ p.blad_roznicy }}</td>
+<td class="num grp">{{ p.prognoza_sumy }}</td>
+<td class="num">{{ p.suma }}</td>
+<td class="num muted">{{ p.blad_sumy }}</td>
+<td class="grp"><b>{{ p.typ }}</b></td>
+<td>{{ p.typ_rzeczywisty }}</td>
+<td><span class="prediction-hit {{ 'hit' if p.trafiony else 'miss' }}">{{ '✓' if p.trafiony else '✕' }} {{ p.trafiony_tekst }}</span></td>
+<td class="num grp"><b>{{ p.blad_wyniku }}</b></td>
+<td><span class="prediction-grade {{ p.klasa_oceny }}">{{ p.ocena }}</span></td>
+</tr>
+{% elif w.przyszla %}
+{% set f = w.przyszla %}
+{% set adres = url_for('administracja.zapowiedz_meczu', id_mecz=w.id_mecz) %}
+<tr data-href="{{ adres }}" data-tips-mode="biezaca" title="Kliknij, aby zobaczyć zapowiedź meczu">
+<td>{{ w.data }}</td>
+<td>{{ w.godzina }}</td>
+<td>{{ w.sezon }}</td>
+<td>{{ f.liga }}</td>
+<td class="num">{{ w.kolejka }}</td>
+<td><a class="player-link" href="{{ adres }}">{{ w.gospodarz }}</a></td>
+<td>{{ w.gosc }}</td>
+<td><span class="tips-state tips-state-upcoming">Przed meczem</span></td>
+<td class="num grp">{{ f.rating_gospodarza }}</td>
+<td class="num">{{ f.rating_goscia }}</td>
+<td class="num">{{ f.roznica_ratingow }}</td>
+<td class="num grp score">{{ f.prognoza }}</td>
+<td class="num muted">—</td>
+<td class="muted">—</td>
+<td>{{ f.typ_prognozy }}</td>
+<td class="num grp">{{ f.prognoza_gospodarza }}</td>
+<td class="num muted">—</td>
+<td class="num muted">—</td>
+<td class="num grp">{{ f.prognoza_goscia }}</td>
+<td class="num muted">—</td>
+<td class="num muted">—</td>
+<td class="num grp">{{ f.prognoza_roznicy }}</td>
+<td class="num muted">—</td>
+<td class="num muted">—</td>
+<td class="num grp">{{ f.prognoza_sumy }}</td>
+<td class="num muted">—</td>
+<td class="num muted">—</td>
+<td class="grp"><b>{{ f.typ }}</b></td>
+<td class="muted">—</td>
+<td class="muted">—</td>
+<td class="num grp muted">—</td>
+<td class="muted">—</td>
+</tr>
+{% else %}
+{% set adres = url_for('administracja.zapowiedz_meczu', id_mecz=w.id_mecz) %}
+<tr data-href="{{ adres }}" data-tips-mode="brak" title="Kliknij, aby zobaczyć zapowiedź meczu">
+<td>{{ w.data }}</td>
+<td>{{ w.godzina }}</td>
+<td>{{ w.sezon }}</td>
+<td>—</td>
+<td class="num">{{ w.kolejka }}</td>
+<td><a class="player-link" href="{{ adres }}">{{ w.gospodarz }}</a></td>
+<td>{{ w.gosc }}</td>
+<td><span class="tips-state">Bez prognozy</span></td>
+<td class="grp note" colspan="24">{{ w.opis_braku }}{% if w.wynik != '—' %} Wynik: {{ w.wynik }}.{% endif %}</td>
+</tr>
+{% endif %}
+{% endfor %}
+</tbody>
+{% else %}
+<tbody><tr><td colspan="32" class="note" data-tips-empty>Brak meczów w wybranym okresie i rozgrywkach.</td></tr></tbody>
+{% endfor %}
+</table>
+</div>
+</div>
+</section>
+</div>
+<script src="{{ url_for('static', filename='js/match_predictions.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/print_table.js') }}" defer></script>
+{% endblock %}

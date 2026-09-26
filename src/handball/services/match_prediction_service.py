@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import statistics
 from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 
 from handball.contracts.match_prediction_repository import MeczeLigoweReadRepository
 from handball.domain.errors import NieZnalezionoPrognozy, NieznanyModelPrognoz
@@ -20,7 +21,9 @@ from handball.domain.match_predictions import (
     PodsumowaniePrognoz,
     PowodWykluczenia,
     ProgiTrafnosci,
+    PrognozaBiezaca,
     PrognozaMeczu,
+    PrognozaZapowiedzi,
     RaportPrognoz,
     SezonPrognoz,
     StronaPrognoz,
@@ -110,6 +113,19 @@ class PodzialSezonowPolicy:
         return dostepne if docelowa is None else min(docelowa, dostepne)
 
 
+@dataclass(frozen=True)
+class StanLigi:
+    liczba_meczow: int
+    ostatni_mecz: datetime
+
+
+@dataclass(frozen=True)
+class PrzeliczenieModelu:
+    wynik: WynikBacktestu
+    modele: Mapping[Liga, ModelSilyDruzyn]
+    mecze: tuple[MeczLigowy, ...]
+
+
 class BacktestPrognozService:
     def __init__(
         self,
@@ -128,6 +144,11 @@ class BacktestPrognozService:
         self._wzorce = wzorce
 
     def uruchom(self, wersja_modelu: str, zakres: ZakresBacktestu | None = None) -> WynikBacktestu:
+        return self.przelicz(wersja_modelu, zakres).wynik
+
+    def przelicz(
+        self, wersja_modelu: str, zakres: ZakresBacktestu | None = None
+    ) -> PrzeliczenieModelu:
         definicja = self._katalog.definicja(wersja_modelu)
         surowe = self._repozytorium.pobierz_mecze(self._wzorce)
         wykluczenia: Counter[PowodWykluczenia] = Counter()
@@ -161,13 +182,17 @@ class BacktestPrognozService:
                     w_raporcie=mecz.sezon.id_sezon in sezony_raportu,
                 )
             )
-        return WynikBacktestu(
-            prognozy=tuple(prognozy),
-            sezony_raportu=podzial.raport,
-            sezony_rozgrzewki=podzial.rozgrzewka,
-            sezon_w_toku=podzial.w_toku,
-            wykluczenia=dict(wykluczenia),
-            parametry=definicja.konfiguracja,
+        return PrzeliczenieModelu(
+            wynik=WynikBacktestu(
+                prognozy=tuple(prognozy),
+                sezony_raportu=podzial.raport,
+                sezony_rozgrzewki=podzial.rozgrzewka,
+                sezon_w_toku=podzial.w_toku,
+                wykluczenia=dict(wykluczenia),
+                parametry=definicja.konfiguracja,
+            ),
+            modele=modele,
+            mecze=tuple(surowe),
         )
 
 
@@ -312,3 +337,91 @@ class SzczegolyPrognozyService:
     ) -> tuple[PrognozaMeczu, ...]:
         druzyny = [p for p in prognozy if p.dotyczy_druzyny(id_zespol)]
         return tuple(reversed(druzyny[-self.DLUGOSC_HISTORII :]))
+
+
+class PrognozaZapowiedziService:
+    def __init__(
+        self,
+        backtest: BacktestPrognozService,
+        katalog: KatalogModeliPrognoz,
+        kwalifikacja: KwalifikacjaMeczuPolicy,
+    ) -> None:
+        self._backtest = backtest
+        self._katalog = katalog
+        self._kwalifikacja = kwalifikacja
+
+    def pobierz(self, wersja_modelu: str, id_mecz: int) -> PrognozaZapowiedzi:
+        return self.pobierz_wiele(wersja_modelu, (id_mecz,))[id_mecz]
+
+    def pobierz_wiele(
+        self, wersja_modelu: str, id_meczow: Iterable[int]
+    ) -> dict[int, PrognozaZapowiedzi]:
+        opis = self._katalog.definicja(wersja_modelu).opis
+        przeliczenie = self._backtest.przelicz(wersja_modelu)
+        prognozy = {p.mecz.id_mecz: p for p in przeliczenie.wynik.prognozy}
+        surowe = {m.id_mecz: m for m in przeliczenie.mecze}
+        ligi = self._stan_lig(przeliczenie.wynik.prognozy)
+        return {
+            id_mecz: self._rozstrzygnij(
+                wersja_modelu,
+                opis,
+                przeliczenie,
+                ligi,
+                prognozy.get(id_mecz),
+                surowe.get(id_mecz),
+            )
+            for id_mecz in id_meczow
+        }
+
+    def _stan_lig(self, prognozy: Sequence[PrognozaMeczu]) -> dict[Liga, StanLigi]:
+        ligi: dict[Liga, StanLigi] = {}
+        for prognoza in prognozy:
+            poprzedni = ligi.get(prognoza.mecz.liga)
+            ligi[prognoza.mecz.liga] = StanLigi(
+                (poprzedni.liczba_meczow if poprzedni else 0) + 1, prognoza.mecz.data
+            )
+        return ligi
+
+    def _rozstrzygnij(
+        self,
+        wersja_modelu: str,
+        opis: OpisModeluPrognoz,
+        przeliczenie: PrzeliczenieModelu,
+        ligi: Mapping[Liga, StanLigi],
+        prognoza: PrognozaMeczu | None,
+        surowy: MeczLigowy | None,
+    ) -> PrognozaZapowiedzi:
+        if prognoza is not None:
+            return PrognozaZapowiedzi(opis, po_meczu=prognoza)
+        if surowy is None:
+            return PrognozaZapowiedzi(opis, powod_braku=PowodWykluczenia.NIEZNANA_LIGA)
+        if surowy.wynik_gosp is not None and surowy.wynik_gosc is not None:
+            return PrognozaZapowiedzi(
+                opis, powod_braku=self._kwalifikacja.powod_wykluczenia(surowy)
+            )
+        powod = self._kwalifikacja.powod_braku_zapowiedzi(surowy)
+        if powod is not None:
+            return PrognozaZapowiedzi(opis, powod_braku=powod)
+        return PrognozaZapowiedzi(
+            opis, biezaca=self._biezaca(wersja_modelu, przeliczenie, ligi, surowy)
+        )
+
+    def _biezaca(
+        self,
+        wersja_modelu: str,
+        przeliczenie: PrzeliczenieModelu,
+        ligi: Mapping[Liga, StanLigi],
+        surowy: MeczLigowy,
+    ) -> PrognozaBiezaca:
+        mecz = self._kwalifikacja.do_zapowiedzi(surowy)
+        model = przeliczenie.modele.get(mecz.liga) or self._katalog.utworz_model(wersja_modelu)
+        stan = model.stan_przed_meczem(mecz)
+        liga = ligi.get(mecz.liga)
+        return PrognozaBiezaca(
+            mecz=mecz,
+            stan=stan,
+            prognoza=model.prognozuj(stan),
+            parametry=model.konfiguracja,
+            liczba_meczow_ligi=liga.liczba_meczow if liga else 0,
+            ostatni_mecz_ligi=liga.ostatni_mecz if liga else None,
+        )

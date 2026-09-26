@@ -221,3 +221,15 @@ def test_filtry_poziomu_i_plci_oraz_skrot_ligi() -> None:
     szczegoly = klient.get("/administracja/raporty/prognozy-meczow/2").get_data(as_text=True)
     assert "I Liga kobiet" in szczegoly
     assert klient.get("/administracja/raporty/prognozy-meczow?poziom=ii_liga").status_code == 400
+
+
+def test_przycisk_druku_historii_prognoz() -> None:
+    tresc = (
+        aplikacja()
+        .test_client()
+        .get("/administracja/raporty/prognozy-meczow?rozmiar=50")
+        .get_data(as_text=True)
+    )
+    assert 'data-print-table="#predictions-table"' in tresc
+    assert "Prognozy meczów — siła drużyn: historia prognoz" in tresc
+    assert "Wiersze 1–" in tresc and "js/print_table.js" in tresc

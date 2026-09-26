@@ -6,6 +6,7 @@ from handball.interface.admin.forms.match_prediction_filters import (
     PrognozyMeczowFilterForm,
     ZakresRaportuForm,
 )
+from handball.interface.admin.forms.match_tip_filters import TypowaniaFilterForm
 from handball.interface.errors import obsluz_blad_domeny
 from handball.interface.report_catalog import KATALOG_RAPORTOW
 from handball.request_dependencies import ZaleznosciZadaniaFactory
@@ -100,4 +101,29 @@ class PrognozaMeczuSzczegolyView(MethodView):
             ),
             parametry_powrotu=request.args.to_dict(flat=False),
             sezony_raportu=formularz.sezony_raportu.data,
+        )
+
+
+class TypowaniaMeczowView(MethodView):
+    def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+        self._fabryka = fabryka_zaleznosci
+
+    def get(self) -> str:
+        formularz = TypowaniaFilterForm(request.args)
+        if not formularz.validate():
+            abort(400, description=str(formularz.errors))
+        serwis = self._fabryka.utworz_raport_typowan()
+        try:
+            filtry = serwis.filtry(formularz.do_wyboru())
+            raport = serwis.pobierz_raport(filtry)
+        except ValueError as wyjatek:
+            abort(400, description=str(wyjatek))
+        except BladOdczytuDanych as wyjatek:
+            obsluz_blad_domeny(wyjatek)
+        return render_template(
+            "admin/reports/match_tips/list.html",
+            sekcja_aktywna="typowania_meczow",
+            sekcja_glowna="raporty",
+            raport=self._fabryka.utworz_presenter_typowan().przygotuj_raport(raport),
+            filtry=filtry,
         )

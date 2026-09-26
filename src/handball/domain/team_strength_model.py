@@ -8,6 +8,7 @@ from handball.domain.match_predictions import (
     AktualizacjaRatingu,
     KonfiguracjaSilyDruzyn,
     MeczDoPrognozy,
+    MeczPrzyszly,
     PrognozaPunktowa,
     RatingPrzedMeczem,
     RegresjaSezonowa,
@@ -70,7 +71,7 @@ class ModelSilyDruzyn:
     def rating(self, id_zespol: int) -> float | None:
         return self._ratingi.get(id_zespol)
 
-    def stan_przed_meczem(self, mecz: MeczDoPrognozy) -> StanPrzedMeczem:
+    def stan_przed_meczem(self, mecz: MeczDoPrognozy | MeczPrzyszly) -> StanPrzedMeczem:
         self._przejdz_do_sezonu(mecz.sezon)
         stan = StanPrzedMeczem(
             gospodarz=self._rating_przed_meczem(mecz.gospodarz.id_zespol),

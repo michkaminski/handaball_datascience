@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block tytul %}Terminarz — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Dane › Terminarz</div>
+<h1>Terminarz</h1>
+<p>Terminarz rozgrywek pogrupowany według rundy, kolejki i dnia. Zakończone mecze pokazują wynik po 60 minutach, a każdy mecz ma zapowiedź z prognozą i statystykami sprzed meczu.</p>
+</section>
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body schedule-filters" method="get" data-schedule-filters>
+<label class="schedule-field schedule-field-season"><span>Sezon <abbr class="required-mark" title="pole wymagane">*</abbr></span>
+<select name="id_sezon" data-schedule-level="0">
+{% for opcja in opcje.sezony %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == opcje.wybor.id_sezon %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+<label class="schedule-field schedule-field-competition"><span>Rozgrywki <abbr class="required-mark" title="pole wymagane">*</abbr></span>
+<select name="id_rozgrywki" data-schedule-level="1">
+<option value="">— wybierz rozgrywki —</option>
+{% for opcja in opcje.rozgrywki %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == opcje.wybor.id_rozgrywki %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+<label class="schedule-field"><span>Runda</span>
+<select name="id_runda" data-schedule-level="2"{% if not opcje.rundy %} disabled{% endif %}>
+<option value="">Wszystkie</option>
+{% for opcja in opcje.rundy %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == opcje.wybor.id_runda %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+<label class="schedule-field"><span>Kolejka</span>
+<select name="id_kolejka" data-schedule-level="3"{% if not opcje.kolejki %} disabled{% endif %}>
+<option value="">Wszystkie</option>
+{% for opcja in opcje.kolejki %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == opcje.wybor.id_kolejka %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+<div class="schedule-filter-actions">
+<button class="btn" type="submit">Filtruj</button>
+<a class="btn secondary" href="{{ url_for('administracja.terminarz') }}">Wyczyść</a>
+</div>
+</form>
+</section>
+{% if terminarz is none %}
+<section class="panel">
+<div class="panel-body">
+<p class="notice" data-schedule-prompt>Wybierz sezon i rozgrywki, aby zobaczyć terminarz. Runda i kolejka są opcjonalne.</p>
+</div>
+</section>
+{% elif not terminarz.rundy %}
+<section class="panel">
+<div class="panel-body">
+<p class="note" data-schedule-empty>Brak meczów dla wybranych filtrów.</p>
+</div>
+</section>
+{% else %}
+<section class="schedule" aria-label="Terminarz">
+<p class="schedule-total">Meczów w terminarzu: <b>{{ terminarz.liczba_meczow }}</b></p>
+{% for runda in terminarz.rundy %}
+<h2 class="schedule-round">{{ runda.nazwa }}</h2>
+{% for kolejka in runda.kolejki %}
+<section class="schedule-matchday">
+<h3 class="schedule-matchday-title">{% if kolejka.id_kolejka is not none %}<a href="{{ url_for('administracja.typowania_kolejki', id_sezon=opcje.wybor.id_sezon, id_rozgrywki=opcje.wybor.id_rozgrywki, id_kolejka=kolejka.id_kolejka) }}" data-tips-link title="Typowania meczów kolejki">{{ kolejka.nazwa }}</a>{% else %}{{ kolejka.nazwa }}{% endif %}</h3>
+<p class="schedule-matchday-meta">{{ kolejka.zakres_dat }} · zakończone {{ kolejka.liczba_zakonczonych }}/{{ kolejka.liczba_meczow }}</p>
+{% for dzien in kolejka.dni %}
+<h4 class="schedule-day">{{ dzien.data }}</h4>
+<ul class="schedule-list">
+{% for mecz in dzien.mecze %}
+<li class="schedule-row status-{{ mecz.status }}" data-href="{{ url_for('administracja.zapowiedz_meczu', id_mecz=mecz.id_mecz, **parametry) }}">
+<span class="schedule-time">{{ mecz.godzina }}{% if mecz.termin_proponowany %} <small title="Termin z data_propozycji — godzina nieustalona">prop.</small>{% endif %}</span>
+<span class="schedule-home" title="{{ mecz.gospodarz }}">{{ mecz.gospodarz }}</span>
+<span class="schedule-score">{{ mecz.wynik }}{% if mecz.dopisek %} <small>{{ mecz.dopisek }}</small>{% endif %}</span>
+<span class="schedule-away" title="{{ mecz.gosc }}">{{ mecz.gosc }}</span>
+<span class="schedule-venue" title="{{ mecz.hala }}">{{ mecz.hala }}</span>
+<span class="schedule-status"><span class="schedule-badge">{% if mecz.status == 'rozegrany' %}✓ {% endif %}{{ mecz.etykieta_statusu }}</span></span>
+<span class="schedule-actions"><a href="{{ url_for('administracja.zapowiedz_meczu', id_mecz=mecz.id_mecz, **parametry) }}" title="Zapowiedź meczu z prognozą i statystykami">Zapowiedź</a> <a class="schedule-secondary" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=mecz.id_mecz) }}" target="_blank" rel="noopener" title="Szczegóły meczu w nowej karcie">Szczegóły</a></span>
+</li>
+{% endfor %}
+</ul>
+{% endfor %}
+</section>
+{% endfor %}
+{% endfor %}
+</section>
+{% endif %}
+<dialog class="match-detail-dialog tips-dialog" data-tips-dialog aria-labelledby="tips-dialog-title"><div class="modal-head"><h2 id="tips-dialog-title" data-tips-dialog-title>Typowania kolejki</h2><button class="close" type="button" data-tips-close aria-label="Zamknij typowania kolejki" autofocus>×</button></div><div class="modal-body" data-tips-content aria-live="polite"></div><div class="modal-foot"><a class="btn secondary" data-tips-open-tab target="_blank" rel="noopener">Otwórz w nowej karcie</a><button class="btn secondary" type="button" data-tips-close>Zamknij</button></div></dialog>
+<script src="{{ url_for('static', filename='js/schedule.js') }}" defer></script>
+{% endblock %}

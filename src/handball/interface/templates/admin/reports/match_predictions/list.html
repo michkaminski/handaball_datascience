@@ -66,6 +66,7 @@
 <section class="panel">
 <h2>Historia prognoz</h2>
 <div class="panel-body">
+<div class="print-actions"><button class="btn secondary small" type="button" data-print-table="#predictions-table" data-print-title="Prognozy meczów — siła drużyn: historia prognoz" data-print-subtitle="Model: {{ raport.tytul_modelu }} ({{ raport.wersja_modelu }}) · Zakres raportu: {{ raport.zakres_raportu }} · Wiersze {{ raport.strona.zakres_wierszy }}" title="Otwiera tabelę w nowej karcie jako zwykły tekst do druku">Drukuj tabelę</button></div>
 <div class="table-wrap prediction-table-wrap">
 <table class="prediction-table" id="predictions-table">
 <thead>
@@ -168,4 +169,5 @@
 </section>
 </div>
 <script src="{{ url_for('static', filename='js/match_predictions.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/print_table.js') }}" defer></script>
 {% endblock %}

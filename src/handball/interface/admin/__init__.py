@@ -22,6 +22,12 @@ from handball.interface.admin.views.report_views import (
     PrognozaMeczuSzczegolyView,
     PrognozyMeczowListView,
     RaportyListView,
+    TypowaniaMeczowView,
+)
+from handball.interface.admin.views.schedule_views import (
+    TerminarzView,
+    TypowaniaKolejkiView,
+    ZapowiedzMeczuView,
 )
 from handball.interface.admin.views.start import StartView
 from handball.interface.admin.views.team_detail_views import DruzynaSzczegolyView
@@ -54,6 +60,17 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/mecze/<int:id_mecz>",
         view_func=MeczSzczegolyView.as_view("szczegoly_meczu", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/terminarz", view_func=TerminarzView.as_view("terminarz", fabryka_zaleznosci)
+    )
+    blueprint.add_url_rule(
+        "/terminarz/typowania",
+        view_func=TypowaniaKolejkiView.as_view("typowania_kolejki", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/terminarz/<int:id_mecz>",
+        view_func=ZapowiedzMeczuView.as_view("zapowiedz_meczu", fabryka_zaleznosci),
     )
     blueprint.add_url_rule(
         "/zawodnicy",
@@ -115,5 +132,9 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
         view_func=PrognozaMeczuSzczegolyView.as_view(
             "szczegoly_prognozy_meczu", fabryka_zaleznosci
         ),
+    )
+    blueprint.add_url_rule(
+        "/raporty/typowania-meczow",
+        view_func=TypowaniaMeczowView.as_view("raport_typowan_meczow", fabryka_zaleznosci),
     )
     return blueprint

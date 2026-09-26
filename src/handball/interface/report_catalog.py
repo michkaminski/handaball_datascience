@@ -22,4 +22,12 @@ KATALOG_RAPORTOW: tuple[PozycjaRaportu, ...] = (
         "Model predykcyjny",
         "administracja.raport_prognoz_meczow",
     ),
+    PozycjaRaportu(
+        "typowania_meczow",
+        "Typowania meczów",
+        "Prognozy meczów z wybranego okresu, także przyszłych. Mecz rozegrany ma prognozę "
+        "i ocenę jak w historii prognoz, nierozegrany prognozę ze stanu modelu na teraz.",
+        "Model predykcyjny",
+        "administracja.raport_typowan_meczow",
+    ),
 )

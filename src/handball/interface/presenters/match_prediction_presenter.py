@@ -9,14 +9,20 @@ from handball.domain.match_predictions import (
     KlasaWyniku,
     KonfiguracjaSilyDruzyn,
     Liga,
+    MeczDoPrognozy,
+    MeczPrzyszly,
     Plec,
     PodsumowaniePrognoz,
     PowodWykluczenia,
     PoziomRozgrywek,
+    PrognozaBiezaca,
     PrognozaMeczu,
+    PrognozaPunktowa,
+    PrognozaZapowiedzi,
     RaportPrognoz,
     RatingPrzedMeczem,
     SezonPrognoz,
+    StanPrzedMeczem,
     SzczegolyPrognozy,
     Typ1X2,
     UczestnikPrognozy,
@@ -28,12 +34,15 @@ from handball.interface.view_models.match_predictions import (
     KrokObliczeniaViewModel,
     OpcjaViewModel,
     PozycjaPrognozyViewModel,
+    PrognozaPrzyszlaViewModel,
+    PrognozaZapowiedziViewModel,
     RaportPrognozViewModel,
     StronaPrognozViewModel,
     SzczegolyPrognozyViewModel,
     WierszHistoriiViewModel,
     WierszRatinguViewModel,
     WskaznikViewModel,
+    WskaznikZapowiedziViewModel,
 )
 
 BRAK = "—"
@@ -235,7 +244,7 @@ class PrognozaMeczuPresenter:
             tytul_modelu=raport.model.nazwa,
             wersja_modelu=raport.model.wersja,
             strona=StronaPrognozViewModel(
-                tuple(self._pozycja(p) for p in raport.strona.pozycje),
+                tuple(self.pozycja(p) for p in raport.strona.pozycje),
                 raport.strona.liczba_wszystkich,
                 raport.strona.strona,
                 raport.strona.rozmiar_strony,
@@ -353,14 +362,168 @@ class PrognozaMeczuPresenter:
             definicje=tuple(DefinicjaPojeciaViewModel(a, b) for a, b in DEFINICJE_MODELU),
         )
 
-    def _pozycja(self, p: PrognozaMeczu) -> PozycjaPrognozyViewModel:
+    def przygotuj_zapowiedz(self, zapowiedz: PrognozaZapowiedzi) -> PrognozaZapowiedziViewModel:
+        if zapowiedz.po_meczu is not None:
+            return self._zapowiedz_po_meczu(zapowiedz, zapowiedz.po_meczu)
+        if zapowiedz.biezaca is not None:
+            return self._zapowiedz_biezaca(zapowiedz, zapowiedz.biezaca)
+        return PrognozaZapowiedziViewModel(
+            tryb="brak",
+            tytul_modelu=zapowiedz.model.nazwa,
+            wersja_modelu=zapowiedz.model.wersja,
+            opis=self.opis_braku(zapowiedz.powod_braku),
+        )
+
+    def opis_braku(self, powod: PowodWykluczenia | None) -> str:
+        if powod is None or powod is PowodWykluczenia.NIEZNANA_LIGA:
+            return "Prognoza niedostępna: model obejmuje Superligę, Ligę Centralną i I Ligę."
+        return f"Prognoza niedostępna: {ETYKIETY_WYKLUCZEN[powod].lower()}."
+
+    def wskazniki_typowania(
+        self, prognoza: PrognozaPunktowa
+    ) -> tuple[WskaznikZapowiedziViewModel, ...]:
+        n = self._liczby
+        return (
+            WskaznikZapowiedziViewModel("Prognoza wyniku", self._wynik_prognozy(prognoza)),
+            WskaznikZapowiedziViewModel("Typ modelu", ETYKIETY_TYPOW[prognoza.typ]),
+            WskaznikZapowiedziViewModel("Typ prognozy", ETYKIETY_TYPOW[prognoza.typ_prezentowany]),
+            WskaznikZapowiedziViewModel(
+                "Przewidywana różnica", n.ze_znakiem(prognoza.przewidywana_roznica)
+            ),
+            WskaznikZapowiedziViewModel("Przewidywana suma", n.liczba(prognoza.przewidywana_suma)),
+            WskaznikZapowiedziViewModel(
+                "Δ rating (z HOME_ADVANTAGE)", n.ze_znakiem(prognoza.roznica_ratingow)
+            ),
+        )
+
+    def prognoza_przyszla(self, b: PrognozaBiezaca) -> PrognozaPrzyszlaViewModel:
+        n, prognoza = self._liczby, b.prognoza
+        return PrognozaPrzyszlaViewModel(
+            liga=self.skrot_ligi(b.mecz.liga),
+            rating_gospodarza=n.liczba(b.stan.gospodarz.rating),
+            rating_goscia=n.liczba(b.stan.gosc.rating),
+            roznica_ratingow=n.ze_znakiem(prognoza.roznica_ratingow),
+            prognoza=self._wynik_prognozy(prognoza),
+            prognoza_gospodarza=n.liczba(prognoza.bramki_gospodarza),
+            prognoza_goscia=n.liczba(prognoza.bramki_goscia),
+            prognoza_roznicy=n.ze_znakiem(prognoza.przewidywana_roznica),
+            prognoza_sumy=n.liczba(prognoza.przewidywana_suma),
+            typ=prognoza.typ.value,
+            typ_prognozy=prognoza.typ_prezentowany.value,
+        )
+
+    def skrot_ligi(self, liga: Liga) -> str:
+        return f"{SKROTY_POZIOMOW[liga.poziom]} {liga.plec.value}"
+
+    def _zapowiedz_biezaca(
+        self, zapowiedz: PrognozaZapowiedzi, b: PrognozaBiezaca
+    ) -> PrognozaZapowiedziViewModel:
+        n, prognoza = self._liczby, b.prognoza
+        ostatni = (
+            f", ostatni z {b.ostatni_mecz_ligi.strftime('%d.%m.%Y')}" if b.ostatni_mecz_ligi else ""
+        )
+        return PrognozaZapowiedziViewModel(
+            tryb="biezaca",
+            tytul_modelu=zapowiedz.model.nazwa,
+            wersja_modelu=zapowiedz.model.wersja,
+            opis=(
+                f"Prognoza na teraz: stan modelu po {b.liczba_meczow_ligi} rozegranych meczach "
+                f"ligi {self._nazwa_ligi(b.mecz.liga)}{ostatni}. Zmieni się po każdym "
+                "kolejnym wyniku wpisanym przed tym meczem."
+            ),
+            wskazniki=self.wskazniki_typowania(prognoza),
+            ratingi=(
+                WierszRatinguViewModel(
+                    b.mecz.gospodarz.nazwa, n.liczba(b.stan.gospodarz.rating), BRAK, BRAK, ""
+                ),
+                WierszRatinguViewModel(
+                    b.mecz.gosc.nazwa, n.liczba(b.stan.gosc.rating), BRAK, BRAK, ""
+                ),
+            ),
+            uwagi=self._uwagi_zapowiedzi(b.mecz, b.stan, b.parametry),
+            kroki=self._kroki_prognozy(b.mecz, b.stan, prognoza, b.parametry),
+        )
+
+    def _zapowiedz_po_meczu(
+        self, zapowiedz: PrognozaZapowiedzi, p: PrognozaMeczu
+    ) -> PrognozaZapowiedziViewModel:
+        n, ocena = self._liczby, p.ocena
+        return PrognozaZapowiedziViewModel(
+            tryb="po_meczu",
+            tytul_modelu=zapowiedz.model.nazwa,
+            wersja_modelu=zapowiedz.model.wersja,
+            opis=(
+                "Mecz zakończony: prognoza ze stanu modelu sprzed meczu, tak jak w raporcie "
+                "„Prognozy meczów”, porównana z wynikiem po 60 minutach."
+            ),
+            wskazniki=(
+                WskaznikZapowiedziViewModel("Prognoza wyniku", self._prognoza(p)),
+                WskaznikZapowiedziViewModel("Rzeczywisty wynik", self._wynik(p)),
+                WskaznikZapowiedziViewModel("Typ modelu", ETYKIETY_TYPOW[p.prognoza.typ]),
+                WskaznikZapowiedziViewModel("Rzeczywisty typ", ETYKIETY_TYPOW[ocena.typ]),
+                WskaznikZapowiedziViewModel(
+                    "Trafiony",
+                    "TAK" if ocena.trafiony else "NIE",
+                    "kpi-hit" if ocena.trafiony else "kpi-miss",
+                ),
+                WskaznikZapowiedziViewModel(
+                    "Ocena wyniku",
+                    ETYKIETY_KLAS_WYNIKU[ocena.klasa_wyniku],
+                    self._klasa_wyniku_css(ocena.klasa_wyniku),
+                ),
+                WskaznikZapowiedziViewModel(
+                    "Typ prognozy",
+                    f"{ocena.typ_prezentowany.value} — "
+                    f"{self._ocena_typu_prognozy(ocena.poprawny_typ_prognozy)}",
+                    "kpi-hit" if ocena.poprawny_typ_prognozy else "kpi-miss",
+                ),
+                WskaznikZapowiedziViewModel(
+                    "score_error",
+                    n.liczba(ocena.blad_wyniku, 3),
+                    self._klasa_css(ocena.klasa),
+                ),
+            ),
+            ratingi=(
+                self._wiersz_ratingu(
+                    p.mecz.gospodarz.nazwa,
+                    p.stan.gospodarz.rating,
+                    p.aktualizacja.poprawka,
+                    p.aktualizacja.rating_gospodarza_po,
+                ),
+                self._wiersz_ratingu(
+                    p.mecz.gosc.nazwa,
+                    p.stan.gosc.rating,
+                    -p.aktualizacja.poprawka,
+                    p.aktualizacja.rating_goscia_po,
+                ),
+            ),
+            uwagi=self._uwagi_zapowiedzi(p.mecz, p.stan, p.parametry),
+            id_mecz_raportu=p.mecz.id_mecz,
+        )
+
+    def _uwagi_zapowiedzi(
+        self,
+        mecz: MeczDoPrognozy | MeczPrzyszly,
+        stan: StanPrzedMeczem,
+        k: KonfiguracjaSilyDruzyn,
+    ) -> tuple[str, ...]:
+        return tuple(
+            uwaga
+            for uwaga in (
+                self._uwaga_ratingu(mecz.gospodarz, stan.gospodarz, k),
+                self._uwaga_ratingu(mecz.gosc, stan.gosc, k),
+            )
+            if uwaga
+        )
+
+    def pozycja(self, p: PrognozaMeczu) -> PozycjaPrognozyViewModel:
         n = self._liczby
         mecz, prognoza, ocena = p.mecz, p.prognoza, p.ocena
         return PozycjaPrognozyViewModel(
             id_mecz=mecz.id_mecz,
             data=mecz.data.strftime("%d.%m.%Y"),
             sezon=mecz.sezon.nazwa,
-            liga=f"{SKROTY_POZIOMOW[mecz.liga.poziom]} {mecz.liga.plec.value}",
+            liga=self.skrot_ligi(mecz.liga),
             kolejka=str(mecz.kolejka) if mecz.kolejka is not None else BRAK,
             gospodarz=mecz.gospodarz.nazwa,
             gosc=mecz.gosc.nazwa,
@@ -400,9 +563,10 @@ class PrognozaMeczuPresenter:
         )
 
     def _prognoza(self, p: PrognozaMeczu) -> str:
-        return (
-            f"{p.prognoza.bramki_gospodarza_prezentowane}:{p.prognoza.bramki_goscia_prezentowane}"
-        )
+        return self._wynik_prognozy(p.prognoza)
+
+    def _wynik_prognozy(self, prognoza: PrognozaPunktowa) -> str:
+        return f"{prognoza.bramki_gospodarza_prezentowane}:{prognoza.bramki_goscia_prezentowane}"
 
     def _wynik(self, p: PrognozaMeczu) -> str:
         return f"{p.mecz.bramki_gospodarza}:{p.mecz.bramki_goscia}"
@@ -521,9 +685,14 @@ class PrognozaMeczuPresenter:
             f"{regresja.rating_po_regresji:.2f}."
         )
 
-    def _kroki(self, p: PrognozaMeczu) -> tuple[KrokObliczeniaViewModel, ...]:
-        n, k = self._liczby, p.parametry
-        mecz, stan, prognoza, ocena, akt = p.mecz, p.stan, p.prognoza, p.ocena, p.aktualizacja
+    def _kroki_prognozy(
+        self,
+        mecz: MeczDoPrognozy | MeczPrzyszly,
+        stan: StanPrzedMeczem,
+        prognoza: PrognozaPunktowa,
+        k: KonfiguracjaSilyDruzyn,
+    ) -> tuple[KrokObliczeniaViewModel, ...]:
+        n = self._liczby
         rh, ra = stan.gospodarz.rating, stan.gosc.rating
         d, m, t = (
             prognoza.roznica_ratingow,
@@ -542,7 +711,7 @@ class PrognozaMeczuPresenter:
                 f"rating_diff =\n    {rh:.2f}\n    − {ra:.2f}\n    + "
                 f"{n.parametr(k.przewaga_wlasnego_parkietu)}",
                 f"rating_diff = {n.ze_znakiem(d)}",
-                self._opis_roznicy_ratingow(p),
+                self._opis_roznicy_ratingow(mecz, prognoza),
             ),
             KrokObliczeniaViewModel(
                 "krok-2",
@@ -553,7 +722,7 @@ class PrognozaMeczuPresenter:
                 f"predicted_margin =\n    {n.parametr(k.wyraz_wolny_roznicy)}\n    + "
                 f"{n.parametr(k.nachylenie_roznicy)} × {n.skladnik(d)}",
                 f"predicted_margin = {n.ze_znakiem(m)}",
-                self._opis_przewidywanej_roznicy(p),
+                self._opis_przewidywanej_roznicy(prognoza),
             ),
             KrokObliczeniaViewModel(
                 "krok-3",
@@ -584,7 +753,7 @@ class PrognozaMeczuPresenter:
                 f"pred_home = ({t:.2f} + {n.skladnik(m)}) / 2 = {h:.3f}\n"
                 f"pred_away = ({t:.2f} − {n.skladnik(m)}) / 2 = {a:.3f}",
                 f"wartość modelowa:   {h:.2f} : {a:.2f}\n"
-                f"wynik prezentowany: {self._prognoza(p).replace(':', ' : ')}",
+                f"wynik prezentowany: {self._wynik_prognozy(prognoza).replace(':', ' : ')}",
                 "Zaokrąglenie (połówki w górę) służy tylko prezentacji. Błędy i metryki są "
                 "liczone na wartościach dokładnych, dlatego zaokrąglony wynik może wyglądać na "
                 "remis przy typie H lub A.",
@@ -599,8 +768,18 @@ class PrognozaMeczuPresenter:
                 f"predicted_margin = {n.ze_znakiem(m)}\nthreshold = "
                 f"{n.parametr(k.prog_remisu)}\n\n{self._porownanie_progu(m, k.prog_remisu)}",
                 f"typ: {prognoza.typ.value}",
-                self._opis_typu(p),
+                self._opis_typu(mecz, prognoza),
             ),
+        )
+
+    def _kroki(self, p: PrognozaMeczu) -> tuple[KrokObliczeniaViewModel, ...]:
+        n, k = self._liczby, p.parametry
+        mecz, stan, prognoza, ocena, akt = p.mecz, p.stan, p.prognoza, p.ocena, p.aktualizacja
+        rh, ra = stan.gospodarz.rating, stan.gosc.rating
+        m, t = prognoza.przewidywana_roznica, prognoza.przewidywana_suma
+        h, a = prognoza.bramki_gospodarza, prognoza.bramki_goscia
+        return (
+            *self._kroki_prognozy(mecz, stan, prognoza, k),
             KrokObliczeniaViewModel(
                 "krok-6",
                 "Krok 6 — rzeczywisty mecz",
@@ -673,22 +852,24 @@ class PrognozaMeczuPresenter:
             ),
         )
 
-    def _opis_roznicy_ratingow(self, p: PrognozaMeczu) -> str:
-        d = p.prognoza.roznica_ratingow
+    def _opis_roznicy_ratingow(
+        self, mecz: MeczDoPrognozy | MeczPrzyszly, prognoza: PrognozaPunktowa
+    ) -> str:
+        d = prognoza.roznica_ratingow
         if d > 0:
             return (
-                f"Po uwzględnieniu własnego parkietu {p.mecz.gospodarz.nazwa} ma przewagę "
+                f"Po uwzględnieniu własnego parkietu {mecz.gospodarz.nazwa} ma przewagę "
                 f"{d:.2f} pkt ratingu."
             )
         if d < 0:
             return (
-                f"Mimo przewagi własnego parkietu {p.mecz.gosc.nazwa} jest silniejszy o "
+                f"Mimo przewagi własnego parkietu {mecz.gosc.nazwa} jest silniejszy o "
                 f"{abs(d):.2f} pkt ratingu."
             )
         return "Po uwzględnieniu własnego parkietu siły drużyn są równe."
 
-    def _opis_przewidywanej_roznicy(self, p: PrognozaMeczu) -> str:
-        m = p.prognoza.przewidywana_roznica
+    def _opis_przewidywanej_roznicy(self, prognoza: PrognozaPunktowa) -> str:
+        m = prognoza.przewidywana_roznica
         if m > 0:
             return (
                 f"{self._liczby.ze_znakiem(m)} oznacza, że model oczekiwał zwycięstwa gospodarza "
@@ -709,11 +890,11 @@ class PrognozaMeczuPresenter:
             return f"{n.ze_znakiem(m)} < {n.ze_znakiem(-prog)}"
         return f"{n.ze_znakiem(-prog)} ≤ {n.ze_znakiem(m)} ≤ {n.ze_znakiem(prog)}"
 
-    def _opis_typu(self, p: PrognozaMeczu) -> str:
-        if p.prognoza.typ is Typ1X2.GOSPODARZ:
-            return f"H — model wskazał zwycięstwo gospodarza ({p.mecz.gospodarz.nazwa})."
-        if p.prognoza.typ is Typ1X2.GOSC:
-            return f"A — model wskazał zwycięstwo gościa ({p.mecz.gosc.nazwa})."
+    def _opis_typu(self, mecz: MeczDoPrognozy | MeczPrzyszly, prognoza: PrognozaPunktowa) -> str:
+        if prognoza.typ is Typ1X2.GOSPODARZ:
+            return f"H — model wskazał zwycięstwo gospodarza ({mecz.gospodarz.nazwa})."
+        if prognoza.typ is Typ1X2.GOSC:
+            return f"A — model wskazał zwycięstwo gościa ({mecz.gosc.nazwa})."
         return "X — przewidywana różnica mieści się w progu remisu."
 
     def _znaczenie(self, p: PrognozaMeczu) -> tuple[str, ...]:

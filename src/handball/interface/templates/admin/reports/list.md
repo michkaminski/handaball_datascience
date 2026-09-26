@@ -34,6 +34,7 @@ Pusty katalog pokazuje wiersz „Brak raportów”.
 (2) Katalog raportów
     Raport (link) | Kategoria (badge) | Opis | Akcje [Otwórz]
     Prognozy meczów — siła drużyn | Model predykcyjny | Historyczny backtest... | [Otwórz]
+    Typowania meczów              | Model predykcyjny | Prognozy meczów z okresu... | [Otwórz]
 ```
 
 | Element | Plik | Blok / selektor / dane |

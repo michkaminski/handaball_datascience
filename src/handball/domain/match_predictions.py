@@ -208,6 +208,18 @@ class MeczDoPrognozy:
         return (self.data, self.id_mecz)
 
 
+@dataclass(frozen=True)
+class MeczPrzyszly:
+    id_mecz: int
+    liga: Liga
+    sezon: SezonPrognoz
+    kolejka: int | None
+    data: datetime | None
+    gospodarz: UczestnikPrognozy
+    gosc: UczestnikPrognozy
+    zamiana: bool
+
+
 class KwalifikacjaMeczuPolicy:
     def __init__(self, wzorce: WzorceNazwLig) -> None:
         self._wzorce = wzorce
@@ -240,6 +252,51 @@ class KwalifikacjaMeczuPolicy:
             return PowodWykluczenia.NIEPRAWIDLOWA_DATA
         return None
 
+    def powod_braku_zapowiedzi(self, mecz: MeczLigowy) -> PowodWykluczenia | None:
+        if self.liga(mecz) is None:
+            return PowodWykluczenia.NIEZNANA_LIGA
+        if mecz.wycofany:
+            return PowodWykluczenia.WYCOFANY
+        if mecz.walkower:
+            return PowodWykluczenia.WALKOWER
+        if mecz.id_zespol_gosp is None:
+            return PowodWykluczenia.BRAK_GOSPODARZA
+        if mecz.id_zespol_gosc is None:
+            return PowodWykluczenia.BRAK_GOSCIA
+        return None
+
+    def do_zapowiedzi(self, mecz: MeczLigowy) -> MeczPrzyszly:
+        liga = self.liga(mecz)
+        if (
+            self.powod_braku_zapowiedzi(mecz) is not None
+            or liga is None
+            or mecz.id_zespol_gosp is None
+            or mecz.id_zespol_gosc is None
+        ):
+            raise ValueError(f"Mecz {mecz.id_mecz} nie kwalifikuje się do zapowiedzi.")
+        kolumna_gosp, kolumna_gosc = self._uczestnicy(
+            mecz, mecz.id_zespol_gosp, mecz.id_zespol_gosc
+        )
+        zamiana = bool(mecz.zamiana)
+        return MeczPrzyszly(
+            id_mecz=mecz.id_mecz,
+            liga=liga,
+            sezon=SezonPrognoz(mecz.id_sezon, mecz.sezon, mecz.rok_sezonu),
+            kolejka=mecz.kolejka,
+            data=mecz.data,
+            gospodarz=kolumna_gosc if zamiana else kolumna_gosp,
+            gosc=kolumna_gosp if zamiana else kolumna_gosc,
+            zamiana=zamiana,
+        )
+
+    def _uczestnicy(
+        self, mecz: MeczLigowy, id_gosp: int, id_gosc: int
+    ) -> tuple[UczestnikPrognozy, UczestnikPrognozy]:
+        return (
+            UczestnikPrognozy(id_gosp, (mecz.nazwa_gosp or "").strip() or f"Drużyna #{id_gosp}"),
+            UczestnikPrognozy(id_gosc, (mecz.nazwa_gosc or "").strip() or f"Drużyna #{id_gosc}"),
+        )
+
     def do_prognozy(self, mecz: MeczLigowy) -> MeczDoPrognozy:
         liga = self.liga(mecz)
         if (
@@ -252,13 +309,8 @@ class KwalifikacjaMeczuPolicy:
             or mecz.data is None
         ):
             raise ValueError(f"Mecz {mecz.id_mecz} nie kwalifikuje się do prognozy.")
-        kolumna_gosp = UczestnikPrognozy(
-            mecz.id_zespol_gosp,
-            (mecz.nazwa_gosp or "").strip() or f"Drużyna #{mecz.id_zespol_gosp}",
-        )
-        kolumna_gosc = UczestnikPrognozy(
-            mecz.id_zespol_gosc,
-            (mecz.nazwa_gosc or "").strip() or f"Drużyna #{mecz.id_zespol_gosc}",
+        kolumna_gosp, kolumna_gosc = self._uczestnicy(
+            mecz, mecz.id_zespol_gosp, mecz.id_zespol_gosc
         )
         zamiana = bool(mecz.zamiana)
         return MeczDoPrognozy(
@@ -327,6 +379,14 @@ class PrognozaPunktowa:
     @property
     def roznica_prezentowana(self) -> int:
         return self.bramki_gospodarza_prezentowane - self.bramki_goscia_prezentowane
+
+    @property
+    def typ_prezentowany(self) -> Typ1X2:
+        if self.roznica_prezentowana > 0:
+            return Typ1X2.GOSPODARZ
+        if self.roznica_prezentowana < 0:
+            return Typ1X2.GOSC
+        return Typ1X2.REMIS
 
 
 @dataclass(frozen=True)
@@ -516,3 +576,21 @@ class SzczegolyPrognozy:
     prognoza: PrognozaMeczu
     historia_gospodarza: tuple[PrognozaMeczu, ...]
     historia_goscia: tuple[PrognozaMeczu, ...]
+
+
+@dataclass(frozen=True)
+class PrognozaBiezaca:
+    mecz: MeczPrzyszly
+    stan: StanPrzedMeczem
+    prognoza: PrognozaPunktowa
+    parametry: KonfiguracjaSilyDruzyn
+    liczba_meczow_ligi: int
+    ostatni_mecz_ligi: datetime | None
+
+
+@dataclass(frozen=True)
+class PrognozaZapowiedzi:
+    model: OpisModeluPrognoz
+    po_meczu: PrognozaMeczu | None = None
+    biezaca: PrognozaBiezaca | None = None
+    powod_braku: PowodWykluczenia | None = None

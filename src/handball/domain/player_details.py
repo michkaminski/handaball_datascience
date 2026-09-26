@@ -26,7 +26,7 @@ class FiltryMeczowZawodnika:
 
 @dataclass(frozen=True)
 class DaneSezonoweZawodnika:
-    id_zespol_sezon: int
+    id_zespol_sezon: int | None
     sezon: str
     druzyna: str | None
     nr_koszulki: int | None

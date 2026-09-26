@@ -16,11 +16,11 @@ Imię i nazwisko, ID, data urodzenia, wzrost, waga i opcjonalne zdjęcie ze sło
 
 ### Sezony i drużyny
 
-Tabela: Sezon, Drużyna, Rozgrywki, Numer, Pozycja, Bramki, Karne i Kary. Jeden rekord składu jest rozwijany do osobnego wiersza dla każdych rozgrywek, w których zawodnik ma przypisane statystyki meczowe dla tej drużyny. Skład bez takich wpisów pozostaje jednym wierszem z „—”. Nazwa i sezon pochodzą z `zespoly_sezony` oraz `sezony`. Pozycja pochodzi z `sklady.pozycja_nazwa`, a przy jej braku z `pozycje.nazwa`. Numer 0, jeśli zapisany, pozostaje zerem.
+Tabela: Sezon, Drużyna, Rozgrywki, Numer, Pozycja, Bramki, Karne i Kary. Jeden rekord składu jest rozwijany do osobnego wiersza dla każdych rozgrywek, w których zawodnik ma przypisane statystyki meczowe dla tej drużyny. Skład bez takich wpisów pozostaje jednym wierszem z „—”. Nazwa i sezon pochodzą z `zespoly_sezony` oraz `sezony`. Pozycja pochodzi z `sklady.pozycja_nazwa`, a przy jej braku z `pozycje.nazwa`. Numer 0, jeśli zapisany, pozostaje zerem. Od 2026-09-26 (zgłoszenie użytkownika: zawodnik 62101 grał w 2025/2026 w dwóch drużynach, a skład sezonowy ma tylko jedną) historia obejmuje też drużyny, w których zawodnik ma wpisy meczowe, ale nie ma rekordu w `sklady`. Taki wiersz ma nazwę drużyny z `zespoly_sezony` (albo `zespoly`), numer i pozycję — najczęstsze w protokołach tej drużyny w sezonie (`mode()`), bez wzrostu i wagi, a `id_zespol_sezon = None`. Wpisy ze stroną `inne` nie tworzą wierszy.
 
 Podsumowanie powstaje z `mecze_zawodnicy` połączonych z `mecze` i `rozgrywki`, grupowanych według sezonu, drużyny wynikającej ze strony `gosp`/`gosc` oraz nazwy rozgrywek. Bramki to suma znanych `bramki`; karne pokazują sumę `karne_bramki/karne_liczba`; kary pokazują sumy `dwie_minuty`, upomnień i dyskwalifikacji. `NULL` pozostaje „—”, jeżeli w grupie nie ma żadnej znanej wartości danego pola. Wpisy strony `inne` nie mają jednoznacznej drużyny i nie trafiają do tego zestawienia.
 
-Sortowanie historii: rok rozpoczęcia sezonu malejąco, ID sezonu malejąco, nazwa i identyfikator migawki drużyny. Historia pokazuje wszystkie istniejące rekordy składów sezonowych zawodnika; filtry meczów jej nie zawężają. To nie jest historia wszystkich wersji JSON ani rejestr dat transferów.
+Sortowanie historii: rok rozpoczęcia sezonu malejąco, ID sezonu malejąco, nazwa i identyfikator migawki drużyny. Historia pokazuje wszystkie istniejące rekordy składów sezonowych zawodnika oraz drużyny znane tylko z protokołów; wiersze obu rodzajów są sortowane razem (rok sezonu, ID sezonu, nazwa drużyny). Filtry meczów jej nie zawężają. To nie jest historia wszystkich wersji JSON ani rejestr dat transferów.
 
 ### Mecze
 
@@ -125,7 +125,7 @@ Profil:
   [zdjęcie / brak]  ID / Imię i nazwisko / Data urodzenia / Wzrost / Waga
 Sezony i drużyny:
   Sezon | Drużyna | Rozgrywki | Numer | Pozycja | Bramki | Karne | Kary
-  [rekordy składów rozwinięte według rozgrywek / brak danych]
+  [rekordy składów i drużyny tylko z protokołów, rozwinięte według rozgrywek / brak danych]
 Mecze:
   [Sezon v] [Rozgrywki v] [Przeciwnik] [Filtruj] [Wyczyść filtry]
   Data ↕ | Sezon/rozgrywki | Drużyna | Przeciwnik | Wynik |
