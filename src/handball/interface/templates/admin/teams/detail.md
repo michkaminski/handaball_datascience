@@ -69,12 +69,16 @@ Obliczenia statystyk bramek (`StatystykiBramekCalculator` w `services/goal_stati
 
 `tests/unit/test_team_detail_service.py`: strona i miejsce przy `zamiana`, remis rozstrzygnięty karnymi i dogrywką, walkower i brak wyniku, bilans, kolejność sezonów, podsumowanie tylko z rozegranych meczów, serie zdobytych, straconych i różnicy (miary, mediany według miejsca, forma, sezony), filtr rozgrywek. `tests/interface/test_team_details.py`: sześć zakładek, 404/400, bilans sezonów, mecze z perspektywy drużyny z escapowaniem, osobna paginacja i sortowanie zawodników, atrybuty wykresów, przełączenie na Mecze po filtrze, link z listy. Test interfejsu sprawdza też tabele miar zdobyte/stracone/różnica z wartościami, atrybuty wszystkich wykresów, brak współczynnika zmienności różnicy i tabele danych według miejsca. `node --test tests/javascript/team_details.test.cjs`: zakładki z klawiaturą; miary sezonów obu serii (sześć serii, mała próba, dominanty, tooltip z różnicą i escapowaniem, tryb Słupki); sumy sezonów (dwa stosy, wzór straconych, etykiety Z/S, przeliczenie po ukryciu rozgrywek); rozkład z przełącznikiem miejsca; wykresy Formy (mecze z medianami i otwieraniem meczu, pusty zakres miejsca, bilans, forma krocząca z granicami sezonów, boxplot z odstającymi). Dane testowe są pamięciowe. Frekwencję sprawdzają testy kalkulatora (u siebie/na wyjeździe, 0 kontra brak danych, rekord, tylko rozegrane) i interfejsu (kafelki z separatorem tysięcy, rekord z linkiem, pokrycie, średnia hali, kolumny sezonów, zależność od filtrów). Wartości frekwencji #272 zgadzają się z bezpośrednim zapytaniem SQL (średnio 2120 u siebie, mediana 1850, suma 527 955, 249/266 meczów, rekord 8313). Na bazie `zprp` (READ ONLY) sprawdzono drużynę #272 we wszystkich zakładkach i w Edge headless przy 1440 px.
 
+## Wydruki PDF
+
+Pasek `[data-team-navigation]` ma przyciski „Raport drużyny (PDF)” i „Zestawienia sezonu (PDF)” (`[data-team-report]`, `[data-team-sheets]`), otwierane w nowej karcie dla sezonu z zakładki Zestawienie sezonu (`sezon_zestawienia`, domyślnie najnowszy). Opisy: [report_pdf.md](report_pdf.md), [season_sheets_pdf.md](season_sheets_pdf.md). Przyciski nie pokazują się, gdy drużyna nie ma żadnego sezonu.
+
 ## Układ tekstowy i mapa zmian
 
 ```text
 [Start › Dane › Drużyny › Szczegóły]
 [Nazwa drużyny]  Karta drużyny #ID · płeć · sezony A–B
-[← Powrót do listy drużyn]
+[← Powrót do listy drużyn] [▤ Raport drużyny (PDF)] [☷ Zestawienia sezonu (PDF)]
 [Dane podstawowe | Sezony | Mecze | Zawodnicy | Podsumowanie | Forma i regularność]
 
 Dane podstawowe:

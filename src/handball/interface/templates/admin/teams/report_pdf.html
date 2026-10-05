@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Raport drużyny: {{ raport.druzyna }} {{ raport.sezon }}</title>
+<meta name="author" content="Handball DataScience">
+<style>.report .grid td{height:{{ raport.uklad.wysokosc_wiersza_mm }}mm;font-size:{{ raport.uklad.czcionka_pt }}pt}</style>
+</head>
+<body class="report">
+<header class="masthead">
+<div class="masthead-team">
+<p class="kicker">Raport drużyny</p>
+<h1>{{ raport.druzyna }}</h1>
+<p class="masthead-meta">{{ raport.opis }}{% if raport.rozgrywki %} · {{ raport.rozgrywki }}{% endif %}</p>
+</div>
+<div class="masthead-season">
+<span class="season">{{ raport.sezon }}</span>
+<span class="generated">protokoły ZPRP · stan na {{ raport.stan_na }}</span>
+</div>
+</header>
+
+<table class="kpis"><tr>
+{% for liczba in raport.liczby %}<td><span class="kpi-label">{{ liczba.etykieta }}</span><b>{{ liczba.wartosc }}</b>{% if liczba.dopisek %} <small>{{ liczba.dopisek }}</small>{% endif %}</td>{% endfor %}
+</tr></table>
+
+<h2 class="section"><span>1</span> Sezony</h2>
+<table class="grid seasons">
+<thead><tr><th class="l">Sezon</th><th class="l">Rozgrywki</th><th>M</th><th>W</th><th>R</th><th>P</th><th>% zw.</th><th>Bramki</th><th>Różn.</th><th>Śr. zdob.</th><th>Śr. strac.</th><th class="l">Remisy rozstrz.</th><th>Widzowie dom</th></tr></thead>
+<tbody>
+{% for wiersz in raport.sezony %}
+<tr class="{{ 'season-row' if wiersz.podsumowanie_sezonu else 'competition-row' }}{% if wiersz.podsumowanie_sezonu and wiersz.sezon == raport.sezon %} current{% endif %}">
+<td class="l">{% if wiersz.podsumowanie_sezonu %}{{ wiersz.sezon }}{% endif %}</td>
+<td class="l">{{ wiersz.rozgrywki }}</td>
+{% set b = wiersz.bilans %}
+<td>{{ b.rozegrane }}</td><td>{{ b.wygrane }}</td><td>{{ b.remisy }}</td><td>{{ b.porazki }}</td><td>{{ b.procent_zwyciestw }}</td><td>{{ b.bramki }}</td><td>{{ b.roznica }}</td><td>{{ b.srednia_zdobytych }}</td><td>{{ b.srednia_straconych }}</td><td class="l small">{{ b.rozstrzygniecia }}</td><td>{{ b.widzowie_dom }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h2 class="section"><span>2</span> Kadra <small>sezon {{ raport.sezon }}{% if raport.poprzedni_sezon %} i poprzedni sezon {{ raport.poprzedni_sezon }}{% endif %}{% if raport.ze_skladu %} · skład zgłoszony na sezon (brak protokołów){% endif %}</small></h2>
+<table class="grid players">
+<colgroup><col class="p-no"><col class="p-name"><col class="p-yr"><col class="p-pos"><col class="p-stat"><col class="p-stat"><col class="p-stat"><col class="p-pen"><col class="p-pct"><col class="p-card"><col class="p-card"><col class="p-card"><col class="p-gap"><col class="p-stat"><col class="p-stat"><col class="p-stat"><col class="p-where"></colgroup>
+<thead>
+<tr class="band"><th colspan="4"></th><th colspan="8" class="band-now">{{ raport.sezon }}</th><th></th><th colspan="4" class="band-prev">{{ raport.poprzedni_sezon or "poprzedni sezon" }}</th></tr>
+<tr><th>Nr</th><th class="l">Zawodnik</th><th>Ur.</th><th>Poz.</th><th>M</th><th>Br</th><th>Śr</th><th>Karne</th><th>%</th><th>2′</th><th>U</th><th>D</th><th></th><th>M</th><th>Br</th><th>Śr</th><th class="l">Klub · rozgrywki</th></tr>
+</thead>
+<tbody>
+{% for z in raport.zawodnicy %}
+{% if loop.first or z.nowa_grupa %}<tr class="group"><td colspan="17">{{ z.grupa }}</td></tr>{% endif %}
+<tr>
+<td class="no">{{ z.numer }}</td>
+<td class="l name">{{ z.nazwa }}</td>
+<td>{{ z.rocznik }}</td>
+<td class="pos">{{ z.pozycja }}</td>
+<td>{{ z.mecze }}</td>
+<td{% if z.wyroznij_bramki %} class="hl"{% endif %}>{{ z.bramki }}</td>
+<td>{{ z.srednia }}</td>
+<td class="small">{{ z.karne }}</td>
+<td{% if z.wyroznij_karne %} class="hl"{% endif %}>{{ z.karne_procent }}</td>
+<td>{{ z.dwie_minuty }}</td>
+<td>{{ z.upomnienia }}</td>
+<td>{{ z.dyskwalifikacje }}</td>
+<td class="gap"></td>
+{% set p = z.poprzedni %}
+{% if p.zagral %}
+<td>{{ p.mecze }}</td>
+<td{% if p.wyroznij_bramki %} class="hl"{% endif %}>{{ p.bramki }}</td>
+<td>{{ p.srednia }}</td>
+<td class="l where{% if p.inny_klub %} moved{% endif %}">{{ p.klub }}</td>
+{% else %}
+<td colspan="3" class="muted">—</td><td class="l where muted">{{ p.klub }}</td>
+{% endif %}
+</tr>
+{% else %}
+<tr><td colspan="17" class="l muted">Brak zawodników w protokołach i składzie sezonu.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+<p class="legend"><span class="hl-sample">12</span> 3 najlepszych strzelców · 3 najskuteczniejszych z rzutów karnych (min. 5 prób) · 3 najlepszych strzelców poprzedniego sezonu · Karne: trafione/wszystkie · Poz.: B bramkarz, R rozgrywający, S skrzydłowy, O obrotowy · <i>kursywa</i>: inny klub w poprzednim sezonie.</p>
+
+<h2 class="section"><span>3</span> Ostatnie mecze ({{ raport.mecze|length }})</h2>
+<table class="grid matches">
+<colgroup><col class="m-date"><col class="m-comp"><col class="m-ha"><col class="m-opp"><col class="m-score"><col class="m-res"><col class="m-7m"><col class="m-2"><col class="m-spect"><col class="m-scorers"></colgroup>
+<thead><tr><th class="l">Data</th><th class="l">Rozgrywki</th><th>D/W</th><th class="l">Przeciwnik</th><th>Wynik</th><th>Rez.</th><th>Karne</th><th>2′</th><th>Widzowie</th><th class="l scorers">Najlepsi strzelcy</th></tr></thead>
+<tbody>
+{% for m in raport.mecze %}
+<tr class="res-row-{{ m.rezultat_klasa }}{% if m.nowy_sezon %} split{% endif %}">
+<td class="l">{{ m.data }}</td>
+<td class="l comp">{{ m.rozgrywki }}</td>
+<td>{{ m.miejsce }}</td>
+<td class="l name">{{ m.przeciwnik }}</td>
+<td class="score">{{ m.wynik }}{% if m.rozstrzygniecie %}<sup>{{ m.rozstrzygniecie }}</sup>{% endif %}</td>
+<td><span class="res res-{{ m.rezultat_klasa }}">{{ m.rezultat }}</span></td>
+<td>{{ m.karne }}</td>
+<td>{{ m.dwie_minuty }}</td>
+<td>{{ m.widzowie }}</td>
+<td class="l scorers">{{ m.strzelcy }}</td>
+</tr>
+{% else %}
+<tr><td colspan="10" class="l muted">Brak rozegranych meczów.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+<p class="legend">Wynik: bramki drużyny pierwsze, pełny czas gry (<sup>d</sup>/<sup>k</sup> remis rozstrzygnięty dogrywką / rzutami karnymi) · wiersze: szare — wygrana, jasnoszare — remis, białe — porażka · Karne: trafione/wszystkie drużyny w meczu · linia oddziela sezony.</p>
+</body>
+</html>

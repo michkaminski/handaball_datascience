@@ -24,7 +24,7 @@
 <div class="crumb">Start › Dane › Drużyny › Szczegóły</div>
 <h1>{{ szczegoly.nazwa }}</h1><p>Karta drużyny #{{ szczegoly.id_zespol }} · {{ szczegoly.plec }} · sezony {{ szczegoly.zakres_sezonow }}</p>
 </section>
-<div class="toolbar" data-team-navigation><a class="btn secondary small" href="{{ url_for('administracja.lista_druzyn') }}">← Powrót do listy drużyn</a></div>
+<div class="toolbar" data-team-navigation><a class="btn secondary small" href="{{ url_for('administracja.lista_druzyn') }}">← Powrót do listy drużyn</a>{% if sezon_zestawienia %} <a class="btn secondary small" href="{{ url_for('administracja.raport_druzyny_pdf', id_zespol=szczegoly.id_zespol, id_sezon=sezon_zestawienia) }}" target="_blank" rel="noopener" data-team-report>▤ Raport drużyny (PDF)</a> <a class="btn secondary small" href="{{ url_for('administracja.zestawienia_druzyny_pdf', id_zespol=szczegoly.id_zespol, id_sezon=sezon_zestawienia) }}" target="_blank" rel="noopener" data-team-sheets>☷ Zestawienia sezonu (PDF)</a>{% endif %}</div>
 <div class="match-tabs" role="tablist" aria-label="Szczegóły drużyny" data-team-tabs hidden>
 {% for klucz, etykieta in [('dane', 'Dane podstawowe'), ('sezony', 'Sezony'), ('mecze', 'Mecze'), ('zawodnicy', 'Zawodnicy'), ('zestawienie', 'Zestawienie sezonu'), ('podsumowanie', 'Podsumowanie'), ('forma', 'Forma i regularność')] %}
 <button type="button" role="tab" id="team-tab-{{ klucz }}" data-team-tab="{{ klucz }}" aria-controls="team-panel-{{ klucz }}" aria-selected="{{ 'true' if aktywna_zakladka == klucz else 'false' }}">{{ etykieta }}</button>

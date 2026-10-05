@@ -1,6 +1,17 @@
 # Stan projektu
 
-Aktualizacja: 2026-09-27.
+Aktualizacja: 2026-10-05.
+
+## Raporty drużyn PDF: raport drużyny i zestawienia sezonu — 2026-10-05
+
+Na zlecenie użytkownika (wzór: wydruki Team report i Season sheets z projektu EHF, dostosowane do danych ZPRP bez statystyk bramkarzy i narodowości) powstały dwa wydruki PDF drużyny w sezonie:
+
+- **Raport drużyny** — jedna kartka A4 w pionie: pasek liczb sezonu, 5 sezonów do wybranego, kadra w grupach pozycji z rocznikiem, bramkami, karnymi, karami i poprzednim sezonem (ten sam klub, inne rozgrywki albo inny klub) oraz 15 ostatnich meczów z wynikiem, karnymi, karami, widzami i najlepszymi strzelcami. Wyróżnieni są najlepsi strzelcy, najskuteczniejsi z rzutów karnych i najlepsi strzelcy poprzedniego sezonu; wiersze meczów mają odcienie szarości według wyniku. Opis: [report_pdf.md](../src/handball/interface/templates/admin/teams/report_pdf.md).
+- **Zestawienia sezonu** — dwie kartki A4 w poziomie: wybrany sezon i poprzedni, zawodnicy × mecze z bramkami, karami, karnymi, rocznikiem, najlepszym strzelcem meczu w ramce i wyróżnieniami w podsumowaniu. Opis: [season_sheets_pdf.md](../src/handball/interface/templates/admin/teams/season_sheets_pdf.md).
+
+Wejścia: przyciski na karcie drużyny i nowa pozycja Raporty › Raporty drużyn (lista drużyn w sezonach z odnośnikami, [teams.md](../src/handball/interface/templates/admin/reports/teams.md)), także w katalogu raportów. Kadrę i poprzedni sezon czyta wąski kontrakt `KadraRaportuReadRepository`, spełniany przez istniejące repozytorium zapowiedzi meczu, więc nie ma nowych zapytań SQL. Wysokość wierszy dobierają `UkladRaportuPolicy` i `UkladZestawieniaPolicy`, aby raport mieścił się na jednej kartce, a każde zestawienie na swojej.
+
+Weryfikacja: 23 nowe testy (interfejs, serwis, presenter); pełny zestaw 569 testów Pythona (poza istniejącym błędem `SECRET_KEY`), mypy bez błędów, Ruff bez nowych uwag. Na bazie (tylko odczyt, transakcje `READ ONLY`) wygenerowano i obejrzano PDF dla ORLEN Wisła Płock 2025/2026 i 2026/2027: raport na jednej stronie, zestawienia 2025/2026 i 2024/2025 po jednej stronie. Bazy nie zmieniano.
 
 ## Kolejność rozgrywek w filtrach — 2026-09-27
 

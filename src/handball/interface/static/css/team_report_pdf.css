@@ -1,0 +1,102 @@
+@page{size:A4 portrait;margin:9mm 10mm 8mm}
+@page poziomo{size:A4 landscape;margin:8mm 8mm 7mm}
+
+html{font-family:"DejaVu Sans","Segoe UI",Arial,sans-serif;font-size:7.4pt;line-height:1.25;color:#111}
+body{margin:0}
+h1,h2,p{margin:0}
+table{border-collapse:collapse;width:100%}
+
+.masthead{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:1.6mm;border-bottom:1.4pt solid #111}
+.kicker{font-size:5.8pt;letter-spacing:.18em;text-transform:uppercase;color:#555}
+.masthead h1{font-size:15pt;line-height:1.05;margin:.4mm 0 .5mm}
+.masthead-meta{font-size:7.2pt;color:#555}
+.masthead-season{text-align:right}
+.masthead-season .season{display:block;font-size:13pt;font-weight:300}
+.masthead-season .generated{display:block;font-size:6pt;color:#888}
+
+.kpis{margin:1.4mm 0 0;border-bottom:.5pt solid #c9c9c9}
+.kpis td{padding:0 2mm 1.2mm;border-left:.5pt solid #e2e2e2;vertical-align:top;white-space:nowrap}
+.kpis td:first-child{border-left:0;padding-left:0}
+.kpi-label{display:block;font-size:5.2pt;letter-spacing:.1em;text-transform:uppercase;color:#555}
+.kpis b{font-size:8.6pt}
+.kpis small{font-size:6.6pt;color:#555}
+
+.section{font-size:8.2pt;font-weight:700;margin:1.6mm 0 .6mm;padding-bottom:.5mm;border-bottom:.5pt solid #c9c9c9}
+.section span{display:inline-block;width:3.6mm;height:3.6mm;line-height:3.6mm;text-align:center;border:.7pt solid #111;border-radius:50%;font-size:6pt;margin-right:1mm}
+.section small{font-size:6.6pt;font-weight:400;color:#555}
+
+.grid{table-layout:fixed}
+.grid th,.grid td{padding:.3mm .9mm;text-align:right;vertical-align:middle;white-space:nowrap;overflow:hidden}
+.grid thead th{font-size:5.6pt;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#555;border-bottom:.8pt solid #111}
+.grid tbody td,.grid tbody th{border-bottom:.3pt solid #e2e2e2}
+.grid tbody tr{break-inside:avoid}
+.grid .l{text-align:left}
+.grid .small{font-size:6.2pt}
+.muted{color:#888}
+.hl{font-weight:700;background:#e3e3e3}
+.legend{margin-top:.8mm;font-size:5.8pt;color:#555;line-height:1.35}
+.hl-sample{display:inline-block;padding:0 1mm;font-weight:700;background:#e3e3e3;color:#111}
+.empty-note{font-style:italic;color:#555;margin-top:4mm}
+
+.seasons{table-layout:auto}
+.seasons .competition-row td{color:#555;font-size:6.6pt}
+.seasons .competition-row td:nth-child(2){padding-left:3.5mm}
+.seasons .current td{font-weight:700;background:#f2f2f2}
+
+.p-no{width:7mm}.p-yr{width:8.5mm}.p-pos{width:6mm}.p-stat{width:6.4mm}.p-pen{width:9.5mm}.p-pct{width:8mm}.p-card{width:4.8mm}.p-gap{width:2mm}.p-where{width:38mm}
+.players .band th{border-bottom:0;font-size:6pt;letter-spacing:.14em;color:#111}
+.players .band-now{border-bottom:.5pt solid #111 !important;text-align:center}
+.players .band-prev{border-bottom:.5pt solid #555 !important;text-align:center;color:#555}
+.players .group td{padding:.7mm 0 .2mm;text-align:left;font-size:5.6pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#555;border-bottom:.5pt solid #c9c9c9;height:auto !important}
+.players .no{text-align:center;font-weight:700}
+.players .name{font-weight:700}
+.players .pos{text-align:center;color:#555}
+.players .gap{border-bottom:0}
+.players .where{font-size:6pt}
+.players .where.moved{font-style:italic}
+
+.m-date{width:12mm}.m-comp{width:30mm}.m-ha{width:7mm}.m-score{width:12mm}.m-res{width:7mm}.m-7m{width:10mm}.m-2{width:6mm}.m-spect{width:12mm}.m-scorers{width:52mm}
+.matches .comp{font-size:6.2pt;color:#555}
+.matches .name{font-weight:700}
+.matches .score{font-weight:700;text-align:center}
+.matches .score sup{font-size:5pt;font-weight:400}
+.matches .scorers{font-size:6.2pt;padding-left:2mm}
+.matches tr.res-row-wygrana td{background:#e6e6e6}
+.matches tr.res-row-remis td{background:#f4f4f4}
+.matches tr.split td{border-top:.8pt solid #c9c9c9}
+.res{display:inline-block;width:3mm;height:3mm;line-height:3mm;text-align:center;border:.6pt solid #111;border-radius:50%;font-size:5.6pt;font-weight:700}
+.res-wygrana{background:#111;color:#fff}
+.res-remis{border-style:dashed}
+.res-inny{border-color:#888;color:#888;font-size:4.6pt}
+
+.sheet-page{page:poziomo;break-after:page}
+.sheet-page:last-child{break-after:auto}
+.running{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:1.2mm;margin-bottom:1.5mm;border-bottom:.8pt solid #111;font-size:7pt;color:#555}
+.running-team{font-weight:700;color:#111;font-size:8.6pt}
+.running-title{letter-spacing:.16em;text-transform:uppercase}
+.sheets .section{margin-top:0}
+.sheet col.player{width:42mm}.sheet col.born{width:9mm}.sheet col.pos{width:7mm}.sheet col.sum-m{width:7mm}.sheet col.sum-g{width:8mm}.sheet col.sum-k{width:16mm}.sheet col.sum-p{width:14mm}
+.sheet thead th{text-transform:none;letter-spacing:0;vertical-align:bottom}
+.sheet .sheet-player{text-align:left;font-weight:700}
+.sheet .sheet-player .no{display:inline-block;width:6mm;margin-right:1mm;color:#555;font-weight:400;text-align:right}
+.sheet .sheet-born,.sheet .sheet-pos{text-align:center;color:#555}
+.sheet-match{padding:.5mm .2mm !important;text-align:center !important}
+.vertical-box{height:28mm;position:relative}
+.vertical{position:absolute;left:50%;bottom:0;width:28mm;transform-origin:left bottom;transform:rotate(-90deg) translateY(50%);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:6pt;font-weight:400;color:#555;text-align:left}
+.vertical b{color:#111}
+.sheet-place{display:block;margin-top:.6mm;font-size:5.6pt;color:#888}
+.sheet-score{display:block;font-size:6pt;line-height:1.05;color:#111;font-weight:700}
+.sheet-score .lost{font-weight:400;color:#555}
+.sheet-score.win{text-decoration:underline}
+.sheet .cell{text-align:center;padding:.3mm .2mm;border-left:.3pt solid #e2e2e2;line-height:1.05}
+.sheet .cell b{font-weight:600}
+.sheet .cell.best b{display:inline-block;padding:0 .5mm;border:.8pt solid #111;font-weight:800}
+.sheet .cell.empty{background:#f3f3f3}
+.sheet .cell sup{font-size:5pt;margin-left:.2mm;font-weight:700}
+.sheet .pk{display:block;font-size:5pt;color:#555}
+.sheet .sum{text-align:center;background:#f2f2f2;font-size:6.6pt}
+.sheet .sum.first{border-left:.8pt solid #111}
+.sheet .sum.hl{background:#d9d9d9;font-weight:700}
+.sheet thead .sum{background:none}
+.sheet tr.split td,.sheet tr.split th{border-top:.8pt solid #c9c9c9}
+.sheet tfoot td,.sheet tfoot th{border-top:.8pt solid #111}

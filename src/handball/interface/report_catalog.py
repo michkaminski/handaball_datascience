@@ -14,6 +14,14 @@ class PozycjaRaportu:
 
 KATALOG_RAPORTOW: tuple[PozycjaRaportu, ...] = (
     PozycjaRaportu(
+        "raporty_druzyn",
+        "Raporty drużyn — wydruki PDF",
+        "Raport drużyny na jednej kartce A4 (sezony, kadra z poprzednim sezonem, ostatnie mecze) "
+        "oraz zestawienia sezonu i poprzedniego sezonu na kartkach poziomych.",
+        "Wydruki",
+        "administracja.raporty_druzyn",
+    ),
+    PozycjaRaportu(
         "prognozy_meczow",
         "Prognozy meczów — siła drużyn",
         "Historyczny backtest prognoz Superligi, Ligi Centralnej i I Ligi mężczyzn i kobiet "

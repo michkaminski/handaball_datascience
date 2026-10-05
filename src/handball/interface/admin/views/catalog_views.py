@@ -16,6 +16,7 @@ class KatalogListView(MethodView):
     sekcja: str
     sortowanie: tuple[str, ...]
     domyslne_sortowanie = "nazwa"
+    sekcja_glowna: str | None = None
 
     def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
         self._fabryka = fabryka_zaleznosci
@@ -43,6 +44,7 @@ class KatalogListView(MethodView):
         return render_template(
             self.szablon,
             sekcja_aktywna=self.sekcja,
+            sekcja_glowna=self.sekcja_glowna,
             formularz=formularz,
             filtry=filtry,
             strona=strona,

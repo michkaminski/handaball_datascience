@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Zestawienia sezonu: {{ zestawienia.druzyna }}</title>
+<meta name="author" content="Handball DataScience">
+<style>{% for strona in zestawienia.strony %}#sheet-{{ loop.index }} .sheet tbody td,#sheet-{{ loop.index }} .sheet tbody th,#sheet-{{ loop.index }} .sheet tfoot td,#sheet-{{ loop.index }} .sheet tfoot th{height:{{ strona.uklad.wysokosc_wiersza_mm }}mm;font-size:{{ strona.uklad.czcionka_pt }}pt}#sheet-{{ loop.index }} .sheet col.match{width:{{ strona.uklad.szerokosc_meczu_mm }}mm}{% endfor %}</style>
+</head>
+<body class="sheets">
+{% for strona in zestawienia.strony %}
+<section class="sheet-page" id="sheet-{{ loop.index }}">
+<header class="running">
+<span class="running-team">{{ zestawienia.druzyna }}</span>
+<span class="running-title">Zestawienie sezonu</span>
+<span class="running-season">{{ strona.sezon }}{% if loop.first %} · stan na {{ zestawienia.stan_na }}{% endif %}</span>
+</header>
+<h2 class="section">Zestawienie sezonu {{ strona.sezon }}{% if strona.opis %} <small>{{ strona.opis }}</small>{% endif %}</h2>
+{% if strona.wiersze %}
+<table class="grid sheet">
+<colgroup><col class="player"><col class="born"><col class="pos">{% for _ in strona.mecze %}<col class="match">{% endfor %}<col class="sum-m"><col class="sum-g"><col class="sum-k"><col class="sum-p"></colgroup>
+<thead>
+<tr>
+<th class="l sheet-player">Zawodnik</th><th class="sheet-born">Ur.</th><th class="sheet-pos">Poz.</th>
+{% for mecz in strona.mecze %}<th class="sheet-match"><div class="vertical-box"><div class="vertical"><b>{{ mecz.przeciwnik }}</b> {{ mecz.data }}</div></div><span class="sheet-place">{{ mecz.miejsce }}</span><span class="sheet-score{% if mecz.wygrana %} win{% endif %}" title="{{ mecz.wynik }}">{{ mecz.zdobyte }}<br><span class="lost">{{ mecz.stracone }}</span></span></th>{% endfor %}
+<th class="sum first">M</th><th class="sum">Br</th><th class="sum">Karne</th><th class="sum">Kary</th>
+</tr>
+</thead>
+<tbody>
+{% for w in strona.wiersze %}
+<tr{% if w.nowa_grupa %} class="split"{% endif %}>
+<th class="l sheet-player">{% if w.numery %}<span class="no">{{ w.numery }}</span>{% endif %}{{ w.nazwa }}</th>
+<td class="sheet-born">{{ w.rocznik }}</td>
+<td class="sheet-pos">{{ w.pozycja }}</td>
+{% for k in w.komorki %}
+{% if k %}<td class="cell{% if k.najlepszy %} best{% endif %}" title="{{ k.opis }}"><b>{{ k.bramki }}</b>{% if k.kary %}<sup class="pen">{{ k.kary }}</sup>{% endif %}{% if k.karne %}<span class="pk">{{ k.karne }}</span>{% endif %}</td>
+{% else %}<td class="cell empty"></td>{% endif %}
+{% endfor %}
+<td class="sum first">{{ w.suma.mecze }}</td>
+<td class="sum{% if w.suma.wyroznij_bramki %} hl{% endif %}"><b>{{ w.suma.bramki }}</b></td>
+<td class="sum{% if w.suma.wyroznij_karne %} hl{% endif %}">{{ w.suma.karne }}</td>
+<td class="sum">{{ w.suma.kary }}</td>
+</tr>
+{% endfor %}
+</tbody>
+<tfoot>
+<tr><th class="l sheet-player">Drużyna</th><td class="sheet-born"></td><td class="sheet-pos"></td>{% for k in strona.sumy_meczow %}<td class="cell"><b>{{ k.bramki }}</b>{% if k.karne %}<span class="pk">{{ k.karne }}</span>{% endif %}</td>{% endfor %}<td class="sum first">{{ strona.mecze|length }}</td><td class="sum"><b>{{ strona.suma.bramki }}</b></td><td class="sum">{{ strona.suma.karne }}</td><td class="sum">{{ strona.suma.kary }}</td></tr>
+</tfoot>
+</table>
+<p class="legend"><span class="hl-sample">12</span> podsumowanie sezonu: 3 najlepszych strzelców i 3 najskuteczniejszych z rzutów karnych (min. 5 prób) · liczba w ramce: najlepszy strzelec drużyny w meczu · ′ kara 2 min, U upomnienie, D dyskwalifikacja · mała liczba pod bramkami: rzuty karne trafione/wszystkie · puste pole: brak w protokole · wynik w nagłówku: bramki drużyny nad bramkami rywala, podkreślony — wygrana · Poz.: B, R, S, O.</p>
+{% else %}
+<p class="empty-note">{{ strona.brak }}</p>
+{% endif %}
+</section>
+{% endfor %}
+</body>
+</html>

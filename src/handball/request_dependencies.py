@@ -24,6 +24,7 @@ from handball.contracts.referee_detail_repository import SzczegolySedziegoReadRe
 from handball.contracts.schedule_repository import TerminarzReadRepository
 from handball.contracts.season_repository import SezonReadRepository
 from handball.contracts.team_detail_repository import SzczegolyDruzynyReadRepository
+from handball.contracts.team_report_repository import KadraRaportuReadRepository
 from handball.contracts.venue_catalog_repository import HalaKatalogReadRepository
 from handball.contracts.venue_detail_repository import SzczegolyHaliReadRepository
 from handball.contracts.venue_repository import HalaReadRepository
@@ -42,6 +43,7 @@ from handball.domain.match_preview import (
 from handball.domain.match_protocol import KolejnoscZawodnikowProtokoluPolicy
 from handball.domain.match_rules import MeczPolicy
 from handball.domain.team_details import KolejnoscPozycjiPolicy, WystepDruzynyPolicy
+from handball.domain.team_report import KolejnoscZawodnikowRaportuPolicy, MiejscaPolicy
 from handball.extensions import baza_danych
 from handball.infrastructure.pdf_renderer import WeasyPrintPdfRenderer
 from handball.infrastructure.repositories.classification_repository import (
@@ -121,6 +123,11 @@ from handball.interface.presenters.schedule_presenter import (
     ZapowiedzMeczuPresenter,
 )
 from handball.interface.presenters.team_detail_presenter import SzczegolyDruzynyPresenter
+from handball.interface.presenters.team_report_presenter import (
+    RaportDruzynyPresenter,
+    UkladRaportuPolicy,
+    UkladZestawieniaPolicy,
+)
 from handball.interface.presenters.venue_detail_presenter import SzczegolyHaliPresenter
 from handball.services.catalog_service import KatalogService
 from handball.services.classification_service import KlasyfikacjaService
@@ -161,6 +168,7 @@ from handball.services.team_detail_service import (
     SzczegolyDruzynyService,
     ZestawienieDruzynyService,
 )
+from handball.services.team_report_service import RaportDruzynyService
 from handball.services.venue_detail_service import SzczegolyHaliService
 from handball.services.venue_service import HalaService
 
@@ -191,7 +199,11 @@ class ZaleznosciZadaniaFactory:
         fabryka_typowan: Callable[[], TypowaniaReadRepository] | None = None,
         renderer_pdf: DokumentPdfRenderer | None = None,
         fabryka_protokolow: Callable[[], ProtokolMeczuReadRepository] | None = None,
+        fabryka_kadr_raportu: Callable[[], KadraRaportuReadRepository] | None = None,
     ) -> None:
+        self._fabryka_kadr_raportu = fabryka_kadr_raportu or (
+            lambda: ZapowiedzMeczuSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
         self._fabryka_protokolow = fabryka_protokolow or (
             lambda: ProtokolMeczuSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -336,6 +348,26 @@ class ZaleznosciZadaniaFactory:
             self.utworz_presenter_meczow(),
             StatystykiBramekPresenter(formatowanie),
             WystepDruzynyPolicy(MeczPolicy()),
+        )
+
+    def utworz_serwis_raportu_druzyny(self) -> RaportDruzynyService:
+        return RaportDruzynyService(
+            self._fabryka_szczegolow_druzyny(),
+            self._fabryka_kadr_raportu(),
+            self.utworz_zestawienie_druzyny(),
+            BilansDruzynyCalculator(FrekwencjaDruzynyCalculator()),
+            WystepDruzynyPolicy(MeczPolicy()),
+            KolejnoscZawodnikowRaportuPolicy(KolejnoscPozycjiPolicy()),
+            self._zegar,
+        )
+
+    def utworz_presenter_raportu_druzyny(self) -> RaportDruzynyPresenter:
+        return RaportDruzynyPresenter(
+            self.utworz_presenter_szczegolow_druzyny(),
+            KolejnoscZawodnikowRaportuPolicy(KolejnoscPozycjiPolicy()),
+            MiejscaPolicy(),
+            UkladRaportuPolicy(),
+            UkladZestawieniaPolicy(),
         )
 
     def utworz_serwis_defensywy_rywala(self) -> DefensywaRywalaService:
