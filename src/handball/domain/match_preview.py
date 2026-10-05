@@ -190,6 +190,7 @@ class GrupaKadry:
 class KadraDruzyny:
     druzyna: DruzynaZapowiedzi
     grupy: tuple[GrupaKadry, ...]
+    ze_skladu: bool = False
 
     @property
     def liczba_zawodnikow(self) -> int:
@@ -342,6 +343,7 @@ class StatystykiZapowiedziCalculator:
 
 class KadraZapowiedziCalculator:
     LICZBA_STRZELCOW = 5
+    BEZ_NUMERU = 10_000
 
     def __init__(
         self, kolejnosc: KolejnoscPozycjiPolicy, poziomy: KolejnoscRozgrywekPolicy
@@ -465,10 +467,9 @@ class KadraZapowiedziCalculator:
             data_urodzenia=glowny.data_urodzenia or (dawny.data_urodzenia if dawny else None),
         )
 
-    def _klucz(self, czlonek: CzlonekKadry) -> tuple[int, int, str, str, int]:
+    def _klucz(self, czlonek: CzlonekKadry) -> tuple[int, str, str, int]:
         return (
-            -(czlonek.sezon.mecze if czlonek.sezon else 0),
-            -(czlonek.poprzedni_sezon.mecze if czlonek.poprzedni_sezon else 0),
+            min(czlonek.numery) if czlonek.numery else self.BEZ_NUMERU,
             (czlonek.nazwisko or "").casefold(),
             (czlonek.imie or "").casefold(),
             czlonek.id_zawodnik,

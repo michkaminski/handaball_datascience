@@ -14,6 +14,7 @@ Decyzja projektowa: 2026-09-12. Technologie wybrano dla obiektowej aplikacji Fla
 | Baza | Istniejący PostgreSQL 15.1 | localhost:5432/zprp, schematy public i logs. Wybór stosu nie obejmuje aktualizacji serwera ani zmiany bazy. |
 | Renderowanie | Jinja2 dostarczane z Flaskiem, HTML5 i CSS | Widoki renderowane po stronie serwera; obliczenia domenowe pozostają w klasach Pythona. |
 | Konfiguracja | Klasa Ustawienia oparta na dataclass i zmiennych środowiska | Typowane, walidowane ustawienia bez sekretów w repozytorium. |
+| Dokumenty PDF | WeasyPrint 70.x (od 2026-09-27) | HTML/CSS → PDF po stronie serwera z CSS Paged Media: strony A4, nagłówki i stopki stron, „Strona X z Y”, spis treści z numerami stron, kontrola podziału stron. Wymaga bibliotek Pango (na Windows z MSYS2, katalog DLL w `WEASYPRINT_DLL_DIRECTORIES`). [Dokumentacja](https://doc.courtbouillon.org/weasyprint/stable/). |
 | Obiekty wejścia i wyniku | dataclass, w razie potrzeby frozen=True | Filtry i wyniki przypadków użycia jako jawne obiekty, niezależne od Flask request i modeli ORM. |
 
 Wybieramy synchroniczne Flask i SQLAlchemy. Model sesji oraz obsługi żądań będzie jednolity w całym backendzie.

@@ -108,6 +108,17 @@ class KadraDruzynyViewModel:
     druzyna: str
     liczba_zawodnikow: int
     grupy: tuple[GrupaKadryViewModel, ...]
+    ze_skladu: bool = False
+
+    @property
+    def najlepsi_strzelcy(self) -> tuple[ZawodnikKadryViewModel, ...]:
+        strzelcy = [
+            zawodnik
+            for grupa in self.grupy
+            for zawodnik in grupa.zawodnicy
+            if zawodnik.miejsce_strzelca is not None
+        ]
+        return tuple(sorted(strzelcy, key=lambda zawodnik: zawodnik.miejsce_strzelca or 0))
 
 
 @dataclass(frozen=True)

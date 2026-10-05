@@ -33,6 +33,9 @@
 <div class="prediction-head-actions">
 <a class="btn secondary small" href="{{ url_for('administracja.terminarz', **parametry_powrotu) }}">← Terminarz</a>
 <a class="btn secondary small" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=zapowiedz.id_mecz) }}">Szczegóły meczu</a>
+<button class="btn small" type="submit" form="preview-options" formaction="{{ url_for('administracja.zapowiedz_meczu_pdf', id_mecz=zapowiedz.id_mecz) }}" formtarget="_blank" data-preview-pdf title="Generuje całą zapowiedź jako PDF podzielony na strony A4, z bieżącymi opcjami kadry i okresu meczów bezpośrednich">Pobierz PDF</button>
+<button class="btn secondary small" type="submit" form="preview-options" formaction="{{ url_for('administracja.protokol_meczu_pdf', id_mecz=zapowiedz.id_mecz) }}" formtarget="_blank" data-preview-protocol title="Pusty protokół zawodów na kartkę A4 z drużynami, kadrami (kolejność jak w zapowiedzi), halą i obsadą sędziowską — do uzupełniania podczas meczu">Protokół do uzupełnienia</button>
+<label class="preview-protocol-order">kolejność <select name="kolejnosc_protokolu" form="preview-options" title="Kolejność zawodników w protokole do uzupełnienia">{% for wartosc, etykieta in formularz.kolejnosc_protokolu.choices %}<option value="{{ wartosc }}"{% if wartosc == formularz.kolejnosc_protokolu.data %} selected{% endif %}>{{ etykieta }}</option>{% endfor %}</select></label>
 </div>
 </div>
 </section>
@@ -82,6 +85,7 @@
 {% for kadra in zapowiedz.kadry %}
 <div>
 <h3>{{ kadra.druzyna }} <small class="muted">({{ kadra.liczba_zawodnikow }} zawodników)</small></h3>
+{% if kadra.ze_skladu %}<p class="note preview-squad-source">Skład zgłoszony na sezon — drużyna nie ma jeszcze meczów w protokołach; numer i pozycja ze składu.</p>{% endif %}
 <div class="table-wrap">
 <table class="preview-table preview-squad">
 <caption class="sr-only">Kadra {{ kadra.druzyna }}</caption>
@@ -103,7 +107,7 @@
 </div>
 </div>
 {% endfor %}
-<p class="note preview-legend">Zawodnicy wpisani do protokołów meczów drużyny we wszystkich rozgrywkach sezonu, rozegranych przed {{ zapowiedz.stan_na }}. Kolejność: bramkarze, rozgrywający, skrzydłowi, obrotowi, a w grupie według liczby meczów. Numer i pozycja pochodzą z protokołów (kilka numerów rozdziela „/”, pozycja — najczęstsza). ★ i czerwone pole bramek: pięciu najlepszych strzelców drużyny w sezonie (ex aequo to samo miejsce; zera bez wyróżnienia).{% if zapowiedz.sezon_poprzedni %} Kolumna {{ zapowiedz.sezon_poprzedni }}: bramki / średnia na mecz zawodnika we wszystkich klubach i rozgrywkach tamtego sezonu, a u zawodników dodanych z poprzedniego sezonu — tylko w tej drużynie („w tej drużynie”). Zaznaczono inny klub niż obecny (z bramkami i meczami dla niego) oraz ligę innego poziomu niż rozgrywki tego meczu.{% endif %}</p>
+<p class="note preview-legend">Zawodnicy wpisani do protokołów meczów drużyny we wszystkich rozgrywkach sezonu, rozegranych przed {{ zapowiedz.stan_na }}. Kolejność: bramkarze, rozgrywający, skrzydłowi, obrotowi, a w grupie według numeru koszulki (bez numeru na końcu), potem nazwiska. Numer i pozycja pochodzą z protokołów (kilka numerów rozdziela „/”, pozycja — najczęstsza). ★ i czerwone pole bramek: pięciu najlepszych strzelców drużyny w sezonie (ex aequo to samo miejsce; zera bez wyróżnienia).{% if zapowiedz.sezon_poprzedni %} Kolumna {{ zapowiedz.sezon_poprzedni }}: bramki / średnia na mecz zawodnika we wszystkich klubach i rozgrywkach tamtego sezonu, a u zawodników dodanych z poprzedniego sezonu — tylko w tej drużynie („w tej drużynie”). Zaznaczono inny klub niż obecny (z bramkami i meczami dla niego) oraz ligę innego poziomu niż rozgrywki tego meczu.{% endif %}</p>
 </div>
 </div>
 </section>

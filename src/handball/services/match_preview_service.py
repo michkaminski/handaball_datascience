@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime
 from typing import Protocol
 from zoneinfo import ZoneInfo
@@ -17,6 +18,7 @@ from handball.domain.match_preview import (
     StatystykiZapowiedziCalculator,
     WystepZapowiedzi,
     ZapowiedzMeczu,
+    ZawodnikKadry,
 )
 
 
@@ -46,9 +48,9 @@ class ZapowiedzMeczuService:
     ) -> None:
         self._repozytorium = repozytorium
         self._statystyki = statystyki
-        self._kadry = kadry
         self._prognozy = prognozy
         self._zegar = zegar
+        self._kadra_meczu = KadraMeczuBuilder(repozytorium, kadry)
 
     def pobierz(
         self, id_mecz: int, wersja_modelu: str, opcje: OpcjeZapowiedzi | None = None
@@ -116,10 +118,43 @@ class ZapowiedzMeczuService:
         sezon_poprzedni: SezonKadry | None,
         opcje: OpcjeZapowiedzi,
     ) -> KadraDruzyny:
+        return self._kadra_meczu.kadra(mecz, druzyna, stan_na, sezon_poprzedni, opcje)
+
+
+class KadraMeczuBuilder:
+    def __init__(
+        self, repozytorium: ZapowiedzMeczuReadRepository, kadry: KadraZapowiedziCalculator
+    ) -> None:
+        self._repozytorium = repozytorium
+        self._kadry = kadry
+
+    def kadra(
+        self,
+        mecz: MeczZapowiedzi,
+        druzyna: DruzynaZapowiedzi,
+        stan_na: datetime,
+        sezon_poprzedni: SezonKadry | None,
+        opcje: OpcjeZapowiedzi,
+    ) -> KadraDruzyny:
         if druzyna.id_zespol is None:
             return self._kadry.kadra(druzyna, ())
         sezon = self._repozytorium.pobierz_kadre(druzyna.id_zespol, mecz.id_sezon, stan_na)
-        if sezon_poprzedni is None:
+        ze_skladu = not sezon
+        if ze_skladu:
+            sezon = self._repozytorium.pobierz_sklad_sezonu(druzyna.id_zespol, mecz.id_sezon)
+        kadra = self._kadra_sezonu(mecz, druzyna, sezon, stan_na, sezon_poprzedni, opcje)
+        return replace(kadra, ze_skladu=ze_skladu and bool(sezon))
+
+    def _kadra_sezonu(
+        self,
+        mecz: MeczZapowiedzi,
+        druzyna: DruzynaZapowiedzi,
+        sezon: list[ZawodnikKadry],
+        stan_na: datetime,
+        sezon_poprzedni: SezonKadry | None,
+        opcje: OpcjeZapowiedzi,
+    ) -> KadraDruzyny:
+        if druzyna.id_zespol is None or sezon_poprzedni is None:
             return self._kadry.kadra(druzyna, sezon, rozgrywki=mecz.rozgrywki)
         dawni = (
             self._repozytorium.pobierz_kadre(druzyna.id_zespol, sezon_poprzedni.id_sezon, stan_na)

@@ -8,12 +8,16 @@ from handball.domain.classifications import (
     SzczegolySkladu,
     SzczegolyTabeli,
 )
+from handball.domain.competition_levels import KolejnoscRozgrywekPolicy
 from handball.domain.options import OpcjaWyboru
 
 
 class KlasyfikacjaService:
-    def __init__(self, repozytorium: KlasyfikacjaReadRepository) -> None:
+    def __init__(
+        self, repozytorium: KlasyfikacjaReadRepository, kolejnosc: KolejnoscRozgrywekPolicy
+    ) -> None:
         self._repozytorium = repozytorium
+        self._kolejnosc = kolejnosc
 
     def pobierz_sklady(self, filtry: FiltryKlasyfikacji) -> StronaKlasyfikacji[Sklad]:
         return self._repozytorium.pobierz_sklady(filtry)
@@ -34,4 +38,6 @@ class KlasyfikacjaService:
         return self._repozytorium.pobierz_opcje_sezonow()
 
     def pobierz_opcje_rozgrywek(self, id_sezon: int | None) -> list[OpcjaWyboru]:
-        return self._repozytorium.pobierz_opcje_rozgrywek(id_sezon)
+        return self._kolejnosc.uporzadkuj_opcje(
+            self._repozytorium.pobierz_opcje_rozgrywek(id_sezon)
+        )

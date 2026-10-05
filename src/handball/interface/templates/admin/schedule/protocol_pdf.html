@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Protokół zawodów: {{ protokol.gospodarz }} — {{ protokol.gosc }}</title>
+<meta name="author" content="Handball DataScience">
+<meta name="description" content="{{ protokol.rozgrywki }} · {{ protokol.data }} {{ protokol.godzina }}">
+<style>.player td{height:{{ protokol.uklad.wysokosc_zawodnika_mm }}mm;font-size:{{ protokol.uklad.czcionka_zawodnika_pt }}pt}</style>
+</head>
+{% set kary = ["W", "B", "U", "2'", "2'", "2'", "D", "Kd"] %}
+<body>
+<table class="head">
+<tr>
+<td class="teams">
+<span class="label">A Drużyna Gospodarzy:</span><b class="team">{{ protokol.gospodarz }}</b>
+<span class="label">B Drużyna Gości:</span><b class="team">{{ protokol.gosc }}</b>
+</td>
+<td class="event">
+<span class="label">Zawody:</span><b>{{ protokol.rozgrywki }}</b>
+<span class="event-line">{{ protokol.sezon }}{% if protokol.etap %} · {{ protokol.etap }}{% endif %}</span>
+<span class="event-line"><span class="label">data</span> <b>{{ protokol.data }}</b> <span class="label">godz.</span> <b>{{ protokol.godzina }}</b></span>
+</td>
+<td class="place">
+<span class="label">Miejsce rozgrywania zawodów (adres):</span>
+<span class="place-name">{{ protokol.hala }}{% if protokol.adres %}, {{ protokol.adres }}{% endif %}</span>
+<table class="score">
+<tr><td class="box"></td><td class="colon">:</td><td class="box"></td><td class="gap"></td><td class="box"></td><td class="colon">:</td><td class="box"></td><td class="gap"></td><td class="box wide"></td></tr>
+<tr class="score-labels"><td colspan="3">wynik końcowy</td><td></td><td colspan="3">do przerwy</td><td></td><td>na korzyść</td></tr>
+</table>
+</td>
+</tr>
+</table>
+
+<table class="main">
+<tr>
+<td class="main-teams">
+{% for druzyna in protokol.druzyny %}
+<table class="team-table">
+<colgroup><col class="c-nr"><col class="c-name"><col class="c-pos"><col class="c-year"><col class="c-games"><col class="c-goals"><col class="c-avg">{% for _ in kary %}<col class="c-pen">{% endfor %}</colgroup>
+<tr class="team-name"><th colspan="10"><span class="label">{{ druzyna.litera }} (nazwa)</span> {{ druzyna.druzyna }}{% if druzyna.ze_skladu %} <span class="label source-note">(skład zgłoszony na sezon)</span>{% endif %}</th><th colspan="5" class="penalties">Kary</th></tr>
+<tr class="cols"><th>Nr</th><th class="name">Nazwisko i imię zawodnika</th><th class="stat" title="Pozycja">P</th><th class="stat" title="Rocznik">Ur.</th><th class="stat" title="Mecze w sezonie">M</th><th class="stat" title="Bramki w sezonie">Br</th><th class="stat stat-last" title="Średnio bramek na mecz">Śr</th>{% for kara in kary %}<th>{{ kara }}</th>{% endfor %}</tr>
+{% for z in druzyna.zawodnicy %}
+<tr class="player{% if z.nowa_grupa %} new-group{% endif %}"><td class="nr">{{ z.numer }}</td><td class="name">{{ z.nazwa }}</td><td class="stat">{{ z.pozycja }}</td><td class="stat">{{ z.rocznik }}</td><td class="stat">{{ z.mecze }}</td><td class="stat{% if z.wyroznij_bramki %} stat-top{% endif %}">{{ z.bramki }}</td><td class="stat stat-last">{{ z.srednia }}</td>{% for _ in kary %}<td></td>{% endfor %}</tr>
+{% else %}
+<tr class="player"><td class="nr"></td><td class="name note">Brak zawodników w protokołach sezonu</td>{% for _ in range(4) %}<td class="stat"></td>{% endfor %}<td class="stat stat-last"></td>{% for _ in kary %}<td></td>{% endfor %}</tr>
+{% endfor %}
+<tr class="officials"><td colspan="15">
+<table class="officials-grid"><tr>
+{% for litera in ["A", "B", "C", "D", "E"] %}<td><b>{{ litera }}</b>{% if loop.first %} <small class="inline">osoba odpowiedzialna</small>{% endif %}<small>nazwisko, imię — funkcja, nr licencji</small></td>{% endfor %}
+<td class="warning"><b>U</b></td>
+</tr></table>
+</td></tr>
+</table>
+{% endfor %}
+</td>
+<td class="main-flow">
+<table class="flow">
+<colgroup>{% for _ in range(2) %}<col class="f-t"><col class="f-team"><col class="f-score"><col class="f-team">{% endfor %}</colgroup>
+<tr class="flow-title"><th colspan="8">Przebieg zawodów</th></tr>
+<tr class="flow-half"><td></td><th colspan="2">I połowa</th><td></td><td></td><th colspan="2">II połowa</th><td></td></tr>
+<tr class="flow-half"><td></td><th colspan="2">time out</th><td></td><td></td><th colspan="2">time out</th><td></td></tr>
+<tr class="flow-cols">{% for _ in range(2) %}<th>T</th><th>Zaw. A</th><th>wynik</th><th>Zaw. B</th>{% endfor %}</tr>
+{% for _ in range(protokol.uklad.wiersze_przebiegu) %}
+<tr class="flow-row">{% for _ in range(2) %}<td></td><td></td><td class="flow-score">:</td><td></td>{% endfor %}</tr>
+{% endfor %}
+</table>
+<table class="penalty-shots">
+<tr><th colspan="4">Rzuty karne</th></tr>
+<tr><th colspan="2">A — liczba / bramki</th><th colspan="2">B — liczba / bramki</th></tr>
+<tr class="penalty-values"><td></td><td></td><td></td><td></td></tr>
+</table>
+</td>
+</tr>
+</table>
+
+<table class="foot">
+<tr>
+<td class="foot-referees">
+<table class="referees">
+<colgroup><col class="r-role"><col class="r-person"><col class="r-label"><col class="r-city"><col class="r-sign-label"><col class="r-sign"></colgroup>
+<tr><th colspan="6" class="referees-title">Sędziowie</th></tr>
+{% for s in protokol.sedziowie %}
+<tr><td class="role">{{ s.funkcja }}</td><td class="person">{{ s.nazwisko }}</td><td class="label">miejscowość</td><td class="city">{{ s.miasto }}</td><td class="label">podpis:</td><td class="sign"></td></tr>
+{% endfor %}
+</table>
+</td>
+<td class="foot-info">
+<table class="info">
+<tr><td colspan="2">Szczegółowe uwagi sędziów:</td></tr>
+<tr><td class="check">brak ☐</td><td class="check">verte ☐</td></tr>
+<tr><td colspan="2">Liczba widzów: <span class="line short"></span></td></tr>
+<tr><td colspan="2">Pojemność hali: <b>{{ protokol.pojemnosc }}</b></td></tr>
+<tr><td colspan="2">Rejestracja: tak ☐ nie ☐</td></tr>
+<tr><td colspan="2">Raport sędziów/delegata: tak ☐ nie ☐</td></tr>
+</table>
+</td>
+<td class="foot-verify">
+<table class="verify">
+<tr><td>Wynik końcowy:</td><td class="box"></td><td class="colon">:</td><td class="box"></td></tr>
+<tr><td>Do przerwy:</td><td class="box"></td><td class="colon">:</td><td class="box"></td></tr>
+<tr><td>Na korzyść:</td><td class="box" colspan="3"></td></tr>
+</table>
+<table class="medical"><tr><td>Opieka medyczna (pieczątka i podpis)</td></tr></table>
+</td>
+</tr>
+</table>
+<p class="source">Handball DataScience · zawody #{{ protokol.id_mecz }} · P: B bramkarz, R rozgrywający, S skrzydłowy, O obrotowy · Ur.: rocznik · M, Br, Śr: mecze, bramki i średnia w sezonie (pogrubione bramki — 4 najlepszych strzelców drużyny) · kadry z protokołów sezonu {{ protokol.sezon }} do {{ protokol.stan_na }}{% if protokol.druzyny | selectattr('ze_skladu') | list %}, a bez protokołów — ze składu zgłoszonego na sezon{% endif %}</p>
+</body>
+</html>

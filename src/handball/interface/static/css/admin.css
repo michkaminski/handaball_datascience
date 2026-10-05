@@ -287,3 +287,4 @@
 .preview-squad td.preview-prev{white-space:normal;text-align:left;min-width:170px;max-width:240px;overflow-wrap:anywhere}.preview-squad th.grp{text-align:left}
 .preview-birth{color:var(--muted);font-size:.7rem;white-space:nowrap}
 .preview-hide-notes .preview-prev-note{display:none}.preview-hide-notes .preview-prev-other{background:none}
+.preview-protocol-order{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;color:#43566b}.preview-protocol-order select{height:26px;padding:1px 4px;border:1px solid var(--line2);border-radius:3px;font-size:.75rem}

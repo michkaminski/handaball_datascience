@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 from typing import cast
 
 from sqlalchemy.orm import Session
@@ -10,11 +11,13 @@ from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
 from handball.contracts.match_prediction_repository import MeczeLigoweReadRepository
 from handball.contracts.match_preview_repository import ZapowiedzMeczuReadRepository
+from handball.contracts.match_protocol_repository import ProtokolMeczuReadRepository
 from handball.contracts.match_repository import MeczReadRepository
 from handball.contracts.match_stage_repository import EtapMeczowReadRepository
 from handball.contracts.match_tip_repository import TypowaniaReadRepository
 from handball.contracts.news_repository import AktualnosciReadRepository
 from handball.contracts.opponent_defense_repository import DefensywaRywalaReadRepository
+from handball.contracts.pdf_renderer import DokumentPdfRenderer
 from handball.contracts.player_detail_repository import SzczegolyZawodnikaReadRepository
 from handball.contracts.player_repository import ZawodnikReadRepository
 from handball.contracts.referee_detail_repository import SzczegolySedziegoReadRepository
@@ -36,9 +39,11 @@ from handball.domain.match_preview import (
     KadraZapowiedziCalculator,
     StatystykiZapowiedziCalculator,
 )
+from handball.domain.match_protocol import KolejnoscZawodnikowProtokoluPolicy
 from handball.domain.match_rules import MeczPolicy
 from handball.domain.team_details import KolejnoscPozycjiPolicy, WystepDruzynyPolicy
 from handball.extensions import baza_danych
+from handball.infrastructure.pdf_renderer import WeasyPrintPdfRenderer
 from handball.infrastructure.repositories.classification_repository import (
     KlasyfikacjaSQLAlchemyRepository,
 )
@@ -53,6 +58,9 @@ from handball.infrastructure.repositories.match_prediction_repository import (
 )
 from handball.infrastructure.repositories.match_preview_repository import (
     ZapowiedzMeczuSQLAlchemyRepository,
+)
+from handball.infrastructure.repositories.match_protocol_repository import (
+    ProtokolMeczuSQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.match_repository import MeczSQLAlchemyRepository
 from handball.infrastructure.repositories.match_stage_repository import (
@@ -97,6 +105,10 @@ from handball.interface.presenters.match_presenter import (
     MeczPresenter,
     SkladMeczuPresenter,
 )
+from handball.interface.presenters.match_protocol_presenter import (
+    ProtokolMeczuPresenter,
+    UkladProtokoluPolicy,
+)
 from handball.interface.presenters.match_tip_presenter import TypowaniaPresenter
 from handball.interface.presenters.news_presenter import AktualnosciPresenter
 from handball.interface.presenters.opponent_defense_presenter import DefensywaRywalaPresenter
@@ -123,7 +135,13 @@ from handball.services.match_prediction_service import (
     RaportPrognozService,
     SzczegolyPrognozyService,
 )
-from handball.services.match_preview_service import ZapowiedzMeczuService, Zegar, ZegarWarszawa
+from handball.services.match_preview_service import (
+    KadraMeczuBuilder,
+    ZapowiedzMeczuService,
+    Zegar,
+    ZegarWarszawa,
+)
+from handball.services.match_protocol_service import ProtokolMeczuService
 from handball.services.match_service import MeczService
 from handball.services.match_tip_service import RaportTypowanService, TypowaniaKolejkiService
 from handball.services.news_service import AktualnosciService
@@ -171,7 +189,15 @@ class ZaleznosciZadaniaFactory:
         fabryka_zapowiedzi_meczu: Callable[[], ZapowiedzMeczuReadRepository] | None = None,
         zegar: Zegar | None = None,
         fabryka_typowan: Callable[[], TypowaniaReadRepository] | None = None,
+        renderer_pdf: DokumentPdfRenderer | None = None,
+        fabryka_protokolow: Callable[[], ProtokolMeczuReadRepository] | None = None,
     ) -> None:
+        self._fabryka_protokolow = fabryka_protokolow or (
+            lambda: ProtokolMeczuSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
+        self._renderer_pdf = renderer_pdf or WeasyPrintPdfRenderer(
+            Path(__file__).parent / "interface" / "static"
+        )
         self._fabryka_typowan = fabryka_typowan or (
             lambda: TypowaniaSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -248,6 +274,7 @@ class ZaleznosciZadaniaFactory:
             self._fabryka_repozytorium_rozgrywek(),
             self._fabryka_repozytorium_hal(),
             self._fabryka_repozytorium_etapow(),
+            KolejnoscRozgrywekPolicy(),
         )
 
     def utworz_presenter_meczow(self) -> MeczPresenter:
@@ -263,7 +290,9 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_slowniki_zawodnikow(self) -> SlownikiZawodnikowService:
         return SlownikiZawodnikowService(
-            self._fabryka_repozytorium_sezonow(), self._fabryka_repozytorium_rozgrywek()
+            self._fabryka_repozytorium_sezonow(),
+            self._fabryka_repozytorium_rozgrywek(),
+            KolejnoscRozgrywekPolicy(),
         )
 
     def utworz_serwis_szczegolow_zawodnika(self) -> SzczegolyZawodnikaService:
@@ -281,7 +310,9 @@ class ZaleznosciZadaniaFactory:
         )
 
     def utworz_serwis_szczegolow_druzyny(self) -> SzczegolyDruzynyService:
-        return SzczegolyDruzynyService(self._fabryka_szczegolow_druzyny())
+        return SzczegolyDruzynyService(
+            self._fabryka_szczegolow_druzyny(), KolejnoscRozgrywekPolicy()
+        )
 
     def utworz_zestawienie_druzyny(self) -> ZestawienieDruzynyService:
         return ZestawienieDruzynyService(
@@ -332,7 +363,7 @@ class ZaleznosciZadaniaFactory:
         return SzczegolySedziegoPresenter(MeczFormat())
 
     def utworz_serwis_klasyfikacji(self) -> KlasyfikacjaService:
-        return KlasyfikacjaService(self._fabryka_klasyfikacji())
+        return KlasyfikacjaService(self._fabryka_klasyfikacji(), KolejnoscRozgrywekPolicy())
 
     def utworz_presenter_skladu(self) -> SkladPresenter:
         return SkladPresenter()
@@ -367,7 +398,11 @@ class ZaleznosciZadaniaFactory:
         return PrognozaMeczuPresenter(MeczFormat(), PrognozaFormat())
 
     def utworz_serwis_terminarza(self) -> TerminarzService:
-        return TerminarzService(self._fabryka_terminarza(), self._fabryka_repozytorium_sezonow())
+        return TerminarzService(
+            self._fabryka_terminarza(),
+            self._fabryka_repozytorium_sezonow(),
+            KolejnoscRozgrywekPolicy(),
+        )
 
     def utworz_presenter_terminarza(self) -> TerminarzPresenter:
         return TerminarzPresenter(MeczFormat(), MeczPolicy(), KalendarzFormat())
@@ -392,6 +427,23 @@ class ZaleznosciZadaniaFactory:
         return ZapowiedzMeczuPresenter(
             KalendarzFormat(), PrognozaFormat(), self.utworz_presenter_prognoz_meczow()
         )
+
+    def utworz_serwis_protokolu_meczu(self) -> ProtokolMeczuService:
+        return ProtokolMeczuService(
+            self._fabryka_zapowiedzi_meczu(),
+            self._fabryka_protokolow(),
+            KadraMeczuBuilder(
+                self._fabryka_zapowiedzi_meczu(),
+                KadraZapowiedziCalculator(KolejnoscPozycjiPolicy(), KolejnoscRozgrywekPolicy()),
+            ),
+            self._zegar,
+        )
+
+    def utworz_presenter_protokolu_meczu(self) -> ProtokolMeczuPresenter:
+        return ProtokolMeczuPresenter(UkladProtokoluPolicy(), KolejnoscZawodnikowProtokoluPolicy())
+
+    def utworz_renderer_pdf(self) -> DokumentPdfRenderer:
+        return self._renderer_pdf
 
     def utworz_typowania_kolejki(self) -> TypowaniaKolejkiService:
         return TypowaniaKolejkiService(

@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
+
+from handball.domain.options import OpcjaWyboru
 
 
 @dataclass(frozen=True)
@@ -21,5 +24,14 @@ class KolejnoscRozgrywekPolicy:
                 return indeks
         return len(self.wzorce)
 
-    def klucz(self, nazwa: str) -> tuple[int, str]:
-        return (self.poziom(nazwa), nazwa.casefold())
+    def klucz(self, nazwa: str) -> tuple[int, bool, str]:
+        return (self.poziom(nazwa), self.baraz(nazwa), nazwa.casefold())
+
+    def baraz(self, nazwa: str) -> bool:
+        return nazwa.strip().casefold().startswith("baraż")
+
+    def uporzadkuj_nazwy(self, nazwy: Iterable[str]) -> list[str]:
+        return sorted(nazwy, key=self.klucz)
+
+    def uporzadkuj_opcje(self, opcje: Iterable[OpcjaWyboru]) -> list[OpcjaWyboru]:
+        return sorted(opcje, key=lambda opcja: (*self.klucz(opcja.etykieta), opcja.wartosc))

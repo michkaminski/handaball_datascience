@@ -8,6 +8,7 @@ from tests.helpers.match_predictions import (
 )
 from tests.helpers.schedule import (
     KADRY,
+    SKLADY,
     WYSTEPY,
     WYSTEPY_ZAWODNIKOW,
     ZapowiedzMeczuInMemoryRepository,
@@ -235,7 +236,7 @@ def test_mecz_spoza_lig_modelu_nie_ma_prognozy() -> None:
     assert wynik.powod_braku is PowodWykluczenia.NIEZNANA_LIGA
 
 
-def test_kadra_bramkarze_na_gorze_potem_pozycje_i_liczba_meczow() -> None:
+def test_kadra_bramkarze_na_gorze_potem_pozycje() -> None:
     kadra = KadraZapowiedziCalculator(KolejnoscPozycjiPolicy(), KolejnoscRozgrywekPolicy()).kadra(
         DruzynaZapowiedzi(10, "Wisła Płock"), KADRY[(10, 5)]
     )
@@ -332,3 +333,41 @@ def test_zawodnik_zagral_wedlug_wyjsc_na_boisko() -> None:
     assert ZawodnikKadry(1, None, None, (), None, 2, 0, zagrane=1).zagral
     assert not ZawodnikKadry(1, None, None, (), None, 2, 0, zagrane=0).zagral
     assert ZawodnikKadry(1, None, None, (), None, 2, 0).zagral
+
+
+def test_kadra_bez_protokolow_w_sezonie_ze_skladu_zgloszonego() -> None:
+    repo = ZapowiedzMeczuInMemoryRepository(
+        [mecz_zapowiedzi(999, gosp=(501, "Klub Spoza Ligi"), gosc=(502, "Inny Klub"))]
+    )
+    zapowiedz = serwis(repo, PrognozyStale(), ZegarStaly(datetime(2030, 1, 1))).pobierz(
+        999, "team_strength_v1"
+    )
+    kadra = zapowiedz.gospodarz.kadra
+    assert kadra.ze_skladu
+    assert [[c.id_zawodnik for c in g.czlonkowie] for g in kadra.grupy] == [[62], [61], [63]]
+    assert kadra.grupy[0].czlonkowie[0].numery == (16,)
+    assert not zapowiedz.gosc.kadra.ze_skladu and zapowiedz.gosc.kadra.liczba_zawodnikow == 0
+    assert repo.sklady == [(501, 5), (502, 5)]
+
+
+def test_kadra_z_protokolow_nie_siega_do_skladu() -> None:
+    repo = ZapowiedzMeczuInMemoryRepository()
+    zapowiedz = serwis(repo, PrognozyStale(), ZegarStaly(datetime(2030, 1, 1))).pobierz(
+        204, "team_strength_v1"
+    )
+    assert not zapowiedz.gosc.kadra.ze_skladu
+    assert 64 not in {c.id_zawodnik for g in zapowiedz.gosc.kadra.grupy for c in g.czlonkowie}
+    assert (10, 5) not in repo.sklady and SKLADY[(10, 5)]
+
+
+def test_kadra_w_grupie_wedlug_numeru_potem_nazwiska_bez_numeru_na_koncu() -> None:
+    zawodnicy = [
+        ZawodnikKadry(1, "Adam", "Zet", (20,), "Rozgrywający", 9, 40),
+        ZawodnikKadry(2, "Bartosz", "Bez", (), "Rozgrywający", 9, 40),
+        ZawodnikKadry(3, "Cezary", "Ymir", (3, 33), "Rozgrywający", 1, 0),
+        ZawodnikKadry(4, "Dawid", "Alfa", (20,), "Rozgrywający", 2, 1),
+    ]
+    kadra = KadraZapowiedziCalculator(KolejnoscPozycjiPolicy(), KolejnoscRozgrywekPolicy()).kadra(
+        DruzynaZapowiedzi(10, "Wisła Płock"), zawodnicy
+    )
+    assert [c.id_zawodnik for c in kadra.grupy[0].czlonkowie] == [3, 4, 1, 2]

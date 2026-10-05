@@ -1,6 +1,45 @@
 # Stan projektu
 
-Aktualizacja: 2026-09-26.
+Aktualizacja: 2026-09-27.
+
+## Kolejność rozgrywek w filtrach — 2026-09-27
+
+Na zlecenie użytkownika wszystkie listy rozgrywek w filtrach mają kolejność według poziomu: Superligi (także Ekstraklasa i baraże o Superligę), Ligi Centralne, I Liga, II Liga, potem pozostałe (III i IV Liga, puchary, turnieje i inne). W obrębie poziomu baraże są za zwykłymi rozgrywkami, a reszta według nazwy (`KolejnoscRozgrywekPolicy.klucz()`, `uporzadkuj_nazwy()`, `uporzadkuj_opcje()`). Dotyczy to listy meczów, listy i karty zawodnika, defensywy rywali, karty sędziego, karty hali, karty drużyny, składów i tabel oraz terminarza; raport typowań stosował tę regułę już wcześniej. Lista rozgrywek w panelu importu zostaje bez zmian, bo nie jest filtrem. Na bazie (tylko odczyt): lista meczów zaczyna się od Ekstraklasy i Superlig, terminarz 2026/2027 od LOTTO Superligi, Lig Centralnych i I Lig. Weryfikacja: 2 nowe testy reguły; pełny zestaw 546 testów Pythona (poza błędem `SECRET_KEY`), mypy bez błędów. Bazy nie zmieniano.
+
+## Zapowiedź meczu: kolejność kadry — 2026-09-27
+
+Na zlecenie użytkownika kadra w zapowiedzi (strona, PDF, protokół) ma w grupie pozycji kolejność według numeru koszulki, potem nazwiska; zawodnicy bez numeru są na końcu grupy (`KadraZapowiedziCalculator._klucz()`). Wcześniej grupa była sortowana według liczby meczów.
+
+## Zapowiedź meczu: kadra ze składu zgłoszonego przed pierwszym meczem — 2026-09-27
+
+Na zlecenie użytkownika drużyna, która nie ma jeszcze w sezonie meczu w protokołach, dostaje w zapowiedzi, jej PDF i protokole do uzupełnienia kadrę ze składu zgłoszonego na sezon (`sklady`). Numer i pozycja pochodzą ze składu, mecze i bramki są zerowe, a źródło jest opisane przy drużynie. Na bazie z 2026-09-27 składy na 2026/2027 ma 153 drużyny (3059 wpisów); mecz 207100 — gospodarz 22 zawodniczki ze składu, gość z protokołów. Kontrakt: [schedule/preview.md](../src/handball/interface/templates/admin/schedule/preview.md). Weryfikacja: 2 testy serwisu i 1 test interfejsu; pełny zestaw 539 testów Pythona (poza błędem `SECRET_KEY`), mypy bez błędów. Bazy nie zmieniano.
+
+## Zapowiedź meczu: protokół zawodów do uzupełnienia — 2026-09-27
+
+Na zlecenie użytkownika (wzór: protokół ZPRP meczu 206534) zapowiedź ma przycisk **Protokół do uzupełnienia**. Otwiera on w nowej karcie pusty protokół na jednej kartce A4, bez logo i stopki ZPRP.
+
+Z bazy uzupełnione są: numer meczu (np. SM/23), drużyny, rozgrywki, data i godzina, hala z adresem i pojemnością oraz obsada sędziowska (sędziowie, sekretarz, mierzący czas, delegat). Kadry obu drużyn mają kolejność jak w zapowiedzi (grupy pozycji, a w grupie numery koszulek) albo, do wyboru obok przycisku, według samych numerów; przy nazwisku są pozycja, rocznik, mecze, bramki i średnia w sezonie, a bramki 4 najlepszych strzelców drużyny są pogrubione; opcja „Dodaj zawodników z poprzedniego sezonu” działa także tu.
+
+Puste do wypełnienia ręcznie: kary, osoby towarzyszące, wynik, przebieg zawodów (34 wiersze na połowę), rzuty karne, uwagi i podpisy. Wysokość wierszy dopasowuje się do liczby zawodników, więc całość zawsze mieści się na jednej stronie. Kontrakt: [schedule/protocol_pdf.md](../src/handball/interface/templates/admin/schedule/protocol_pdf.md).
+
+Weryfikacja: 4 nowe testy interfejsu i 3 testy presentera. Pełny zestaw: 536 testów Pythona (poza istniejącym błędem `SECRET_KEY`) i 66 testów JavaScript; mypy bez błędów, Ruff bez nowych uwag. Na bazie (tylko odczyt) mecz 206533: 34 zawodników i 51 z poprzednim sezonem — po jednej stronie; odpowiedź ok. 2,3 s. Bazy nie zmieniano.
+
+## Zapowiedź meczu: PDF na kartki A4 — 2026-09-27
+
+Na zlecenie użytkownika zapowiedź ma przycisk **Pobierz PDF**. Otwiera on w nowej karcie całą zapowiedź jako PDF A4 w pionie, z bieżącymi opcjami kadry, uwag i okresu. Generuje go WeasyPrint (nowa zależność, decyzja w [ARCHITECTURE](ARCHITECTURE.md#dokumenty-pdf--2026-09-27)).
+
+Podział stron:
+- okładka z blokiem meczu, „W skrócie” (forma, bilans bezpośredni, prognoza, pięciu strzelców drużyn) i spisem treści z numerami stron;
+- każda kadra na osobnej stronie;
+- forma razem z porównaniem;
+- mecze bezpośrednie;
+- prognoza z krokami.
+
+Każda strona ma nagłówek „Gospodarz — Gość”, a stopka „stan na …” i „Strona X z Y”. Kontrakt: [schedule/preview_pdf.md](../src/handball/interface/templates/admin/schedule/preview_pdf.md).
+
+Wymaganie środowiska: biblioteki Pango (MSYS2). Instalacja jednorazowa opisana w [README](../README.md); `run.bat` sam wskazuje `C:\msys64\mingw64\bin`. Bez nich trasa PDF zwraca 503, a reszta aplikacji działa.
+
+Weryfikacja: 5 nowych testów interfejsu i 2 testy renderera. Pełny zestaw: 530 testów Pythona (poza istniejącym błędem `SECRET_KEY`) i 66 testów JavaScript; mypy bez błędów, Ruff bez nowych uwag. Na bazie (tylko odczyt) wygenerowano PDF meczu 206529 (6 stron) i 206533 (8 stron) i obejrzano strony. Bazy nie zmieniano.
 
 ## Karta zawodnika: drużyny spoza składów sezonowych — 2026-09-26
 

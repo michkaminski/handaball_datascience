@@ -1,9 +1,10 @@
 from collections import Counter
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from statistics import mean, median
 
 from handball.contracts.team_detail_repository import SzczegolyDruzynyReadRepository
+from handball.domain.competition_levels import KolejnoscRozgrywekPolicy
 from handball.domain.match_rules import StatusMeczu
 from handball.domain.team_details import (
     BilansDruzyny,
@@ -73,14 +74,18 @@ class FrekwencjaDruzynyCalculator:
 
 
 class SzczegolyDruzynyService:
-    def __init__(self, repozytorium: SzczegolyDruzynyReadRepository) -> None:
+    def __init__(
+        self, repozytorium: SzczegolyDruzynyReadRepository, kolejnosc: KolejnoscRozgrywekPolicy
+    ) -> None:
         self._repozytorium = repozytorium
+        self._kolejnosc = kolejnosc
 
     def pobierz_szczegoly(self, id_zespol: int) -> SzczegolyDruzyny:
         return self._repozytorium.pobierz_szczegoly(id_zespol)
 
     def pobierz_opcje_filtrow(self, id_zespol: int) -> OpcjeFiltrowDruzyny:
-        return self._repozytorium.pobierz_opcje_filtrow(id_zespol)
+        opcje = self._repozytorium.pobierz_opcje_filtrow(id_zespol)
+        return replace(opcje, rozgrywki=tuple(self._kolejnosc.uporzadkuj_nazwy(opcje.rozgrywki)))
 
     def pobierz_mecze(self, id_zespol: int, filtry: FiltryDruzyny) -> StronaMeczowDruzyny:
         return self._repozytorium.pobierz_mecze(id_zespol, filtry)

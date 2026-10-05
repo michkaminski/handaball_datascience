@@ -5,6 +5,7 @@ from datetime import date
 
 from handball.contracts.schedule_repository import TerminarzReadRepository
 from handball.contracts.season_repository import SezonReadRepository
+from handball.domain.competition_levels import KolejnoscRozgrywekPolicy
 from handball.domain.options import OpcjaWyboru
 from handball.domain.schedule import (
     DzienTerminarza,
@@ -24,17 +25,21 @@ class NieznanySezonTerminarza(ValueError):
 
 class TerminarzService:
     def __init__(
-        self, repozytorium: TerminarzReadRepository, repozytorium_sezonow: SezonReadRepository
+        self,
+        repozytorium: TerminarzReadRepository,
+        repozytorium_sezonow: SezonReadRepository,
+        kolejnosc: KolejnoscRozgrywekPolicy,
     ) -> None:
         self._repozytorium = repozytorium
         self._repozytorium_sezonow = repozytorium_sezonow
+        self._kolejnosc = kolejnosc
 
     def pobierz_opcje(self, wybor: WyborTerminarza) -> OpcjeTerminarza:
         sezony = self._repozytorium_sezonow.pobierz_wszystkie()
         id_sezon = self._sezon(sezony, wybor.id_sezon)
         if id_sezon is None:
             return OpcjeTerminarza(WyborTerminarza(), sezony)
-        rozgrywki = self._repozytorium.pobierz_rozgrywki(id_sezon)
+        rozgrywki = self._kolejnosc.uporzadkuj_opcje(self._repozytorium.pobierz_rozgrywki(id_sezon))
         id_rozgrywki = self._dostepny(rozgrywki, wybor.id_rozgrywki)
         if id_rozgrywki is None:
             return OpcjeTerminarza(WyborTerminarza(id_sezon), sezony, rozgrywki)

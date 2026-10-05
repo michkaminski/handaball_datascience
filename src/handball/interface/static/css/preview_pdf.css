@@ -1,0 +1,136 @@
+:root{--ink:#17283d;--muted:#68798a;--line:#d7e1e8;--line2:#c8d4dd;--n1:#10283f;--n2:#173752;--n3:#21557f;--acc:#2b6ea4;--good:#2f7e6c;--warn:#9f6a15;--danger:#b04646;--soft:#f3f7fa}
+
+@page{size:A4 portrait;margin:17mm 13mm 15mm;
+  @top-left{content:string(mecz, first);font:600 8pt "Segoe UI",Arial,sans-serif;color:#21557f;vertical-align:bottom;padding-bottom:2.5mm}
+  @top-right{content:"Zapowiedź meczu";font:8pt "Segoe UI",Arial,sans-serif;color:#68798a;vertical-align:bottom;padding-bottom:2.5mm}
+  @bottom-left{content:"Handball DataScience · " string(stan, first);font:7.5pt "Segoe UI",Arial,sans-serif;color:#68798a;vertical-align:top;padding-top:2.5mm}
+  @bottom-right{content:"Strona " counter(page) " z " counter(pages);font:7.5pt "Segoe UI",Arial,sans-serif;color:#68798a;vertical-align:top;padding-top:2.5mm}
+}
+@page :first{margin-top:13mm;@top-left{content:none}@top-right{content:none}}
+
+html{font-family:"Segoe UI",Arial,sans-serif;font-size:9pt;line-height:1.35;color:var(--ink)}
+body{margin:0}
+h2,h3,h4{margin:0;break-after:avoid}
+p{margin:0}
+.sr-only{display:none}
+.running-match{string-set:mecz content()}
+.running-date{string-set:stan content()}
+.running-match,.running-date{height:0;overflow:hidden;margin:0;line-height:0;color:transparent}
+.note{font-size:7.5pt;color:var(--muted)}
+.muted{color:var(--muted)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.nowrap{white-space:nowrap}
+.notice{margin:6pt 0;padding:5pt 8pt;border:.6pt solid #d9e6ef;background:#f5f9fc;border-radius:3pt;color:#35506a;font-size:8.5pt}
+.notice-warning{border-color:#ecd9ae;color:var(--warn);background:#fbf1dc}
+
+.page{break-before:page}
+.page>.note{margin-bottom:5pt}
+.block{break-inside:avoid;margin-top:12pt}
+.section-title{display:flex;align-items:center;gap:8pt;font-size:14pt;color:var(--n1);padding-bottom:5pt;margin-bottom:9pt;border-bottom:1.6pt solid var(--acc);bookmark-level:1;bookmark-label:content()}
+.section-no{display:inline-block;width:18pt;height:18pt;line-height:18pt;border-radius:9pt;background:var(--n2);color:#fff;text-align:center;font-size:9.5pt;font-weight:700}
+.team-title{font-size:11pt;color:#123b63;margin:0 0 5pt;display:flex;align-items:center;gap:8pt}
+.team-title small{font-size:8pt;font-weight:400;color:var(--muted)}
+
+.cover-label{font-size:8pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+.cover-context{font-size:10pt;color:#35506a;margin:2pt 0 9pt}
+.hero{border-radius:6pt;background:linear-gradient(160deg,#21557f,#10283f);color:#fff;padding:16pt 14pt 11pt}
+.hero-grid{width:100%;border-collapse:collapse;table-layout:fixed}
+.hero-grid td{vertical-align:middle;padding:0}
+.hero-team b{display:block;font-size:17pt;line-height:1.15;font-weight:700}
+.hero-home{text-align:right;width:40%}
+.hero-away{text-align:left;width:40%}
+.hero-role{display:block;font-size:7pt;letter-spacing:.12em;text-transform:uppercase;color:#b7cad8;margin-bottom:3pt}
+.hero-center{text-align:center;width:20%}
+.hero-score,.hero-vs{display:block;font-size:24pt;font-weight:800;font-variant-numeric:tabular-nums}
+.hero-vs{font-size:16pt;color:#cfe0ee}
+.hero-status{display:inline-block;margin-top:4pt;padding:1pt 8pt;border-radius:8pt;background:rgba(255,255,255,.16);font-size:7.5pt}
+.hero-meta{margin-top:12pt;padding-top:8pt;border-top:.6pt solid rgba(255,255,255,.25);text-align:center;font-size:9pt;color:#e6eef5}
+.hero-meta span{margin:0 9pt}
+.hero-meta b{font-size:7pt;letter-spacing:.1em;text-transform:uppercase;color:#b7cad8;margin-right:4pt;font-weight:600}
+
+.cover-heading{font-size:11pt;color:var(--n1);margin:15pt 0 6pt;padding-bottom:3pt;border-bottom:1pt solid var(--line2)}
+.summary{width:calc(100% + 12pt);border-collapse:separate;border-spacing:6pt;table-layout:fixed;margin:-6pt}
+.summary-box{vertical-align:top;border:.6pt solid var(--line);background:var(--soft);border-radius:4pt;padding:7pt 9pt}
+.summary-box h3{font-size:8pt;text-transform:uppercase;letter-spacing:.06em;color:#21557f;margin-bottom:5pt}
+.summary-row{display:flex;justify-content:space-between;align-items:center;gap:6pt;margin-bottom:4pt;font-size:9pt}
+.summary-team{font-weight:600}
+.summary-h2h{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:4pt}
+.summary-h2h td{text-align:center;vertical-align:top;padding:0 2pt}
+.summary-h2h b{display:block;font-size:17pt;line-height:1.1;color:var(--n1)}
+.summary-h2h span{display:block;font-size:7pt;color:var(--muted)}
+.summary-h2h .h2h-home b{color:var(--good)}
+.summary-h2h .h2h-away b{color:var(--danger)}
+.scorers{width:100%;border-collapse:collapse}
+.scorers td{padding:1.6pt 0;border-bottom:.5pt solid var(--line)}
+.scorers tr:last-child td{border-bottom:0}
+.scorer-place{width:14pt;color:#842828;font-weight:700}
+.toc{margin:0;padding:0;list-style:none;font-size:9.5pt}
+.toc li{margin:2.5pt 0}
+.toc ol{list-style:none;margin:1pt 0 0;padding:0 0 0 16pt;font-size:9pt}
+.toc-no{display:inline-block;width:16pt;font-weight:700;color:var(--acc)}
+.toc a{color:var(--ink);text-decoration:none}
+.toc a::after{content:leader(dotted) target-counter(attr(href),page);color:var(--muted)}
+.cover-foot{margin-top:10pt}
+
+.kpis{width:calc(100% + 8pt);border-collapse:separate;border-spacing:4pt;table-layout:fixed;margin:-4pt -4pt 4pt}
+.kpi{vertical-align:top;border-left:2.5pt solid var(--acc);background:#fff;padding:4pt 6pt}
+.page .kpi{background:var(--soft)}
+.kpi span{display:block;font-size:6.8pt;color:var(--muted)}
+.kpi b{display:block;font-size:11pt;color:#173e65;font-variant-numeric:tabular-nums}
+.kpi-hit,.wynik-dokladny-wynik,.wynik-dokladna-roznica,.wynik-roznica-1,.ocena-bardzo-trafna,.ocena-trafna{border-left-color:var(--good)}
+.kpi-miss,.ocena-bardzo-slaba{border-left-color:var(--danger)}
+.wynik-roznica-4-plus,.ocena-slaba{border-left-color:var(--warn)}
+
+.form-strip{display:inline-flex;gap:2pt}
+.form-mark{display:inline-block;min-width:13pt;height:13pt;line-height:13pt;padding:0 2pt;border-radius:2.5pt;text-align:center;font-size:7pt;font-weight:800;color:#fff;background:#6b7885}
+.form-win{background:var(--good)}
+.form-draw{background:#6b7885}
+.form-loss{background:var(--danger)}
+
+.pdf-table{width:100%;border-collapse:collapse;font-size:8.3pt}
+.pdf-table th,.pdf-table td{padding:2.6pt 5pt;border-bottom:.5pt solid #e1e8ed;text-align:left;vertical-align:top}
+.pdf-table th.num,.pdf-table td.num{text-align:right}
+.pdf-table thead th{background:#e7eef4;color:#17324d;font-weight:600;font-size:7.5pt;border-bottom:.8pt solid var(--line2)}
+.pdf-table thead{display:table-header-group}
+.pdf-table tbody tr:nth-child(even) td{background:#fafcfd}
+.pdf-table tr{break-inside:avoid}
+.pdf-matches .score{font-weight:700}
+.pdf-matches .mark{width:18pt;text-align:center}
+
+.squad .group th{background:#eef3f7;color:#173e65;font-size:7pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3pt 5pt;border-top:.8pt solid var(--line2)}
+.squad tbody{break-inside:avoid-page}
+.squad .nr{width:22pt;color:#35506a}
+.squad .pos{width:13%}
+.squad .stat{width:6.5%}
+.squad .player b{font-weight:600}
+.squad .birth{color:var(--muted);font-size:6.8pt;white-space:nowrap}
+.squad .scorer{display:inline-block;margin-left:3pt;padding:0 4pt;border-radius:6pt;background:#842828;color:#fff;font-size:6.5pt;font-weight:700;white-space:nowrap}
+.squad td.top-scorer{background:#fbe1e1 !important;color:#842828;font-weight:700}
+.squad .prev{border-left:.6pt solid var(--line2);width:31%}
+.squad th.prev small{font-weight:400;color:var(--muted)}
+.squad .prev small.muted{font-size:6.8pt}
+.squad .prev-note{display:block;color:var(--warn);font-weight:600;font-size:6.6pt;line-height:1.25}
+.squad td.prev-other{background:#fdf6e7 !important}
+.bez-uwag .squad .prev{width:22%}
+.legend{margin-top:7pt;line-height:1.4}
+
+.compare{margin-top:4pt}
+.compare th,.compare td{width:38%;font-size:8.8pt;padding:3.4pt 7pt}
+.compare .label{width:24%;text-align:center;color:var(--muted);font-weight:600;font-size:7.8pt}
+.compare thead th{font-size:8.5pt}
+.compare thead th.label{color:var(--muted)}
+.compare .better{font-weight:800;color:var(--good)}
+
+.ratings{width:70%;margin:4pt 0 8pt}
+.zmiana-plus{color:var(--good);font-weight:600}
+.zmiana-minus{color:var(--danger);font-weight:600}
+.steps-title{font-size:10.5pt;color:#123b63;margin:12pt 0 4pt}
+.step{break-inside:avoid;border-top:.6pt solid var(--line);padding-top:7pt;margin-top:7pt}
+.step h4{font-size:9.5pt;color:#123b63;margin-bottom:3pt}
+.step-text{font-size:8.3pt;margin:3pt 0}
+.step-grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.step-grid td{vertical-align:top;padding:0}
+.step-grid td+td{padding-left:6pt}
+.step-label{display:block;font-size:6.8pt;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:3pt 0 2pt}
+.step pre{margin:0;padding:4pt 6pt;background:#f5f8fa;border:.5pt solid var(--line);border-radius:2.5pt;font:7.4pt/1.35 Consolas,"Courier New",monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.step-result pre{background:#eef7f3;border-color:#cae6dd;font-weight:700}

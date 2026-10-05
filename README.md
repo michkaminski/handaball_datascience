@@ -13,6 +13,13 @@ uv sync
 uv run python -m flask --app "handball:create_app()" run --port 5057
 ```
 
+PDF zapowiedzi meczu (przycisk „Pobierz PDF”) generuje WeasyPrint, który na Windows potrzebuje bibliotek Pango. Instalacja jednorazowa:
+
+1. Zainstaluj [MSYS2](https://www.msys2.org/) w domyślnym katalogu `C:\msys64` (instalator ze strony albo `winget install --id MSYS2.MSYS2 -e`).
+2. Otwórz z menu Start „MSYS2 MSYS” i wykonaj `pacman -Syu` (jeśli konsola się zamknie, otwórz ją ponownie i powtórz polecenie), a potem `pacman -S mingw-w64-x86_64-pango`.
+3. Sprawdź, że istnieje plik `C:\msys64\mingw64\bin\libpango-1.0-0.dll`.
+4. Uruchom ponownie serwer przez `run.bat` — sam ustawi `WEASYPRINT_DLL_DIRECTORIES=C:\msys64\mingw64\bin`. Przy innej ścieżce ustaw tę zmienną ręcznie. Skrypt dopisuje ten katalog także na początek `PATH`, bo biblioteki szukane są najpierw w `PATH`, a inne programy (np. Meld) mają tam starsze wersje GTK/Pango, których mieszanie kończy się błędem `cannot load library … error 0x7f`. Bez Pango reszta aplikacji działa, a trasa PDF zwraca 503 z tą instrukcją.
+
 Panel: `http://127.0.0.1:5057/administracja/`. Lista zawodników: `/administracja/zawodnicy` — filtry, sortowanie i paginacja. Nazwy zmiennych konfiguracji połączenia opisuje `.env.example`.
 
 ```powershell

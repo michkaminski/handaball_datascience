@@ -25,8 +25,10 @@ from handball.interface.admin.views.report_views import (
     TypowaniaMeczowView,
 )
 from handball.interface.admin.views.schedule_views import (
+    ProtokolMeczuPdfView,
     TerminarzView,
     TypowaniaKolejkiView,
+    ZapowiedzMeczuPdfView,
     ZapowiedzMeczuView,
 )
 from handball.interface.admin.views.start import StartView
@@ -71,6 +73,14 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/terminarz/<int:id_mecz>",
         view_func=ZapowiedzMeczuView.as_view("zapowiedz_meczu", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/terminarz/<int:id_mecz>/pdf",
+        view_func=ZapowiedzMeczuPdfView.as_view("zapowiedz_meczu_pdf", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/terminarz/<int:id_mecz>/protokol",
+        view_func=ProtokolMeczuPdfView.as_view("protokol_meczu_pdf", fabryka_zaleznosci),
     )
     blueprint.add_url_rule(
         "/zawodnicy",

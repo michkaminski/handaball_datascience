@@ -21,6 +21,7 @@ from handball.infrastructure.database.match_sides import StronyMeczuSql
 from handball.infrastructure.database.models.competitions import Kolejka, Rozgrywki, Runda, Sezon
 from handball.infrastructure.database.models.matches import Mecz, MeczZawodnik
 from handball.infrastructure.database.models.players import Zawodnik
+from handball.infrastructure.database.models.rosters import SkladSezonowy
 from handball.infrastructure.database.models.teams import Zespol, ZespolSezon
 from handball.infrastructure.database.models.venues import Hala
 
@@ -190,6 +191,39 @@ class ZapowiedzMeczuSQLAlchemyRepository:
                 bramki=int(w[6]),
                 zagrane=int(w[7]),
                 data_urodzenia=w[8],
+            )
+            for w in wiersze
+        ]
+
+    def pobierz_sklad_sezonu(self, id_zespol: int, id_sezon: int) -> list[ZawodnikKadry]:
+        zapytanie = (
+            select(
+                SkladSezonowy.id_zawodnik,
+                func.coalesce(Zawodnik.imie, SkladSezonowy.imie),
+                func.coalesce(Zawodnik.nazwisko, SkladSezonowy.nazwisko),
+                SkladSezonowy.nr_koszulki,
+                SkladSezonowy.pozycja_nazwa,
+                func.coalesce(Zawodnik.data_urodzenia, SkladSezonowy.data_urodzenia),
+            )
+            .join(ZespolSezon, ZespolSezon.id == SkladSezonowy.id_zespol_sezon)
+            .join(Zawodnik, Zawodnik.id == SkladSezonowy.id_zawodnik, isouter=True)
+            .where(ZespolSezon.id_zespol == id_zespol, ZespolSezon.id_sezon == id_sezon)
+        )
+        try:
+            wiersze = self._sesja.execute(zapytanie).all()
+        except SQLAlchemyError as wyjatek:
+            raise BladOdczytuDanych("Nie udało się odczytać składu drużyny na sezon.") from wyjatek
+        return [
+            ZawodnikKadry(
+                id_zawodnik=w[0],
+                imie=w[1],
+                nazwisko=w[2],
+                numery=(w[3],) if w[3] is not None else (),
+                pozycja=w[4],
+                mecze=0,
+                bramki=0,
+                zagrane=0,
+                data_urodzenia=w[5],
             )
             for w in wiersze
         ]

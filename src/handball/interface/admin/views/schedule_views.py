@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from flask import abort, render_template, request
+from pathlib import Path
+
+from flask import Response, abort, current_app, render_template, request
 from flask.views import MethodView
 
+from handball.contracts.pdf_renderer import GeneratorPdfNiedostepny
 from handball.domain.errors import BladOdczytuDanych, NieZnalezionoMeczu
 from handball.interface.admin.forms.match_tip_filters import TypowaniaKolejkiForm
 from handball.interface.admin.forms.schedule_filters import TerminarzFilterForm, ZapowiedzOpcjeForm
 from handball.interface.errors import obsluz_blad_domeny
+from handball.interface.view_models.schedule import ZapowiedzMeczuViewModel
 from handball.request_dependencies import ZaleznosciZadaniaFactory
 
 
@@ -41,11 +45,13 @@ class TerminarzView(MethodView):
         )
 
 
-class ZapowiedzMeczuView(MethodView):
+class ZapowiedzMeczuOdczyt:
+    PARAMETRY_POWROTU = frozenset({"id_sezon", "id_rozgrywki", "id_runda", "id_kolejka"})
+
     def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
         self._fabryka = fabryka_zaleznosci
 
-    def get(self, id_mecz: int) -> str:
+    def pobierz(self, id_mecz: int) -> tuple[ZapowiedzMeczuViewModel, ZapowiedzOpcjeForm]:
         katalog = self._fabryka.utworz_katalog_modeli_prognoz()
         wersja = request.args.get("model") or katalog.domyslna_wersja
         formularz = ZapowiedzOpcjeForm(request.args)
@@ -59,20 +65,92 @@ class ZapowiedzMeczuView(MethodView):
             abort(400, description=str(wyjatek))
         except (NieZnalezionoMeczu, BladOdczytuDanych) as wyjatek:
             obsluz_blad_domeny(wyjatek)
-        parametry_powrotu = {
+        return (
+            self._fabryka.utworz_presenter_zapowiedzi_meczu().przygotuj(zapowiedz),
+            formularz,
+        )
+
+    def parametry_powrotu(self) -> dict[str, str]:
+        return {
             klucz: wartosc
             for klucz, wartosc in request.args.items()
-            if klucz in {"id_sezon", "id_rozgrywki", "id_runda", "id_kolejka"}
+            if klucz in self.PARAMETRY_POWROTU
         }
+
+
+class ZapowiedzMeczuView(MethodView):
+    def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+        self._odczyt = ZapowiedzMeczuOdczyt(fabryka_zaleznosci)
+
+    def get(self, id_mecz: int) -> str:
+        zapowiedz, formularz = self._odczyt.pobierz(id_mecz)
         return render_template(
             "admin/schedule/preview.html",
             sekcja_aktywna="terminarz",
             sekcja_glowna="mecze",
-            zapowiedz=self._fabryka.utworz_presenter_zapowiedzi_meczu().przygotuj(zapowiedz),
-            parametry_powrotu=parametry_powrotu,
+            zapowiedz=zapowiedz,
+            parametry_powrotu=self._odczyt.parametry_powrotu(),
             formularz=formularz,
             model=request.args.get("model"),
         )
+
+
+class PdfResponseBuilder:
+    def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+        self._fabryka = fabryka_zaleznosci
+
+    def odpowiedz(self, html: str, arkusz: Path, nazwa_pliku: str) -> Response:
+        katalog_statyczny = Path(current_app.static_folder or "")
+        try:
+            pdf = self._fabryka.utworz_renderer_pdf().renderuj(html, [katalog_statyczny / arkusz])
+        except GeneratorPdfNiedostepny as wyjatek:
+            abort(503, description=str(wyjatek))
+        return Response(
+            pdf,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{nazwa_pliku}"'},
+        )
+
+
+class ZapowiedzMeczuPdfView(MethodView):
+    ARKUSZ = Path("css") / "preview_pdf.css"
+
+    def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+        self._odczyt = ZapowiedzMeczuOdczyt(fabryka_zaleznosci)
+        self._pdf = PdfResponseBuilder(fabryka_zaleznosci)
+
+    def get(self, id_mecz: int) -> Response:
+        zapowiedz, formularz = self._odczyt.pobierz(id_mecz)
+        html = render_template(
+            "admin/schedule/preview_pdf.html",
+            zapowiedz=zapowiedz,
+            bez_uwag=bool(formularz.bez_uwag.data),
+        )
+        return self._pdf.odpowiedz(html, self.ARKUSZ, f"zapowiedz-meczu-{id_mecz}.pdf")
+
+
+class ProtokolMeczuPdfView(MethodView):
+    ARKUSZ = Path("css") / "protocol_pdf.css"
+
+    def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+        self._fabryka = fabryka_zaleznosci
+        self._pdf = PdfResponseBuilder(fabryka_zaleznosci)
+
+    def get(self, id_mecz: int) -> Response:
+        formularz = ZapowiedzOpcjeForm(request.args)
+        if not formularz.validate():
+            abort(400, description=str(formularz.errors))
+        try:
+            protokol = self._fabryka.utworz_serwis_protokolu_meczu().pobierz(
+                id_mecz, formularz.do_opcji(), formularz.do_kolejnosci_protokolu()
+            )
+        except (NieZnalezionoMeczu, BladOdczytuDanych) as wyjatek:
+            obsluz_blad_domeny(wyjatek)
+        html = render_template(
+            "admin/schedule/protocol_pdf.html",
+            protokol=self._fabryka.utworz_presenter_protokolu_meczu().przygotuj(protokol),
+        )
+        return self._pdf.odpowiedz(html, self.ARKUSZ, f"protokol-meczu-{id_mecz}.pdf")
 
 
 class TypowaniaKolejkiView(MethodView):

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Zapowiedź meczu: {{ zapowiedz.gospodarz }} — {{ zapowiedz.gosc }}</title>
+<meta name="author" content="Handball DataScience">
+<meta name="description" content="{{ zapowiedz.kontekst }} · {{ zapowiedz.termin }}">
+</head>
+{% macro tabela_wystepow(wiersze, podpis) -%}
+<table class="pdf-table pdf-matches">
+<caption class="sr-only">{{ podpis }}</caption>
+<thead><tr><th>Data</th><th>Rozgrywki</th><th>Rywal</th><th>Miejsce</th><th class="num">Wynik</th><th class="mark"></th></tr></thead>
+<tbody>
+{% for w in wiersze %}
+<tr><td class="nowrap">{{ w.data }}</td><td>{{ w.rozgrywki }}</td><td>{{ w.rywal }}</td><td>{{ w.miejsce }}</td><td class="num score">{{ w.wynik }}</td><td class="mark"><span class="form-mark {{ w.klasa }}">{{ w.rezultat }}</span></td></tr>
+{% else %}
+<tr><td colspan="6" class="note">Brak rozegranych meczów przed tym terminem.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{%- endmacro %}
+{% macro pasek_formy(forma) -%}
+<span class="form-strip">{% for znak in forma.znaki %}<span class="form-mark {{ znak.klasa }}">{{ znak.litera }}</span>{% else %}<span class="note">brak meczów</span>{% endfor %}</span>
+{%- endmacro %}
+{% macro kafelki_prognozy(wskazniki) -%}
+<table class="kpis">{% for rzad in wskazniki | batch(4) %}<tr>{% for wskaznik in rzad %}<td class="kpi {{ wskaznik.klasa }}"><span>{{ wskaznik.etykieta }}</span><b>{{ wskaznik.wartosc }}</b></td>{% endfor %}{% for _ in range(4 - rzad | length) %}<td class="kpi-empty"></td>{% endfor %}</tr>{% endfor %}</table>
+{%- endmacro %}
+{% macro naglowek_sekcji(numer, tytul, kotwica=None) -%}
+<h2 class="section-title"{% if kotwica %} id="{{ kotwica }}"{% endif %}><span class="section-no">{{ numer }}</span>{{ tytul }}</h2>
+{%- endmacro %}
+<body class="{{ 'bez-uwag' if bez_uwag else '' }}">
+<p class="running-match">{{ zapowiedz.gospodarz }} — {{ zapowiedz.gosc }}</p>
+<p class="running-date">stan na {{ zapowiedz.stan_na }}</p>
+
+<section class="cover">
+<p class="cover-label">Zapowiedź meczu</p>
+<p class="cover-context">{{ zapowiedz.kontekst }}</p>
+<div class="hero status-{{ zapowiedz.status }}">
+<table class="hero-grid">
+<tr>
+<td class="hero-team hero-home"><span class="hero-role">Gospodarz</span><b>{{ zapowiedz.gospodarz }}</b></td>
+<td class="hero-center">{% if zapowiedz.wynik %}<span class="hero-score">{{ zapowiedz.wynik }}</span>{% else %}<span class="hero-vs">vs</span>{% endif %}<span class="hero-status">{{ zapowiedz.etykieta_statusu }}</span></td>
+<td class="hero-team hero-away"><span class="hero-role">Gość</span><b>{{ zapowiedz.gosc }}</b></td>
+</tr>
+</table>
+<p class="hero-meta"><span><b>Termin</b> {{ zapowiedz.termin }}</span><span><b>Hala</b> {{ zapowiedz.hala }}</span></p>
+</div>
+{% if zapowiedz.zamiana %}<p class="notice">W danych źródłowych strony są zamienione (zamiana = true); pokazano faktycznego gospodarza i gościa.</p>{% endif %}
+
+<h2 class="cover-heading">W skrócie</h2>
+<table class="summary">
+<tr>
+<td class="summary-box">
+<h3>Forma — ostatnie mecze</h3>
+{% for forma in zapowiedz.formy %}<p class="summary-row"><span class="summary-team">{{ forma.druzyna }}</span>{{ pasek_formy(forma) }}</p>{% endfor %}
+<p class="note">Od najnowszego meczu. W — wygrana, R — remis, P — porażka.</p>
+</td>
+<td class="summary-box">
+<h3>Mecze bezpośrednie</h3>
+{% set h2h = zapowiedz.bezposrednie %}
+{% if h2h.liczba %}
+<table class="summary-h2h">
+<tr><td class="h2h-home"><b>{{ h2h.wygrane_gospodarza }}</b><span>{{ zapowiedz.gospodarz }}</span></td><td class="h2h-draw"><b>{{ h2h.remisy }}</b><span>remisy</span></td><td class="h2h-away"><b>{{ h2h.wygrane_goscia }}</b><span>{{ zapowiedz.gosc }}</span></td></tr>
+</table>
+<p class="note">{{ h2h.liczba }} meczów, bramki {{ h2h.bramki }} · {{ h2h.okres }}</p>
+{% else %}
+<p class="note">Drużyny nie grały ze sobą w okresie: {{ h2h.okres }}.</p>
+{% endif %}
+</td>
+</tr>
+<tr>
+<td class="summary-box" colspan="2">
+<h3>Prognoza modelu</h3>
+{% if zapowiedz.prognoza.dostepna %}
+{{ kafelki_prognozy(zapowiedz.prognoza.wskazniki) }}
+{% else %}
+<p class="note">{{ zapowiedz.prognoza.opis }}</p>
+{% endif %}
+</td>
+</tr>
+<tr>
+{% for kadra in zapowiedz.kadry %}
+<td class="summary-box">
+<h3>Najlepsi strzelcy sezonu — {{ kadra.druzyna }}</h3>
+{% if kadra.najlepsi_strzelcy %}
+<table class="scorers">
+{% for z in kadra.najlepsi_strzelcy %}<tr><td class="scorer-place">{{ z.miejsce_strzelca }}.</td><td>{{ z.nazwa }}</td><td class="num"><b>{{ z.bramki }}</b> br.</td><td class="num muted">{{ z.mecze }} m.</td></tr>{% endfor %}
+</table>
+{% else %}
+<p class="note">Brak bramek w sezonie przed meczem.</p>
+{% endif %}
+</td>
+{% endfor %}
+</tr>
+</table>
+
+<h2 class="cover-heading">Spis treści</h2>
+<ol class="toc">
+<li><span class="toc-no">1</span>Kadra w sezonie {{ zapowiedz.sezon }}
+<ol>{% for kadra in zapowiedz.kadry %}<li><a href="#kadra-{{ loop.index }}">{{ kadra.druzyna }}</a></li>{% endfor %}</ol>
+</li>
+<li><a href="#forma"><span class="toc-no">2</span>Forma — ostatnie mecze</a></li>
+<li><a href="#porownanie"><span class="toc-no">3</span>Porównanie drużyn</a></li>
+<li><a href="#bezposrednie"><span class="toc-no">4</span>Mecze bezpośrednie</a></li>
+<li><a href="#prognoza"><span class="toc-no">5</span>Prognoza modelu</a></li>
+</ol>
+<p class="note cover-foot">Statystyki obejmują mecze rozegrane przed {{ zapowiedz.stan_na }}; wynik po 60 minutach, bez walkowerów i meczów wycofanych.</p>
+</section>
+
+{% set kolumny = 7 if zapowiedz.sezon_poprzedni else 6 %}
+{% for kadra in zapowiedz.kadry %}
+<section class="page squad-page" id="kadra-{{ loop.index }}">
+{{ naglowek_sekcji(1, "Kadra w sezonie " ~ zapowiedz.sezon) }}
+<h3 class="team-title">{{ kadra.druzyna }} <small>{{ 'gospodarz' if loop.first else 'gość' }} · {{ kadra.liczba_zawodnikow }} zawodników{% if kadra.ze_skladu %} · skład zgłoszony na sezon — drużyna nie ma jeszcze meczów w protokołach{% endif %}</small></h3>
+<table class="pdf-table squad">
+<caption class="sr-only">Kadra {{ kadra.druzyna }}</caption>
+<thead>
+<tr><th class="num">Nr</th><th>Zawodnik</th><th class="pos">Pozycja</th><th class="num stat">Mecze</th><th class="num stat">Bramki</th><th class="num stat">Śr.</th>{% if zapowiedz.sezon_poprzedni %}<th class="prev">{{ zapowiedz.sezon_poprzedni }} <small>br. / śr.</small></th>{% endif %}</tr>
+</thead>
+{% for grupa in kadra.grupy %}
+<tbody>
+<tr class="group"><th colspan="{{ kolumny }}">{{ grupa.nazwa }}</th></tr>
+{% for z in grupa.zawodnicy %}
+<tr{% if z.miejsce_strzelca %} class="scorer-row"{% endif %}><td class="num nr">{{ z.numer }}</td><td class="player"><b>{{ z.nazwa }}</b>{% if z.data_urodzenia %} <small class="birth">({{ z.data_urodzenia }})</small>{% endif %}{% if z.miejsce_strzelca %} <span class="scorer">★ {{ z.miejsce_strzelca }}</span>{% endif %}</td><td>{{ z.pozycja }}</td><td class="num">{{ z.mecze }}</td><td class="num{% if z.miejsce_strzelca %} top-scorer{% endif %}">{{ z.bramki }}</td><td class="num">{{ z.srednia }}</td>{% if zapowiedz.sezon_poprzedni %}<td class="prev{% if z.uwagi_poprzednie and not bez_uwag %} prev-other{% endif %}">{{ z.poprzedni }}{% if z.poprzedni_mecze %} <small class="muted">({{ z.poprzedni_mecze }})</small>{% endif %}{% if not bez_uwag %}{% for uwaga in z.uwagi_poprzednie %}<small class="prev-note">{{ uwaga }}</small>{% endfor %}{% endif %}</td>{% endif %}</tr>
+{% endfor %}
+</tbody>
+{% else %}
+<tbody><tr><td colspan="{{ kolumny }}" class="note">Brak zawodników w protokołach sezonu przed meczem.</td></tr></tbody>
+{% endfor %}
+</table>
+<p class="note legend">Zawodnicy wpisani do protokołów meczów drużyny we wszystkich rozgrywkach sezonu, rozegranych przed {{ zapowiedz.stan_na }}; w grupie według numeru koszulki, potem nazwiska. Numer i pozycja z protokołów (kilka numerów rozdziela „/”, pozycja — najczęstsza). ★ i czerwone pole bramek: pięciu najlepszych strzelców drużyny w sezonie (ex aequo to samo miejsce).{% if zapowiedz.sezon_poprzedni %} Kolumna {{ zapowiedz.sezon_poprzedni }}: bramki / średnia na mecz we wszystkich klubach i rozgrywkach tamtego sezonu, a u zawodników dodanych z poprzedniego sezonu — tylko w tej drużynie.{% if not bez_uwag %} Zaznaczono inny klub niż obecny oraz ligę innego poziomu niż rozgrywki tego meczu.{% endif %}{% endif %}</p>
+</section>
+{% endfor %}
+
+<section class="page" id="forma">
+{{ naglowek_sekcji(2, "Forma — ostatnie mecze") }}
+{% for forma in zapowiedz.formy %}
+<div class="block">
+<h3 class="team-title">{{ forma.druzyna }} {{ pasek_formy(forma) }}</h3>
+{{ tabela_wystepow(forma.wiersze, "Ostatnie mecze " ~ forma.druzyna) }}
+</div>
+{% endfor %}
+<p class="note">Ostatnie 5 meczów ze wszystkich rozgrywek w bazie, od najnowszego. Wynik z perspektywy drużyny.</p>
+
+<div class="block" id="porownanie">
+{{ naglowek_sekcji(3, "Porównanie drużyn") }}
+<p class="note">Mecze tych rozgrywek rozegrane przed {{ zapowiedz.stan_na }}. Pogrubienie wskazuje lepszą wartość.</p>
+<table class="pdf-table compare">
+<caption class="sr-only">Porównanie statystyk gospodarza i gościa przed meczem</caption>
+<thead><tr><th class="num">{{ zapowiedz.gospodarz }}</th><th class="label">Statystyka</th><th>{{ zapowiedz.gosc }}</th></tr></thead>
+<tbody>
+{% for wiersz in zapowiedz.porownanie %}
+<tr><td class="num{% if wiersz.przewaga == 'gospodarz' %} better{% endif %}">{{ wiersz.gospodarz }}</td><th class="label">{{ wiersz.etykieta }}</th><td class="{% if wiersz.przewaga == 'gosc' %}better{% endif %}">{{ wiersz.gosc }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="page" id="bezposrednie">
+{{ naglowek_sekcji(4, "Mecze bezpośrednie") }}
+{% set h2h = zapowiedz.bezposrednie %}
+{% if h2h.liczba %}
+<table class="kpis"><tr>
+<td class="kpi"><span>Mecze</span><b>{{ h2h.liczba }}</b></td>
+<td class="kpi kpi-hit"><span>Wygrane: {{ zapowiedz.gospodarz }}</span><b>{{ h2h.wygrane_gospodarza }}</b></td>
+<td class="kpi"><span>Remisy</span><b>{{ h2h.remisy }}</b></td>
+<td class="kpi kpi-miss"><span>Wygrane: {{ zapowiedz.gosc }}</span><b>{{ h2h.wygrane_goscia }}</b></td>
+<td class="kpi"><span>Bramki</span><b>{{ h2h.bramki }}</b></td>
+</tr></table>
+<p class="note">Okres: {{ h2h.okres }}. Wszystkie spotkania z tego okresu ({{ h2h.wiersze | length }}) z perspektywy gospodarza ({{ zapowiedz.gospodarz }}).</p>
+{{ tabela_wystepow(h2h.wiersze, "Mecze bezpośrednie") }}
+{% else %}
+<p class="note">Drużyny nie grały ze sobą w okresie: {{ h2h.okres }} (w danych bazy).</p>
+{% endif %}
+</section>
+
+<section class="page" id="prognoza">
+{{ naglowek_sekcji(5, "Prognoza modelu") }}
+<p class="note">Model: {{ zapowiedz.prognoza.tytul_modelu }} ({{ zapowiedz.prognoza.wersja_modelu }}).</p>
+<p class="notice{% if not zapowiedz.prognoza.dostepna %} notice-warning{% endif %}">{{ zapowiedz.prognoza.opis }}</p>
+{% if zapowiedz.prognoza.dostepna %}
+{{ kafelki_prognozy(zapowiedz.prognoza.wskazniki) }}
+<table class="pdf-table ratings">
+<caption class="sr-only">Ratingi drużyn w modelu</caption>
+<thead><tr><th>Drużyna</th><th class="num">Rating przed meczem</th>{% if zapowiedz.prognoza.tryb == 'po_meczu' %}<th class="num">Zmiana</th><th class="num">Rating po meczu</th>{% endif %}</tr></thead>
+<tbody>
+{% for wiersz in zapowiedz.prognoza.ratingi %}<tr><td>{{ wiersz.druzyna }}</td><td class="num">{{ wiersz.przed }}</td>{% if zapowiedz.prognoza.tryb == 'po_meczu' %}<td class="num {{ wiersz.klasa_zmiany }}">{{ wiersz.zmiana }}</td><td class="num">{{ wiersz.po }}</td>{% endif %}</tr>{% endfor %}
+</tbody>
+</table>
+{% for uwaga in zapowiedz.prognoza.uwagi %}<p class="notice">{{ uwaga }}</p>{% endfor %}
+{% if zapowiedz.prognoza.kroki %}
+<h3 class="steps-title">Jak policzono prognozę — {{ zapowiedz.prognoza.kroki | length }} kroków</h3>
+{% for krok in zapowiedz.prognoza.kroki %}
+<div class="step">
+<h4>{{ krok.tytul }}</h4>
+<p class="step-text"><b>Definicja.</b> {{ krok.definicja }}</p>
+<table class="step-grid"><tr>
+<td><span class="step-label">Wzór</span><pre>{{ krok.wzor }}</pre></td>
+<td><span class="step-label">Podstawienie wartości</span><pre>{{ krok.podstawienie }}</pre></td>
+</tr></table>
+<div class="step-result"><span class="step-label">Wynik obliczenia</span><pre>{{ krok.wynik }}</pre></div>
+<p class="step-text"><b>Interpretacja.</b> {{ krok.interpretacja }}</p>
+</div>
+{% endfor %}
+{% endif %}
+{% endif %}
+</section>
+</body>
+</html>

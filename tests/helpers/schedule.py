@@ -10,6 +10,7 @@ from handball.domain.match_preview import (
     WystepZapowiedzi,
     ZawodnikKadry,
 )
+from handball.domain.match_protocol import DaneProtokolu, HalaProtokolu, SedziaProtokolu
 from handball.domain.matches import DaneMeczu
 from handball.domain.options import OpcjaWyboru
 from handball.domain.schedule import FiltryTerminarza, PozycjaTerminarza
@@ -224,6 +225,16 @@ KADRY: dict[tuple[int, int], list[ZawodnikKadry]] = {
 }
 
 
+SKLADY: dict[tuple[int, int], list[ZawodnikKadry]] = {
+    (501, 5): [
+        ZawodnikKadry(61, "Tomasz", "Obrotowy", (19,), "Obrotowy", 0, 0, zagrane=0),
+        ZawodnikKadry(62, "Marek", "Bramkarz", (16,), "Bramkarz", 0, 0, zagrane=0),
+        ZawodnikKadry(63, "Kamil", "Bez", (), None, 0, 0, zagrane=0),
+    ],
+    (10, 5): [ZawodnikKadry(64, "Nie", "Uzyty", (99,), "Bramkarz", 0, 0, zagrane=0)],
+}
+
+
 WYSTEPY_ZAWODNIKOW: dict[int, list[WystepSezonuZawodnika]] = {
     4: [
         WystepSezonuZawodnika(7, 10, "Wisła Płock", "ORLEN Superliga", 3, 20),
@@ -242,6 +253,7 @@ class ZapowiedzMeczuInMemoryRepository:
         self.odczyty: list[tuple[int, datetime]] = []
         self.kadry: list[tuple[int, int, datetime]] = []
         self.wystepy_zawodnikow: list[tuple[tuple[int, ...], int]] = []
+        self.sklady: list[tuple[int, int]] = []
 
     def pobierz_mecz(self, id_mecz: int) -> MeczZapowiedzi:
         try:
@@ -265,6 +277,27 @@ class ZapowiedzMeczuInMemoryRepository:
 
     def pobierz_poprzedni_sezon(self, id_sezon: int) -> SezonKadry | None:
         return SezonKadry(4, "2024/2025") if id_sezon == 5 else None
+
+    def pobierz_sklad_sezonu(self, id_zespol: int, id_sezon: int) -> list[ZawodnikKadry]:
+        self.sklady.append((id_zespol, id_sezon))
+        return list(SKLADY.get((id_zespol, id_sezon), []))
+
+
+class ProtokolMeczuInMemoryRepository:
+    def __init__(self, znane: frozenset[int] = frozenset({204, 201, 999})) -> None:
+        self._znane = znane
+
+    def pobierz_dane_protokolu(self, id_mecz: int) -> DaneProtokolu:
+        if id_mecz not in self._znane:
+            raise NieZnalezionoMeczu(f"Nie znaleziono meczu o id {id_mecz}")
+        return DaneProtokolu(
+            hala=HalaProtokolu("Hala Pogoń", "Zabrze", "Olimpijska", "7", 2500),
+            sedziowie=(
+                SedziaProtokolu("delegat", "NOWAK Jan", "Chorzów"),
+                SedziaProtokolu("pierwszy", "KOWAL Piotr", "Opole"),
+                SedziaProtokolu("drugi", "LAS Adam", "Ozimek"),
+            ),
+        )
 
 
 class SezonyTerminarza:

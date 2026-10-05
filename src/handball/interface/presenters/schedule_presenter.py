@@ -410,6 +410,7 @@ class ZapowiedzMeczuPresenter:
                 )
                 for grupa in kadra.grupy
             ),
+            ze_skladu=kadra.ze_skladu,
         )
 
     def _zawodnik(self, czlonek: CzlonekKadry) -> ZawodnikKadryViewModel:

@@ -3,6 +3,7 @@ from datetime import date
 import pytest
 from tests.helpers.schedule import TerminarzInMemoryRepository
 
+from handball.domain.competition_levels import KolejnoscRozgrywekPolicy
 from handball.domain.options import OpcjaWyboru
 from handball.domain.schedule import FiltryTerminarza, WyborTerminarza
 from handball.services.schedule_service import NieznanySezonTerminarza, TerminarzService
@@ -14,7 +15,9 @@ class SezonyInMemory:
 
 
 def serwis(repo: TerminarzInMemoryRepository | None = None) -> TerminarzService:
-    return TerminarzService(repo or TerminarzInMemoryRepository(), SezonyInMemory())
+    return TerminarzService(
+        repo or TerminarzInMemoryRepository(), SezonyInMemory(), KolejnoscRozgrywekPolicy()
+    )
 
 
 def test_bez_wyboru_domyslny_jest_najnowszy_sezon_i_brak_filtrow() -> None:

@@ -2,6 +2,7 @@ from wtforms import BooleanField, IntegerField, SelectField, validators
 from wtforms.form import Form
 
 from handball.domain.match_preview import OpcjeZapowiedzi
+from handball.domain.match_protocol import KolejnoscProtokolu
 from handball.domain.schedule import WyborTerminarza
 
 LATA_BEZPOSREDNICH = (5, 10, 15, 20)
@@ -32,10 +33,23 @@ class ZapowiedzOpcjeForm(Form):
         default="10",
         validators=[validators.Optional()],
     )
+    kolejnosc_protokolu = SelectField(
+        choices=[
+            (KolejnoscProtokolu.POZYCJE.value, "pozycja, numer"),
+            (KolejnoscProtokolu.NUMERY.value, "według numerów"),
+        ],
+        default=KolejnoscProtokolu.POZYCJE.value,
+        validators=[validators.Optional()],
+    )
 
     def do_opcji(self) -> OpcjeZapowiedzi:
         lata = self.lata.data or self.lata.default
         return OpcjeZapowiedzi(
             kadra_z_poprzedniego_sezonu=bool(self.kadra_poprzedni.data),
             lata_bezposrednich=None if lata == WSZYSTKIE_LATA else int(str(lata)),
+        )
+
+    def do_kolejnosci_protokolu(self) -> KolejnoscProtokolu:
+        return KolejnoscProtokolu(
+            str(self.kolejnosc_protokolu.data or self.kolejnosc_protokolu.default)
         )
