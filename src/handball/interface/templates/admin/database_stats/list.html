@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block tytul %}Statystyki tabel — Handball DataScience{% endblock %}
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Narzędzia › Statystyki tabel</div>
+<h1>Statystyki tabel</h1>
+<p>Rozmiary i przybliżone liczby rekordów tabel PostgreSQL (statystyki katalogowe).</p>
+</section>
+
+<section class="panel">
+<h2>Baza {{ strona.podsumowanie.nazwa }}</h2>
+<div class="panel-body">
+<div class="venue-summary">
+<div><span>Rozmiar bazy</span><b>{{ strona.podsumowanie.rozmiar_etykieta }}</b></div>
+<div><span>Tabele</span><b>{{ strona.podsumowanie.liczba_tabel_etykieta }}</b></div>
+<div><span>Rekordy ≈</span><b>{{ strona.podsumowanie.suma_rekordow_etykieta }}</b></div>
+<div><span>Suma tabel</span><b>{{ strona.podsumowanie.suma_rozmiarow_etykieta }}</b></div>
+<div><span>Suma indeksów</span><b>{{ strona.podsumowanie.suma_indeksow_etykieta }}</b></div>
+</div>
+<p class="note">Liczba rekordów pochodzi z <code>pg_stat_user_tables</code> (n_live_tup) — po dużych importach warto uruchomić <code>ANALYZE</code>.</p>
+</div>
+</section>
+
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body filters catalog-filters compact" method="get">
+<input type="hidden" name="sortowanie" value="{{ filtry.sortowanie }}">
+<label>Szukaj{{ formularz.szukaj(placeholder="schemat lub tabela...") }}</label>
+<label>Schemat{{ formularz.schemat() }}</label>
+<label>Zapełnienie{{ formularz.zapelnienie() }}</label>
+<label>Min. rekordów{{ formularz.min_rekordow(placeholder="0") }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.statystyki_tabel') }}">Wyczyść</a></div>
+</form>
+</section>
+
+<section class="panel">
+<div class="panel-body">
+<div class="toolbar">
+<span class="note">Widoczne tabele: {{ strona.liczba_przefiltrowanych_etykieta }} / {{ strona.podsumowanie.liczba_tabel_etykieta }}</span>
+</div>
+<div class="table-wrap">
+<table id="database-stats-table">
+<thead>
+<tr>
+{% for pole, etykieta in [('schema','Schemat'),('tabela','Tabela'),('rekordy','Rekordy ≈'),('rozmiar','Razem'),('dane','Dane'),('indeksy','Indeksy')] %}
+<th scope="col"{% if filtry.sortowanie == pole %} aria-sort="ascending"{% elif filtry.sortowanie == '-' + pole %} aria-sort="descending"{% endif %}>
+<a href="{{ url_for(request.endpoint, **dict(request.args, sortowanie=(pole if filtry.sortowanie == '-' + pole else '-' + pole))) }}">{{ etykieta }}{% if filtry.sortowanie == pole %} ▲{% elif filtry.sortowanie == '-' + pole %} ▼{% endif %}</a>
+</th>
+{% endfor %}
+</tr>
+</thead>
+<tbody>
+{% for tabela in strona.pozycje %}
+<tr>
+<td>{{ tabela.schemat }}</td>
+<td><b>{{ tabela.tabela }}</b></td>
+<td>{{ tabela.rekordy_etykieta }}</td>
+<td>{{ tabela.rozmiar_etykieta }}</td>
+<td>{{ tabela.dane_etykieta }}</td>
+<td>{{ tabela.indeksy_etykieta }}</td>
+</tr>
+{% else %}
+<tr><td colspan="6" class="note">Brak tabel spełniających wybrane filtry.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</section>
+{% endblock %}

@@ -69,6 +69,12 @@ SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
     (
         "Narzędzia",
         [
+            PozycjaMenu(
+                "statystyki_bazy",
+                "Statystyki tabel",
+                "administracja.statystyki_tabel",
+                "◫",
+            ),
             PozycjaMenu("anomalie", "Anomalie danych", None, "!"),
             PozycjaMenu("walidacja", "Walidacja danych", None, "✓"),
             PozycjaMenu("logi_aplikacji", "Logi aplikacji", None, "≡"),
