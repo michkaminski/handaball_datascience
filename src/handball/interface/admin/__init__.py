@@ -13,6 +13,12 @@ from handball.interface.admin.views.classification_views import (
     TabelaListView,
     TabelaSzczegolyView,
 )
+from handball.interface.admin.views.database_stats_views import StatystykiBazyView
+from handball.interface.admin.views.distribution_views import (
+    MeczeRozkladuBramekView,
+    RozkladBramekView,
+    RozkladyListView,
+)
 from handball.interface.admin.views.match_views import MeczListView, MeczSzczegolyView
 from handball.interface.admin.views.opponent_defense_views import DefensywaRywalaZawodnikaView
 from handball.interface.admin.views.player_detail_views import ZawodnikSzczegolyView
@@ -31,7 +37,6 @@ from handball.interface.admin.views.schedule_views import (
     ZapowiedzMeczuPdfView,
     ZapowiedzMeczuView,
 )
-from handball.interface.admin.views.database_stats_views import StatystykiBazyView
 from handball.interface.admin.views.start import StartView
 from handball.interface.admin.views.team_detail_views import DruzynaSzczegolyView
 from handball.interface.admin.views.team_report_views import (
@@ -160,6 +165,18 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/raporty/druzyny",
         view_func=RaportyDruzynListView.as_view("raporty_druzyn", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/raporty/rozklady",
+        view_func=RozkladyListView.as_view("lista_rozkladow", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/raporty/rozklady/bramki",
+        view_func=RozkladBramekView.as_view("rozklad_bramek", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/raporty/rozklady/bramki/mecze",
+        view_func=MeczeRozkladuBramekView.as_view("mecze_rozkladu_bramek", fabryka_zaleznosci),
     )
     blueprint.add_url_rule(
         "/raporty/typowania-meczow",

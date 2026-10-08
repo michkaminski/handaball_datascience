@@ -10,6 +10,7 @@ from handball.contracts.classification_repository import KlasyfikacjaReadReposit
 from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
 from handball.contracts.database_stats_repository import StatystykiBazyReadRepository
+from handball.contracts.goal_distribution_repository import RozkladBramekReadRepository
 from handball.contracts.match_prediction_repository import MeczeLigoweReadRepository
 from handball.contracts.match_preview_repository import ZapowiedzMeczuReadRepository
 from handball.contracts.match_protocol_repository import ProtokolMeczuReadRepository
@@ -58,6 +59,9 @@ from handball.infrastructure.repositories.core_catalog_repository import (
 )
 from handball.infrastructure.repositories.database_stats_repository import (
     StatystykiBazySQLAlchemyRepository,
+)
+from handball.infrastructure.repositories.goal_distribution_repository import (
+    RozkladBramekSQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.match_prediction_repository import (
     MeczeLigoweSQLAlchemyRepository,
@@ -136,6 +140,7 @@ from handball.interface.presenters.venue_detail_presenter import SzczegolyHaliPr
 from handball.services.catalog_service import KatalogService
 from handball.services.classification_service import KlasyfikacjaService
 from handball.services.database_stats_service import StatystykiBazyService
+from handball.services.goal_distribution_service import RozkladBramekService
 from handball.services.goal_statistics import StatystykiBramekCalculator
 from handball.services.match_dictionary_service import SlownikiMeczowService
 from handball.services.match_prediction_service import (
@@ -192,6 +197,7 @@ class ZaleznosciZadaniaFactory:
         fabryka_szczegolow_hali: Callable[[], SzczegolyHaliReadRepository] | None = None,
         fabryka_katalogu_podstawowego: Callable[[], KatalogPodstawowyReadRepository] | None = None,
         fabryka_statystyk_bazy: Callable[[], StatystykiBazyReadRepository] | None = None,
+        fabryka_rozkladu_bramek: Callable[[], RozkladBramekReadRepository] | None = None,
         fabryka_szczegolow_sedziego: Callable[[], SzczegolySedziegoReadRepository] | None = None,
         fabryka_klasyfikacji: Callable[[], KlasyfikacjaReadRepository] | None = None,
         fabryka_defensywy_rywala: Callable[[], DefensywaRywalaReadRepository] | None = None,
@@ -250,6 +256,9 @@ class ZaleznosciZadaniaFactory:
         )
         self._fabryka_statystyk_bazy = fabryka_statystyk_bazy or (
             lambda: StatystykiBazySQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
+        self._fabryka_rozkladu_bramek = fabryka_rozkladu_bramek or (
+            lambda: RozkladBramekSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
         self._fabryka_szczegolow_hali = fabryka_szczegolow_hali or (
             lambda: SzczegolyHaliSQLAlchemyRepository(cast(Session, baza_danych.session))
@@ -393,6 +402,9 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_serwis_statystyk_bazy(self) -> StatystykiBazyService:
         return StatystykiBazyService(self._fabryka_statystyk_bazy())
+
+    def utworz_serwis_rozkladu_bramek(self) -> RozkladBramekService:
+        return RozkladBramekService(self._fabryka_rozkladu_bramek())
 
     def utworz_serwis_szczegolow_hali(self) -> SzczegolyHaliService:
         return SzczegolyHaliService(self._fabryka_szczegolow_hali())

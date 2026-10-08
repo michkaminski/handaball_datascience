@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% macro blok(identyfikator, tytul, opis, seria, odmiana, uklad) %}
+<section class="goal-dist-card goal-dist-{{ odmiana }} goal-dist-{{ uklad }}" id="{{ identyfikator }}">
+<header class="goal-dist-head">
+<div>
+<h2>{{ tytul }}</h2>
+<p class="goal-dist-lead">{{ opis }}</p>
+</div>
+<ul class="goal-dist-metrics">
+<li><span>Mecze</span><b>{{ seria.liczba_meczow_etykieta }}</b></li>
+<li><span>Średnia</span><b>{{ seria.srednia_etykieta }}</b></li>
+<li><span>Mediana</span><b>{{ seria.mediana_etykieta }}</b></li>
+<li><span>Dominanta</span><b>{{ seria.dominanty_etykieta }}</b></li>
+<li><span>Zakres</span><b>{{ seria.zakres_etykieta }}</b></li>
+</ul>
+</header>
+{% if seria.pozycje %}
+{% set liczba_slupkow = seria.pozycje|length %}
+{% set krok = 1 if liczba_slupkow <= 20 else (2 if liczba_slupkow <= 36 else (5 if liczba_slupkow <= 60 else 10)) %}
+<div class="goal-dist-body">
+<figure class="goal-dist-figure">
+<figcaption>Liczba meczów według liczby bramek. Kliknij słupek, aby zobaczyć mecze.</figcaption>
+<div class="goal-dist-plot">
+<div class="goal-dist-chart" role="group" aria-label="{{ tytul }}: średnia {{ seria.srednia_etykieta }}, mediana {{ seria.mediana_etykieta }}, najczęściej {{ seria.dominanty_etykieta }}">
+{% for pozycja in seria.pozycje %}
+{% set pokaz = pozycja.czy_dominanta or loop.first or loop.last or pozycja.bramki % krok == 0 %}
+<button type="button" class="goal-dist-col{% if pozycja.mecze %} has-count{% endif %}{% if pozycja.czy_dominanta %} goal-dist-mode{% endif %}" {% if pozycja.mecze %}data-goal-bar data-series="{{ identyfikator }}" data-goals="{{ pozycja.bramki }}" data-caption="{{ tytul }}: {{ pozycja.bramki }} bramek, {{ pozycja.mecze_etykieta }} meczów"{% else %}disabled{% endif %} title="{{ pozycja.bramki }} bramek — {{ pozycja.mecze_etykieta }} meczów ({{ pozycja.udzial_etykieta }})" aria-label="{{ pozycja.bramki }} bramek, {{ pozycja.mecze_etykieta }} meczów">
+<span class="goal-dist-count">{% if pozycja.czy_dominanta and liczba_slupkow <= 24 %}{{ pozycja.mecze_etykieta }}{% endif %}</span>
+<span class="goal-dist-track"><i style="--h: {{ '%.2f'|format(pozycja.szerokosc) }}%"></i></span>
+<span class="goal-dist-tick{% if not pokaz %} is-hidden{% endif %}">{{ pozycja.bramki }}</span>
+</button>
+{% endfor %}
+</div>
+</div>
+<p class="goal-dist-axis">Liczba bramek. Zielony słupek to wartość najczęstsza.</p>
+</figure>
+<div class="table-wrap goal-dist-table-wrap">
+<table class="goal-dist-table">
+<thead>
+<tr>
+<th scope="col">Bramki</th>
+<th scope="col">Mecze</th>
+<th scope="col">Udział</th>
+<th scope="col">Narastająco</th>
+</tr>
+</thead>
+<tbody>
+{% for pozycja in seria.pozycje %}
+<tr{% if pozycja.czy_dominanta %} class="goal-dist-mode"{% endif %}>
+<th scope="row">{{ pozycja.bramki }}</th>
+<td class="num">{{ pozycja.mecze_etykieta }}</td>
+<td class="num">{{ pozycja.udzial_etykieta }}</td>
+<td class="num">{{ pozycja.narastajaco_etykieta }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% else %}
+<p class="note">Brak rozegranych meczów dla wybranych filtrów.</p>
+{% endif %}
+</section>
+{% endmacro %}
+
+{% block tytul %}Rozkład bramek na mecz — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › <a href="{{ url_for('administracja.lista_raportow') }}">Raporty</a> › <a href="{{ url_for('administracja.lista_rozkladow') }}">Rozkłady</a> › Rozkład bramek na mecz</div>
+<h1>Rozkład bramek na mecz</h1>
+<p>Wynik po 60 minutach. Walkowery i mecze bez wyniku są pominięte. Dogrywka i karne nie wchodzą do licznika.</p>
+</section>
+
+<section class="panel">
+<h2>Filtry</h2>
+<form id="goal-dist-filters" class="panel-body filters goal-dist-filters" method="get">
+<label>Sezon{{ formularz.id_sezon() }}</label>
+<label>Rozgrywki{{ formularz.rozgrywki() }}</label>
+<label>Płeć{{ formularz.plec() }}</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.rozklad_bramek') }}">Wyczyść</a></div>
+</form>
+</section>
+
+<div data-goal-distribution data-matches-url="{{ url_for('administracja.mecze_rozkladu_bramek') }}">
+<section class="panel">
+<div class="panel-body">
+<div class="goal-dist-kpis">
+<div><span>Mecze</span><b>{{ raport.suma.liczba_meczow_etykieta }}</b></div>
+<div><span>Średnia suma</span><b>{{ raport.suma.srednia_etykieta }}</b></div>
+<div><span>Mediana sumy</span><b>{{ raport.suma.mediana_etykieta }}</b></div>
+<div><span>Najczęstsza suma</span><b>{{ raport.suma.dominanty_etykieta }}</b></div>
+<div><span>Średnia gospodarzy</span><b>{{ raport.gospodarze.srednia_etykieta }}</b></div>
+<div><span>Średnia gości</span><b>{{ raport.goscie.srednia_etykieta }}</b></div>
+</div>
+<nav class="goal-dist-nav" aria-label="Części rozkładu">
+<a href="#suma">Suma bramek</a>
+<a href="#gospodarze">Gospodarze</a>
+<a href="#goscie">Goście</a>
+</nav>
+{{ blok('suma', 'Suma bramek w meczu', 'Ile bramek padło łącznie i w ilu meczach taki wynik się powtórzył.', raport.suma, 'total', 'split') }}
+<div class="goal-dist-pair">
+{{ blok('gospodarze', 'Bramki gospodarzy', 'Ile bramek zdobyli gospodarze i ile razy taka liczba wystąpiła.', raport.gospodarze, 'home', 'stack') }}
+{{ blok('goscie', 'Bramki gości', 'Ile bramek zdobyli goście i ile razy taka liczba wystąpiła.', raport.goscie, 'away', 'stack') }}
+</div>
+</div>
+</section>
+<dialog class="match-detail-dialog" data-goal-dialog aria-labelledby="goal-matches-title">
+<div class="modal-head"><h2 id="goal-matches-title" data-goal-title>Mecze</h2><button class="close" type="button" data-goal-close aria-label="Zamknij listę meczów" autofocus>×</button></div>
+<div class="modal-body" data-goal-body aria-live="polite"></div>
+<div class="modal-foot"><button class="btn secondary" type="button" data-goal-close>Zamknij</button></div>
+</dialog>
+</div>
+<script src="{{ url_for('static', filename='js/goal_distribution.js') }}"></script>
+{% endblock %}

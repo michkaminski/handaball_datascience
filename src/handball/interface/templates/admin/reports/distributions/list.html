@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block tytul %}Rozkłady — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Raporty › Rozkłady</div>
+<h1>Rozkłady</h1>
+<p>Zestawienia częstości i profili statystycznych. Każdy raport jest tylko do odczytu i liczy się na rozegranych meczach z wybranego zakresu.</p>
+</section>
+<section class="panel">
+<h2>Katalog rozkładów</h2>
+<div class="panel-body">
+<div class="table-wrap">
+<table class="report-catalog">
+<thead><tr><th scope="col">Raport</th><th scope="col">Kategoria</th><th scope="col">Opis</th><th scope="col">Akcje</th></tr></thead>
+<tbody>
+{% for rozklad in rozklady %}
+<tr>
+<td><a class="player-link" href="{{ url_for(rozklad.punkt_koncowy) }}">{{ rozklad.tytul }}</a></td>
+<td><span class="badge plan">{{ rozklad.kategoria }}</span></td>
+<td class="report-description">{{ rozklad.opis }}</td>
+<td><a class="icon-link" href="{{ url_for(rozklad.punkt_koncowy) }}">Otwórz</a></td>
+</tr>
+{% else %}
+<tr><td colspan="4" class="note">Brak rozkładów.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</section>
+{% endblock %}

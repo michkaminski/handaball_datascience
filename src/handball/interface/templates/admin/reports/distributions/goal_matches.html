@@ -1,0 +1,33 @@
+{% if mecze %}
+<p class="note">{{ mecze|length }} meczów</p>
+<div class="table-wrap">
+<table class="goal-dist-table">
+<thead>
+<tr>
+<th scope="col">Data</th>
+<th scope="col">Sezon</th>
+<th scope="col">Rozgrywki</th>
+<th scope="col">Gospodarz</th>
+<th scope="col">Wynik</th>
+<th scope="col">Gość</th>
+<th scope="col"><span class="sr-only">Szczegóły</span></th>
+</tr>
+</thead>
+<tbody>
+{% for mecz in mecze %}
+<tr>
+<td>{{ mecz.data_etykieta }}</td>
+<td>{{ mecz.sezon }}</td>
+<td>{{ mecz.rozgrywki }}</td>
+<td>{{ mecz.gospodarz }}</td>
+<td class="num"><b>{{ mecz.wynik_etykieta }}</b></td>
+<td>{{ mecz.gosc }}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=mecz.id_mecz) }}">Szczegóły</a></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="note">Brak meczów.</p>
+{% endif %}

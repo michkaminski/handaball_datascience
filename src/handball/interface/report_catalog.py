@@ -14,6 +14,14 @@ class PozycjaRaportu:
 
 KATALOG_RAPORTOW: tuple[PozycjaRaportu, ...] = (
     PozycjaRaportu(
+        "rozkłady",
+        "Rozkłady",
+        "Rozkłady częstości wyników: ile razy pada dana liczba bramek w meczu, "
+        "u gospodarzy i u gości.",
+        "Statystyka",
+        "administracja.lista_rozkladow",
+    ),
+    PozycjaRaportu(
         "raporty_druzyn",
         "Raporty drużyn — wydruki PDF",
         "Raport drużyny na jednej kartce A4 (sezony, kadra z poprzednim sezonem, ostatnie mecze) "
