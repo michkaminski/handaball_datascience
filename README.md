@@ -10,8 +10,10 @@ W katalogu projektu uruchom `run.bat` albo:
 
 ```powershell
 uv sync
-uv run python -m flask --app "handball:create_app()" run --port 5057
+uv run python app.py
 ```
+
+Port domyślny: `5057` (`HDS_PORT`). Na Linuxie ta sama komenda; `run.bat` zostaje tylko pod Windows (Pango/WeasyPrint).
 
 PDF zapowiedzi meczu (przycisk „Pobierz PDF”) generuje WeasyPrint, który na Windows potrzebuje bibliotek Pango. Instalacja jednorazowa:
 

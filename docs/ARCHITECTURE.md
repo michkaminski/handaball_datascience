@@ -12,7 +12,7 @@ Decyzja użytkownika z 2026-09-12: AI nie zmienia bazy samodzielnie. Jakikolwiek
 
 Decyzja z 2026-09-12: cały nowy kod aplikacyjny powstaje obiektowo i zgodnie z SOLID. Aktualizacja nazewnictwa z 2026-09-14: pliki, katalogi, moduły i pakiety są angielskie; domena, metody i zmienne polskie bez znaków diakrytycznych, a role techniczne klas angielskie, np. MeczService i MeczRepository. Zachowujemy oryginalne API bibliotek i jawne mapowanie rzeczywistych nazw bazy. Przyjęty stos oraz uzasadnienie: [TECH_STACK](TECH_STACK.md). Wymagania implementacji: [CODING_STANDARDS](CODING_STANDARDS.md).
 
-- AplikacjaFactory i Ustawienia składają aplikację oraz konfigurację. Cienki adapter create_app() obsługuje integrację z narzędziami Flaska.
+- AplikacjaFactory i Ustawienia składają aplikację oraz konfigurację. Cienki adapter create_app() obsługuje integrację z narzędziami Flaska; lokalny start idzie przez `app.py` / `run.bat`.
 - Klasy MethodView w Blueprints obsługują HTTP; szablony Jinja2 odpowiadają za prezentację.
 - Klasy serwisów realizują przypadki użycia i logikę meczową.
 - Kontrakty Protocol oddzielają serwisy od klas repozytoriów SQLAlchemy. Zależności przekazujemy przez konstruktor.

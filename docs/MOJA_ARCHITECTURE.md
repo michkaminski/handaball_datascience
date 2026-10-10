@@ -14,7 +14,8 @@ Wersja HTML ma tę samą treść co ten MD. Opisy plików są względne wobec ka
 
 ```text
 handball_datascience/
-├── run.bat                                  ← Przygotowuje środowisko i uruchamia Flaska.
+├── app.py                                   ← Lokalny start: create_app() + app.run().
+├── run.bat                                  ← uv sync, Pango (Windows) i python app.py.
 ├── pyproject.toml                           ← Pakiet, zależności i narzędzia jakości.
 ├── uv.lock                                  ← Konkretne wersje zależności.
 ├── src/
@@ -436,7 +437,7 @@ W zwykłym przebiegu listy powstają trzy odczyty słowników oraz dwa odczyty r
 ## 9. Jak obiekty są tworzone
 
 ```text
-run.bat / flask --app handball
+run.bat / app.py
     |
     v
 create_app()
