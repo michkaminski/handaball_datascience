@@ -1,0 +1,38 @@
+{% extends "mathematics/_layout.html" %}
+{% set artykul = strona.artykul %}
+{% set aktywny_dzial = strona.dzial.id %}
+{% set aktywny_artykul = artykul.concept.id %}
+{% block tytul %}{{ artykul.concept.name }} — Matematyka{% endblock %}
+{% block matematyka %}
+<div class="pagehead">
+<div class="crumb"><a href="{{ url_for('matematyka.indeks') }}">Matematyka</a> › <a href="{{ url_for('matematyka.dzial', dzial=strona.dzial.id) }}">{{ strona.dzial.name }}</a> › {{ artykul.concept.name }}</div>
+<h1>{{ artykul.concept.name }}</h1>
+<p class="ml-lead">{{ artykul.concept.summary }}</p>
+{% if strona.uzywane_przez %}<p class="ml-tags">Używane przez: {% for model in strona.uzywane_przez %}<span class="ml-tag">{{ model|upper }}</span>{% endfor %}</p>{% endif %}
+</div>
+<div class="ml-article-layout">
+<aside class="ml-toc" aria-label="Spis treści">
+<p class="ml-toc-title">Spis treści</p>
+<ol>
+{% for pozycja in artykul.toc %}
+<li class="ml-toc-l{{ pozycja.level }}"><a href="#{{ pozycja.id }}" data-ml-toc="{{ pozycja.id }}">{% if pozycja.number %}{{ pozycja.number }}. {% endif %}{{ pozycja.title }}</a></li>
+{% endfor %}
+</ol>
+</aside>
+<article class="panel ml-article" data-ml-article>
+<div class="panel-body">
+{{ artykul.html|safe }}
+</div>
+</article>
+</div>
+<nav class="ml-pager" aria-label="Nawigacja między rozdziałami">
+{% if strona.poprzedni %}<a class="btn secondary" href="{{ rejestr.url(strona.poprzedni.id) }}">← {{ strona.poprzedni.name }}</a>{% else %}<span></span>{% endif %}
+{% if strona.nastepny %}<a class="btn secondary" href="{{ rejestr.url(strona.nastepny.id) }}">{{ strona.nastepny.name }} →</a>{% endif %}
+</nav>
+{% if strona.powiazane %}
+<div class="panel"><div class="panel-body">
+<h2 class="ml-related-title">Powiązane pojęcia w rejestrze</h2>
+<ul class="ml-related">{% for pojecie in strona.powiazane %}<li><a href="{{ rejestr.url(pojecie.id) }}" title="{{ pojecie.summary }}">{{ pojecie.name }}</a></li>{% endfor %}</ul>
+</div></div>
+{% endif %}
+{% endblock %}

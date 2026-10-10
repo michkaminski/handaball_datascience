@@ -17,6 +17,7 @@ GORNY_PASEK: list[PozycjaMenu] = [
     PozycjaMenu("start", "Start", "administracja.start"),
     PozycjaMenu("mecze", "Dane", "administracja.lista_meczow"),
     PozycjaMenu("raporty", "Raporty", "administracja.lista_raportow"),
+    PozycjaMenu("matematyka", "Matematyka", "matematyka.indeks"),
     PozycjaMenu("import", "Import", "administracja.import_danych"),
     PozycjaMenu("kontrola", "Kontrola danych", None),
     PozycjaMenu("logi", "Logi", None),
@@ -58,6 +59,12 @@ SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
                 "administracja.raport_typowan_meczow",
                 "✎",
             ),
+        ],
+    ),
+    (
+        "Matematyka",
+        [
+            PozycjaMenu("matematyka", "Biblioteka matematyczna", "matematyka.indeks", "∑"),
         ],
     ),
     (

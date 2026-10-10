@@ -1,0 +1,33 @@
+{% extends "mathematics/_layout.html" %}
+{% set aktywny_dzial = wynik.dzial.id %}
+{% set aktywny_artykul = None %}
+{% block tytul %}{{ wynik.dzial.name }} — Matematyka{% endblock %}
+{% block matematyka %}
+<div class="pagehead">
+<div class="crumb"><a href="{{ url_for('matematyka.indeks') }}">Matematyka</a> › {{ wynik.dzial.name }}</div>
+<h1>{{ wynik.dzial.name }}</h1>
+<p class="ml-lead">{{ wynik.dzial.description }}</p>
+</div>
+{% if wynik.artykuly %}
+<div class="ml-grid ml-grid-tight">
+{% for artykul in wynik.artykuly %}
+<a class="panel ml-card ml-card-link" href="{{ rejestr.url(artykul.id) }}">
+<div class="panel-body">
+<h2>{{ artykul.name }}</h2>
+<p>{{ artykul.summary }}</p>
+{% if artykul.models %}<p class="ml-tags">{% for model in artykul.models %}<span class="ml-tag">{{ model|upper }}</span>{% endfor %}</p>{% endif %}
+</div>
+</a>
+{% endfor %}
+</div>
+{% else %}
+<div class="panel"><div class="panel-body"><p class="ml-empty">Dział w przygotowaniu. Pojęcia wnioskowania używane przez MAF są opisane w działach <a href="{{ url_for('matematyka.dzial', dzial='statystyka-bayesowska') }}">Statystyka bayesowska</a> i <a href="{{ url_for('matematyka.dzial', dzial='walidacja-modeli') }}">Walidacja modeli</a>.</p></div></div>
+{% endif %}
+{% if planowane %}
+<div class="panel"><div class="panel-body">
+<h2>Planowane modele</h2>
+<p class="note">Miejsce w architekturze jest zarezerwowane; modele nie są jeszcze zaimplementowane.</p>
+<ul class="ml-planned">{% for model in planowane %}<li>{{ model.name }}</li>{% endfor %}</ul>
+</div></div>
+{% endif %}
+{% endblock %}

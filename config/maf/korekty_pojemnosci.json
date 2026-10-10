@@ -1,0 +1,4 @@
+{
+  "opis": "Korekty pojemności dostępnej w modelu MAF. Pola: id_hali + sezon (np. \"2024/2025\") albo id_meczu, pojemnosc, uwagi. Pojemność z bazy (hale.pojemnosc) jest nominalna i stała w czasie; korekta ma pierwszeństwo.",
+  "korekty": []
+}

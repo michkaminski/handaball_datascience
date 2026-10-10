@@ -44,6 +44,10 @@ Nowy interfejs WWW może być kolejnym adapterem tych samych serwisów. Logika n
 
 Nazwy klas i ścieżek w dokumentacji odpowiadają migracji z 2026-09-14. Pakiet dystrybucyjny i importowany to `handball`, testy są w `tests`, a skrypt startowy to `run.bat`. Flask jawnie wskazuje `interface/templates` i `interface/static`. Zachowano adresy `/administracja/`, `/administracja/mecze` i prefiks zasobów `/statyczne`; pliki zasobów nazywają się `admin.css` i `admin.js`.
 
+## Moduł MAF i biblioteka Matematyka — 2026-10-10
+
+Decyzja: Model Atrakcyjności Frekwencyjnej działa jako dwa procesy. Trening (MCMC) jest poleceniem CLI `handball.maf_cli`, które czyta bazę tylko do odczytu i zapisuje wynik jako wersjonowany artefakt plikowy (`var/maf/`), a nie w bazie — bez zgody na zapis w bazie i bez kosztownych obliczeń w żądaniu HTTP. Aplikacja czyta artefakt przez kontrakt `ModeleMafReadStore`. Obliczenia matematyczne są w pakiecie `maf`, a treść biblioteki `/matematyka/` w pakiecie `mathlib`; oba są niezależne od Flaska i bazy, z angielskimi nazwami jak biblioteki zewnętrzne, i są wspólne (kopie) z aplikacją EHF. Zamiast PyMC używamy własnego samplera NUTS w NumPy/SciPy (brak kompilatora C dla PyTensor). Szczegóły: [MAF](MAF.md).
+
 ## Decyzje otwarte
 
 | Temat | Kiedy rozstrzygnąć |

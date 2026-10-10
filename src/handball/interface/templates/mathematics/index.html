@@ -1,0 +1,39 @@
+{% extends "mathematics/_layout.html" %}
+{% set aktywny_dzial = None %}
+{% set aktywny_artykul = None %}
+{% block tytul %}Matematyka — Handball DataScience{% endblock %}
+{% block matematyka %}
+<div class="pagehead">
+<div class="crumb">Start › Matematyka</div>
+<h1>Biblioteka matematyczna</h1>
+<p class="ml-lead">Centralny podręcznik pojęć statystyki, probabilistyki i modelowania bayesowskiego, z których korzystają analizy Data Science piłki ręcznej. Każde pojęcie ma definicję formalną, wzory, twierdzenia z dowodami, przykład liczbowy, zastosowanie w piłce ręcznej i bibliografię.</p>
+</div>
+<div class="ml-search panel"><div class="panel-body">
+<label for="ml-search-input" class="ml-search-label">Szukaj pojęcia</label>
+<input id="ml-search-input" type="search" placeholder="np. przedział wiarygodności, R-hat, rozkład beta" data-ml-search>
+</div></div>
+<div class="ml-grid">
+{% for pozycja in dzialy %}
+<section class="panel ml-card" data-ml-category>
+<div class="panel-body">
+<h2><a href="{{ url_for('matematyka.dzial', dzial=pozycja.dzial.id) }}">{{ loop.index }}. {{ pozycja.dzial.name }}</a></h2>
+<p class="note">{{ pozycja.dzial.description }}</p>
+{% if pozycja.artykuly %}
+<ul class="ml-list">
+{% for artykul in pozycja.artykuly %}
+<li data-ml-item="{{ artykul.name|lower }} {{ artykul.summary|lower }}"><a href="{{ rejestr.url(artykul.id) }}">{{ artykul.name }}</a><span>{{ artykul.summary }}</span></li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="ml-empty">Dział w przygotowaniu — architektura rejestru pozwala dodać artykuły bez zmian w kodzie.</p>
+{% endif %}
+{% if pozycja.dzial.id == 'modele-sportowe' and planowane %}
+<p class="ml-planned-title">Planowane modele</p>
+<ul class="ml-planned">{% for model in planowane %}<li>{{ model.name }}</li>{% endfor %}</ul>
+{% endif %}
+</div>
+</section>
+{% endfor %}
+</div>
+<p class="note">Rejestr pojęć w wersji {{ rejestr.version }} · {{ rejestr.concepts|length }} pojęć · {{ rejestr.bibliography|length }} zweryfikowanych źródeł.</p>
+{% endblock %}

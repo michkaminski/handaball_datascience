@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block tresc %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mathlib.css') }}">
+<div class="ml-shell" data-mathlib data-echarts-url="{{ url_for('static', filename='vendor/echarts/echarts.min.js') }}">
+<nav class="ml-sidenav" aria-label="Działy biblioteki matematycznej">
+<a class="ml-sidenav-home" href="{{ url_for('matematyka.indeks') }}">∑ Biblioteka matematyczna</a>
+{% for pozycja in dzialy %}
+<details{% if aktywny_dzial == pozycja.dzial.id %} open{% endif %}>
+<summary><a href="{{ url_for('matematyka.dzial', dzial=pozycja.dzial.id) }}"{% if aktywny_dzial == pozycja.dzial.id %} aria-current="true"{% endif %}>{{ pozycja.dzial.name }}</a> <span class="ml-count">{{ pozycja.artykuly|length }}</span></summary>
+<ul>
+{% for artykul in pozycja.artykuly %}
+<li><a href="{{ rejestr.url(artykul.id) }}"{% if aktywny_artykul == artykul.id %} aria-current="page"{% endif %}>{{ artykul.name }}</a></li>
+{% endfor %}
+</ul>
+</details>
+{% endfor %}
+</nav>
+<div class="ml-main">
+{% block matematyka %}{% endblock %}
+</div>
+</div>
+<script src="{{ url_for('static', filename='vendor/katex/katex.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/katex/contrib/auto-render.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mathlib.js') }}"></script>
+{% endblock %}

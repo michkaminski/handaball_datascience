@@ -20,6 +20,7 @@ ZAKLADKI_FREKWENCJI = (
     ZakladkaFrekwencji("calendar", "Kalendarz"),
     ZakladkaFrekwencji("extended", "Rekordy+"),
     ZakladkaFrekwencji("science", "Data Science"),
+    ZakladkaFrekwencji("maf", "Atrakcyjność (MAF)"),
 )
 PARAMETRY_ZAKLADKI = ("zakladka", "tab")
 

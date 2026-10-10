@@ -38,6 +38,11 @@ Utworzono dokumenty dla wszystkich 11 szablonów nazwanych w projekcie katalogó
 | `partials/pagination.html` | [partials/pagination.md](../src/handball/interface/templates/partials/pagination.md) | istnieje |
 | `admin/start.html` | [admin/start.md](../src/handball/interface/templates/admin/start.md) | istnieje: Aktualności — ostatnie mecze, ciekawostki, najlepsi strzelcy |
 | `admin/matches/list.html` | [admin/matches/list.md](../src/handball/interface/templates/admin/matches/list.md) | istnieje |
+| `admin/reports/attendance/maf_panel.html` | [admin/reports/attendance/maf_panel.md](../src/handball/interface/templates/admin/reports/attendance/maf_panel.md) | istnieje: zakładka Atrakcyjność (MAF) raportu frekwencji |
+| `mathematics/_layout.html` | [mathematics/_layout.md](../src/handball/interface/templates/mathematics/_layout.md) | istnieje: układ biblioteki Matematyka |
+| `mathematics/index.html` | [mathematics/index.md](../src/handball/interface/templates/mathematics/index.md) | istnieje |
+| `mathematics/category.html` | [mathematics/category.md](../src/handball/interface/templates/mathematics/category.md) | istnieje |
+| `mathematics/article.html` | [mathematics/article.md](../src/handball/interface/templates/mathematics/article.md) | istnieje |
 | `admin/matches/detail.html` | [admin/matches/detail.md](../src/handball/interface/templates/admin/matches/detail.md) | planowany (etap 5) |
 | `admin/teams/detail.html` | [admin/teams/detail.md](../src/handball/interface/templates/admin/teams/detail.md) | istnieje: Dane podstawowe, Sezony, Mecze, Zawodnicy, Podsumowanie, Forma i regularność |
 | `admin/players/detail.html` | [admin/players/detail.md](../src/handball/interface/templates/admin/players/detail.md) | istnieje: Profil, Sezony i drużyny, Mecze, Podsumowanie, Forma i regularność (ze spisem treści i sekcją defensywy rywali) |

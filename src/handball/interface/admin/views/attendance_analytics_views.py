@@ -37,6 +37,7 @@ class FrekwencjaView(MethodView):
             wykres=self._wykres(raport),
             zakladki=ZAKLADKI_FREKWENCJI,
             aktywna_zakladka=self._wybor_zakladki.wybierz(request.args),
+            modele_maf=self._fabryka.utworz_serwis_atrakcyjnosci().modele(),
         )
 
     def _filtry(self, formularz: FrekwencjaFilterForm) -> FiltryFrekwencji:

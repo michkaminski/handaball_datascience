@@ -400,3 +400,10 @@ Nie używać `python ../run.py` jako komendy uruchomienia nowej aplikacji: dotyc
 ## Składy, Strzelcy i Tabele — 2026-09-21
 
 Zaimplementowano trzy zakładki administracyjne tylko do odczytu: filtry sezonu i rozgrywek, wyszukiwanie, sortowanie, paginację oraz aktywne pozycje menu. Składy opisują zgłoszenia sezonowe, a klasyfikacje zachowują wartości źródłowe bez przeliczania.
+
+## MAF i biblioteka Matematyka — 2026-10-10
+
+Dodano zakładkę **Atrakcyjność (MAF)** w Raporty › Frekwencja i dział **Matematyka** (`/matematyka/`). MAF to hierarchiczny model bayesowski frekwencji (beta-dwumianowy dla wypełnienia hali, ujemny dwumianowy dla liczby widzów) z indeksem IAF, prognozami probabilistycznymi, analizą odchyleń, diagnostyką MCMC i walidacją chronologiczną. Trening: `uv run python -m handball.maf_cli` (wyniki w `var/maf/`, bez zapisu w bazie). Biblioteka: 62 artykuły w 9 działach + strona naukowa modelu, rejestr pojęć i zweryfikowana bibliografia. Architektura i utrzymanie: [MAF](MAF.md).
+
+Następny krok dla MAF: uzupełnić korekty pojemności hal (pojemność dostępna w konkretnych sezonach), rozważyć interakcje gospodarz × rywal (derby) i dodać kolejne modele sportowe z listy planowanych w rejestrze.
+

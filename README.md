@@ -31,6 +31,8 @@ uv run mypy
 uv run pytest --ignore=tests/integration
 ```
 
+Model Atrakcyjności Frekwencyjnej (zakładka Raporty › Frekwencja › Atrakcyjność) wymaga jednorazowego treningu, który nie zmienia bazy: `uv run python -m handball.maf_cli` — szczegóły w [docs/MAF.md](docs/MAF.md). Biblioteka matematyczna: `/matematyka/`.
+
 Ostatnia komenda sprawdza logikę i widoki bez bazy. Testy w `tests/integration` wymagają osobnego, świadomego uruchomienia zgodnie z zasadami bazy w AGENTS.md.
 
 ## Dokumentacja
@@ -52,6 +54,7 @@ Ostatnia komenda sprawdza logikę i widoki bez bazy. Testy w `tests/integration`
 | [TEMPLATES](docs/TEMPLATES.md) | Indeks opisów poszczególnych szablonów i zasady ich aktualizacji |
 | [UML](docs/UML.md) | Diagramy klas, składania zależności i obsługi żądania |
 | [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) | Wzorzec wyglądu administracji i kolejne etapy realizacji |
+| [MAF](docs/MAF.md) | Model Atrakcyjności Frekwencyjnej i biblioteka Matematyka |
 | [STATUS](docs/STATUS.md) | Stan projektu i następny krok |
 
 ## Praca z AI

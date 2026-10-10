@@ -1,0 +1,10 @@
+{
+  "opis": "Ciągłość klubów, które w bazie ZPRP dostały nowy identyfikator zespołu (nowy podmiot), choć sportowo są tym samym klubem. Mecze poprzednika są w modelu MAF przypisywane następcy. Dodawaj tylko pary potwierdzone historią rozgrywek.",
+  "kontynuacje": [
+    {
+      "poprzedni": 28,
+      "obecny": 10813,
+      "uwagi": "Kielce, pierwsza drużyna mężczyzn: zespół 28 (nr_klubu 39, „Vive Tauron Kielce.”, sezony do 2016/2017) → zespół 10813 (nr_klubu 4189, „Industria Kielce”, od 2016/2017); ciągła obecność w Superlidze i Lidze Mistrzów."
+    }
+  ]
+}

@@ -54,3 +54,11 @@ Alembic/Flask-Migrate nie wchodzą do bieżącego etapu. Narzędzie migracyjne d
 ## Późniejszy serwis publiczny
 
 Utrzymujemy ustalony kierunek HTML + JSON + JavaScript. Format eksportu, biblioteki interfejsu i hosting wybierzemy przy tym etapie. Obecny wybór nie dodaje frameworka SPA, kolejki zadań, cache ani bibliotek uczenia maszynowego.
+
+## Obliczenia statystyczne i dokumentacja matematyczna (2026-10-10)
+
+- **NumPy 2.x i SciPy 1.x** — obliczenia modelu MAF (funkcje specjalne `gammaln`, `digamma`, `expit`, rangi do R-hat). Typy: `scipy-stubs` w zależnościach deweloperskich.
+- **Sampler NUTS** — własna implementacja w pakiecie `maf` (szczegóły i uzasadnienie w [MAF](MAF.md)); PyMC/ArviZ są punktem odniesienia metodycznego, nie zależnością.
+- **KaTeX 0.16.11** (MIT) — renderowanie wzorów w bibliotece `/matematyka/` i w dashboardzie MAF; dostarczany lokalnie z `static/vendor/katex` (tylko fonty woff2), bez CDN.
+- Wykresy funkcji i rozkładów w bibliotece oraz wykresy MAF używają istniejącego ECharts (SVG).
+

@@ -29,6 +29,7 @@ Pasek `.match-tabs.att-tabs[role=tablist][data-attendance-tabs]` (ukryty do uruc
 | `calendar` | Kalendarz | `#att-panel-calendar` | wykresy `months`, `weekdays`, `hours`, tabele, `heatmap` |
 | `extended` | Rekordy+ | `#att-panel-extended` | rekordy sezonów, klubów, hal, finałów, par |
 | `science` | Data Science | `#att-panel-science` | `histogram`, `weekdayEffect`, rozrzut, anomalie, korelacje, prognoza |
+| `maf` | Atrakcyjność (MAF) | `#att-panel-maf` | fragment [maf_panel.html](maf_panel.md): bayesowski Model Atrakcyjności Frekwencyjnej, dane z API JSON i zapisanego artefaktu modelu |
 
 Wybór zakładki: `?zakladka=` lub `?tab=` (nieznany klucz → `overview`), logika w [attendance_tabs.py](../../../presenters/attendance_tabs.py) (`WyborZakladkiFrekwencji`, `ZAKLADKI_FREKWENCJI`). Kliknięcie zmienia `?zakladka=` przez `history.replaceState`; kotwica (np. `#kalendarz`) otwiera swoją zakładkę. Wykresy są inicjowane przy pierwszym pokazaniu panelu (`MenedzerWykresow`), a przy kolejnych pokazaniach i zmianie okna wywoływane jest `resize()`.
 
@@ -42,7 +43,7 @@ Widzowie na rozegranych meczach...
 [ Filtry: Sezon | Rozgrywki | Płeć | Gospodarz | Hala | Pomiń zera ]
 
 ┌ div[data-attendance] ───────────────────────────────────────────────┐
-[ Podsumowanie | Trendy | Kluby | Miasta | Rekordy | Przeciwnicy | Kalendarz | Rekordy+ | Data Science ]  ← tablist
+[ Podsumowanie | Trendy | Kluby | Miasta | Rekordy | Przeciwnicy | Kalendarz | Rekordy+ | Data Science | Atrakcyjność (MAF) ]  ← tablist
 
 ▸ Podsumowanie
 [ KPI: suma | znane | rozegrane | pokrycie | średnia | mediana | rekord | YoY | wypełnienie? ]

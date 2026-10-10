@@ -7,6 +7,7 @@ from typing import cast
 from sqlalchemy.orm import Session
 
 from handball.contracts.attendance_analytics_repository import FrekwencjaReadRepository
+from handball.contracts.attendance_appeal_store import ModeleMafReadStore
 from handball.contracts.classification_repository import KlasyfikacjaReadRepository
 from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
@@ -54,6 +55,7 @@ from handball.domain.match_rules import MeczPolicy
 from handball.domain.team_details import KolejnoscPozycjiPolicy, WystepDruzynyPolicy
 from handball.domain.team_report import KolejnoscZawodnikowRaportuPolicy, MiejscaPolicy
 from handball.extensions import baza_danych
+from handball.infrastructure.maf_store import katalog_modeli
 from handball.infrastructure.pdf_renderer import WeasyPrintPdfRenderer
 from handball.infrastructure.repositories.attendance_analytics_repository import (
     FrekwencjaSQLAlchemyRepository,
@@ -151,6 +153,9 @@ from handball.interface.presenters.team_report_presenter import (
 )
 from handball.interface.presenters.venue_detail_presenter import SzczegolyHaliPresenter
 from handball.services.attendance_analytics_service import FrekwencjaService
+from handball.services.attendance_appeal_service import (
+    AtrakcyjnoscFrekwencyjnaService,
+)
 from handball.services.catalog_service import KatalogService
 from handball.services.classification_service import KlasyfikacjaService
 from handball.services.database_stats_service import StatystykiBazyService
@@ -175,6 +180,7 @@ from handball.services.match_preview_service import (
 from handball.services.match_protocol_service import ProtokolMeczuService
 from handball.services.match_service import MeczService
 from handball.services.match_tip_service import RaportTypowanService, TypowaniaKolejkiService
+from handball.services.mathematics_service import BibliotekaMatematycznaService
 from handball.services.news_service import AktualnosciService
 from handball.services.opponent_defense_service import DefensywaRywalaService
 from handball.services.player_detail_service import (
@@ -195,6 +201,8 @@ from handball.services.team_detail_service import (
 from handball.services.team_report_service import RaportDruzynyService
 from handball.services.venue_detail_service import SzczegolyHaliService
 from handball.services.venue_service import HalaService
+from maf.artifacts import ArtifactStore
+from mathlib.registry import MathRegistry, default_registry
 
 
 class ZaleznosciZadaniaFactory:
@@ -227,7 +235,11 @@ class ZaleznosciZadaniaFactory:
         fabryka_protokolow: Callable[[], ProtokolMeczuReadRepository] | None = None,
         fabryka_kadr_raportu: Callable[[], KadraRaportuReadRepository] | None = None,
         fabryka_frekwencji: Callable[[], FrekwencjaReadRepository] | None = None,
+        magazyn_modeli_maf: ModeleMafReadStore | None = None,
+        rejestr_matematyki: MathRegistry | None = None,
     ) -> None:
+        self._magazyn_modeli_maf = magazyn_modeli_maf or ArtifactStore(katalog_modeli())
+        self._rejestr_matematyki = rejestr_matematyki or default_registry()
         self._fabryka_frekwencji = fabryka_frekwencji or (
             lambda: FrekwencjaSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -423,6 +435,14 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_serwis_rozkladu_bramek(self) -> RozkladBramekService:
         return RozkladBramekService(self._fabryka_rozkladu_bramek())
+
+    def utworz_biblioteke_matematyczna(self) -> BibliotekaMatematycznaService:
+        return BibliotekaMatematycznaService(self._rejestr_matematyki)
+
+    def utworz_serwis_atrakcyjnosci(self) -> AtrakcyjnoscFrekwencyjnaService:
+        return AtrakcyjnoscFrekwencyjnaService(
+            self._magazyn_modeli_maf, self.utworz_biblioteke_matematyczna()
+        )
 
     def utworz_serwis_frekwencji(self) -> FrekwencjaService:
         return FrekwencjaService(

@@ -9,3 +9,4 @@ __pycache__/
 instance/
 src/instance/
 .test-postgres/
+var/
