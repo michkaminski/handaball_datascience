@@ -1,5 +1,6 @@
 from flask import Blueprint
 
+from handball.interface.admin.views.attendance_analytics_views import FrekwencjaView
 from handball.interface.admin.views.catalog_views import (
     DruzynaListView,
     RozgrywkiListView,
@@ -177,6 +178,10 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
     blueprint.add_url_rule(
         "/raporty/rozklady/bramki/mecze",
         view_func=MeczeRozkladuBramekView.as_view("mecze_rozkladu_bramek", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
+        "/raporty/frekwencja",
+        view_func=FrekwencjaView.as_view("raport_frekwencji", fabryka_zaleznosci),
     )
     blueprint.add_url_rule(
         "/raporty/typowania-meczow",

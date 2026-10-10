@@ -6,6 +6,7 @@ from typing import cast
 
 from sqlalchemy.orm import Session
 
+from handball.contracts.attendance_analytics_repository import FrekwencjaReadRepository
 from handball.contracts.classification_repository import KlasyfikacjaReadRepository
 from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
@@ -30,6 +31,12 @@ from handball.contracts.team_report_repository import KadraRaportuReadRepository
 from handball.contracts.venue_catalog_repository import HalaKatalogReadRepository
 from handball.contracts.venue_detail_repository import SzczegolyHaliReadRepository
 from handball.contracts.venue_repository import HalaReadRepository
+from handball.domain.attendance_analytics import FrekwencjaCalculator
+from handball.domain.attendance_calendar import KalendarzFrekwencjiCalculator
+from handball.domain.attendance_cities import MiastaFrekwencjiCalculator
+from handball.domain.attendance_data_science import FrekwencjaDataScienceCalculator
+from handball.domain.attendance_forecast import PrognozaFrekwencjiCalculator, RegresjaOLS
+from handball.domain.attendance_opponents import PrzeciwnicyFrekwencjiCalculator
 from handball.domain.competition_levels import KolejnoscRozgrywekPolicy
 from handball.domain.match_predictions import (
     KwalifikacjaMeczuPolicy,
@@ -48,6 +55,9 @@ from handball.domain.team_details import KolejnoscPozycjiPolicy, WystepDruzynyPo
 from handball.domain.team_report import KolejnoscZawodnikowRaportuPolicy, MiejscaPolicy
 from handball.extensions import baza_danych
 from handball.infrastructure.pdf_renderer import WeasyPrintPdfRenderer
+from handball.infrastructure.repositories.attendance_analytics_repository import (
+    FrekwencjaSQLAlchemyRepository,
+)
 from handball.infrastructure.repositories.classification_repository import (
     KlasyfikacjaSQLAlchemyRepository,
 )
@@ -104,6 +114,9 @@ from handball.infrastructure.repositories.venue_detail_repository import (
     SzczegolyHaliSQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.venue_repository import HalaSQLAlchemyRepository
+from handball.interface.presenters.attendance_analytics_presenter import (
+    FrekwencjaWykresPresenter,
+)
 from handball.interface.presenters.classification_presenter import SkladPresenter
 from handball.interface.presenters.goal_statistics_presenter import StatystykiBramekPresenter
 from handball.interface.presenters.match_prediction_presenter import (
@@ -137,6 +150,7 @@ from handball.interface.presenters.team_report_presenter import (
     UkladZestawieniaPolicy,
 )
 from handball.interface.presenters.venue_detail_presenter import SzczegolyHaliPresenter
+from handball.services.attendance_analytics_service import FrekwencjaService
 from handball.services.catalog_service import KatalogService
 from handball.services.classification_service import KlasyfikacjaService
 from handball.services.database_stats_service import StatystykiBazyService
@@ -212,7 +226,11 @@ class ZaleznosciZadaniaFactory:
         renderer_pdf: DokumentPdfRenderer | None = None,
         fabryka_protokolow: Callable[[], ProtokolMeczuReadRepository] | None = None,
         fabryka_kadr_raportu: Callable[[], KadraRaportuReadRepository] | None = None,
+        fabryka_frekwencji: Callable[[], FrekwencjaReadRepository] | None = None,
     ) -> None:
+        self._fabryka_frekwencji = fabryka_frekwencji or (
+            lambda: FrekwencjaSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
         self._fabryka_kadr_raportu = fabryka_kadr_raportu or (
             lambda: ZapowiedzMeczuSQLAlchemyRepository(cast(Session, baza_danych.session))
         )
@@ -405,6 +423,19 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_serwis_rozkladu_bramek(self) -> RozkladBramekService:
         return RozkladBramekService(self._fabryka_rozkladu_bramek())
+
+    def utworz_serwis_frekwencji(self) -> FrekwencjaService:
+        return FrekwencjaService(
+            self._fabryka_frekwencji(),
+            FrekwencjaCalculator(),
+            PrzeciwnicyFrekwencjiCalculator(),
+            KalendarzFrekwencjiCalculator(),
+            FrekwencjaDataScienceCalculator(PrognozaFrekwencjiCalculator(RegresjaOLS())),
+            MiastaFrekwencjiCalculator(),
+        )
+
+    def utworz_presenter_frekwencji(self) -> FrekwencjaWykresPresenter:
+        return FrekwencjaWykresPresenter()
 
     def utworz_serwis_szczegolow_hali(self) -> SzczegolyHaliService:
         return SzczegolyHaliService(self._fabryka_szczegolow_hali())

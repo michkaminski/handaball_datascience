@@ -22,6 +22,14 @@ KATALOG_RAPORTOW: tuple[PozycjaRaportu, ...] = (
         "administracja.lista_rozkladow",
     ),
     PozycjaRaportu(
+        "frekwencja",
+        "Frekwencja",
+        "Widzowie na meczach: kluczowe miary, trendy sezonowe, ranking klubów jako gospodarzy "
+        "i TOP 50 rekordów. Brak danych o widzach nie jest traktowany jako zero.",
+        "Statystyka",
+        "administracja.raport_frekwencji",
+    ),
+    PozycjaRaportu(
         "raporty_druzyn",
         "Raporty drużyn — wydruki PDF",
         "Raport drużyny na jednej kartce A4 (sezony, kadra z poprzednim sezonem, ostatnie mecze) "

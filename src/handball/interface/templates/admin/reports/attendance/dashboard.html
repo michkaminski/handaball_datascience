@@ -1,0 +1,879 @@
+{% extends "base.html" %}
+
+{% macro zmiana(wartosc, etykieta) %}
+<span class="att-change{% if wartosc is not none and wartosc > 0 %} att-up{% elif wartosc is not none and wartosc < 0 %} att-down{% endif %}">{{ etykieta }}</span>
+{% endmacro %}
+
+{% macro naglowki_miar() %}
+<th scope="col" class="num">Mecze</th>
+<th scope="col" class="num">Znane</th>
+<th scope="col" class="num">Suma</th>
+<th scope="col" class="num">Średnia</th>
+<th scope="col" class="num">Mediana</th>
+<th scope="col" class="num">Dominanta</th>
+<th scope="col" class="num">Min</th>
+<th scope="col" class="num">Max</th>
+{% endmacro %}
+
+{% macro komorki_miar(agregat, rozklad) %}
+<td class="num">{{ agregat.rozegrane_etykieta }}</td>
+<td class="num">{{ agregat.znane_etykieta }}{% if agregat.mala_proba %} <span class="att-flag" title="Mała próba (mniej niż 5 meczów)">*</span>{% endif %}</td>
+<td class="num"><b>{{ agregat.suma_etykieta }}</b></td>
+<td class="num">{{ agregat.srednia_etykieta }}</td>
+<td class="num">{{ rozklad.mediana_etykieta }}</td>
+<td class="num">{{ rozklad.dominanta_etykieta }}</td>
+<td class="num">{{ rozklad.minimum_etykieta }}</td>
+<td class="num">{{ agregat.maksimum_etykieta }}</td>
+{% endmacro %}
+
+{% macro pasek_miast(etykieta_szukania, miasta, opis) %}
+<div class="toolbar">
+<div class="left">
+<input type="search" placeholder="{{ etykieta_szukania }}" aria-label="{{ etykieta_szukania }}" data-filter-input>
+<select aria-label="Miasto" data-filter-select="miasto">
+<option value="">Wszystkie miasta</option>
+{% for wiersz in miasta.ranking %}
+<option value="{{ wiersz.miasto.klucz }}">{{ wiersz.miasto.miasto }}</option>
+{% endfor %}
+</select>
+<span class="note">{{ opis }}</span>
+</div>
+</div>
+{% endmacro %}
+
+{% macro tabela_rekordow(rekordy, pusty) %}
+{% if rekordy %}
+<div class="table-wrap att-table-wrap">
+<table class="att-table">
+<thead>
+<tr>
+<th scope="col" class="num">#</th>
+<th scope="col">Data</th>
+<th scope="col">Sezon</th>
+<th scope="col">Rozgrywki</th>
+<th scope="col">Gospodarz</th>
+<th scope="col" class="num">Wynik</th>
+<th scope="col">Gość</th>
+<th scope="col">Hala</th>
+<th scope="col" class="num">Widzowie</th>
+<th scope="col"><span class="sr-only">Szczegóły</span></th>
+</tr>
+</thead>
+<tbody>
+{% for mecz in rekordy %}
+<tr>
+<td class="num">{{ loop.index }}</td>
+<td>{{ mecz.data_etykieta }}</td>
+<td>{{ mecz.sezon }}</td>
+<td>{{ mecz.rozgrywki }}</td>
+<td>{{ mecz.gospodarz }}</td>
+<td class="num"><b>{{ mecz.wynik_etykieta }}</b></td>
+<td>{{ mecz.gosc }}</td>
+<td>{{ mecz.hala_etykieta }}</td>
+<td class="num"><b>{{ mecz.widzowie_etykieta }}</b></td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=mecz.id_mecz) }}">Szczegóły</a></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="note">{{ pusty }}</p>
+{% endif %}
+{% endmacro %}
+
+{% macro tabela_kalendarza(grupy, tytul, kolumna) %}
+<div class="att-subpanel">
+<h3>{{ tytul }}</h3>
+{% if grupy %}
+<div class="table-wrap att-table-wrap att-table-short">
+<table class="att-table">
+<thead>
+<tr>
+<th scope="col">{{ kolumna }}</th>
+<th scope="col" class="num">Rozegrane</th>
+<th scope="col" class="num">Znane</th>
+<th scope="col" class="num">Średnia</th>
+</tr>
+</thead>
+<tbody>
+{% for grupa in grupy %}
+<tr>
+<th scope="row">{{ grupa.etykieta }}</th>
+<td class="num">{{ grupa.rozegrane_etykieta }}</td>
+<td class="num">{{ grupa.znane_etykieta }}{% if grupa.mala_proba %} <span class="att-flag" title="Mała próba (mniej niż 5 meczów)">*</span>{% endif %}</td>
+<td class="num"><b>{{ grupa.srednia_etykieta }}</b></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="note">Brak danych.</p>
+{% endif %}
+</div>
+{% endmacro %}
+
+{% macro tabela_efektu(grupy, kolumna) %}
+<div class="table-wrap att-table-wrap att-table-short">
+<table class="att-table">
+<thead>
+<tr>
+<th scope="col">{{ kolumna }}</th>
+<th scope="col" class="num">n</th>
+<th scope="col" class="num">Średnia</th>
+<th scope="col" class="num">Mediana</th>
+<th scope="col" class="num">Różnica vs ogół próbki</th>
+</tr>
+</thead>
+<tbody>
+{% for grupa in grupy %}
+<tr>
+<th scope="row">{{ grupa.etykieta }}</th>
+<td class="num">{{ grupa.n_etykieta }}{% if grupa.mala_proba %} <span class="att-flag" title="Mała próba (n&lt;5)">*</span>{% endif %}</td>
+<td class="num"><b>{{ grupa.srednia_etykieta }}</b></td>
+<td class="num">{{ grupa.mediana_etykieta }}</td>
+<td class="num">{{ zmiana(grupa.roznica, grupa.roznica_etykieta) }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% macro tabela_anomalii(anomalie, tytul) %}
+<div class="att-subpanel">
+<h3>{{ tytul }}</h3>
+{% if anomalie %}
+<div class="table-wrap att-table-wrap att-table-short">
+<table class="att-table">
+<thead>
+<tr>
+<th scope="col">Data</th>
+<th scope="col">Mecz</th>
+<th scope="col" class="num">Widzowie</th>
+<th scope="col" class="num">Poza granicą</th>
+<th scope="col"><span class="sr-only">Szczegóły</span></th>
+</tr>
+</thead>
+<tbody>
+{% for anomalia in anomalie %}
+<tr>
+<td>{{ anomalia.mecz.data_etykieta }}</td>
+<td>{{ anomalia.mecz.etykieta }}</td>
+<td class="num"><b>{{ anomalia.mecz.widzowie_etykieta }}</b></td>
+<td class="num">{{ anomalia.odchylenie_etykieta }}</td>
+<td><a class="icon-link" href="{{ url_for('administracja.szczegoly_meczu', id_mecz=anomalia.mecz.id_mecz) }}">Szczegóły</a></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="note">Brak meczów poza granicą.</p>
+{% endif %}
+</div>
+{% endmacro %}
+
+{% block tytul %}Frekwencja — Handball DataScience{% endblock %}
+
+{% block tresc %}
+{% set podsumowanie = raport.podsumowanie %}
+{% set ds = raport.data_science %}
+<section class="pagehead">
+<div class="crumb">Start › <a href="{{ url_for('administracja.lista_raportow') }}">Raporty</a> › Frekwencja</div>
+<h1>Frekwencja</h1>
+<p>Widzowie na rozegranych meczach. Mecze bez znanej frekwencji nie wchodzą do średniej, mediany ani sumy.</p>
+</section>
+
+<section class="panel">
+<h2>Filtry</h2>
+<form id="attendance-filters" class="panel-body filters att-filters" method="get">
+<input type="hidden" name="zakladka" value="{{ aktywna_zakladka }}" data-attendance-tab-field>
+<label>Sezon{{ formularz.id_sezon() }}</label>
+<label>Rozgrywki{{ formularz.rozgrywki() }}</label>
+<label>Płeć{{ formularz.plec() }}</label>
+<label>Gospodarz{{ formularz.id_zespol() }}</label>
+<label>Hala{{ formularz.id_hala() }}</label>
+<label class="att-check"><span>Mecze bez publiczności</span>
+<span class="att-check-box">{{ formularz.bez_zer(value='y') }} Pomiń zera</span>
+</label>
+<div class="pole-przycisku"><button class="btn small" type="submit">Filtruj</button></div>
+<div class="pole-przycisku"><a class="btn secondary small" href="{{ url_for('administracja.raport_frekwencji') }}">Wyczyść</a></div>
+</form>
+</section>
+
+<div data-attendance data-active-tab="{{ aktywna_zakladka }}" data-echarts-url="{{ url_for('static', filename='vendor/echarts/echarts.min.js') }}">
+<script type="application/json" id="attendance-chart-data">{{ wykres|tojson }}</script>
+
+<div class="match-tabs att-tabs" role="tablist" aria-label="Sekcje raportu frekwencji" data-attendance-tabs hidden>
+{% for zakladka in zakladki %}
+<button type="button" role="tab" id="att-tab-{{ zakladka.klucz }}" data-tab="{{ zakladka.klucz }}" aria-controls="att-panel-{{ zakladka.klucz }}" aria-selected="{{ 'true' if aktywna_zakladka == zakladka.klucz else 'false' }}">{{ zakladka.etykieta }}</button>
+{% endfor %}
+</div>
+
+<section class="panel" id="att-panel-overview" data-attendance-panel="overview" aria-labelledby="att-tab-overview">
+<h2>Podsumowanie</h2>
+<div class="panel-body">
+<div class="att-kpis">
+<div><span>Łącznie widzów</span><b>{{ podsumowanie.suma_etykieta }}</b></div>
+<div class="att-kpi-good"><span>Mecze ze znaną frekwencją</span><b>{{ podsumowanie.znane_etykieta }}</b></div>
+<div class="att-kpi-warn"><span>Mecze rozegrane</span><b>{{ podsumowanie.rozegrane_etykieta }}</b></div>
+<div><span>Pokrycie</span><b>{{ podsumowanie.pokrycie_etykieta }}</b></div>
+<div class="att-kpi-good"><span>Średnia na mecz</span><b>{{ podsumowanie.srednia_etykieta }}</b></div>
+<div class="att-kpi-warn"><span>Mediana na mecz</span><b>{{ podsumowanie.mediana_etykieta }}</b></div>
+<div>
+<span>Rekord frekwencji</span>
+<b>{{ podsumowanie.maksimum_etykieta }}</b>
+{% if raport.rekord %}
+<small><a href="{{ url_for('administracja.szczegoly_meczu', id_mecz=raport.rekord.id_mecz) }}">{{ raport.rekord.gospodarz }} – {{ raport.rekord.gosc }}</a></small>
+{% endif %}
+</div>
+<div class="att-kpi-good"><span>Zmiana YoY średniej</span><b>{{ zmiana(raport.para_sezonow.zmiana if raport.para_sezonow else none, raport.zmiana_etykieta) }}</b><small>{{ raport.zmiana_opis }}</small></div>
+{% if raport.ma_wypelnienie %}
+<div><span>Średnie wypełnienie obiektu</span><b>{{ podsumowanie.wypelnienie_etykieta }}</b><small>Tylko mecze z znaną pojemnością hali</small></div>
+{% endif %}
+</div>
+<ul class="att-notes">
+{% for uwaga in raport.uwagi %}
+<li>{{ uwaga }}</li>
+{% endfor %}
+</ul>
+{% if raport.trend.punkty %}
+<h3>Pokrycie danych o frekwencji według sezonów</h3>
+<div class="att-chart att-chart-sm" data-attendance-chart-coverage data-chart="coverage" role="img" aria-label="Mecze ze znaną frekwencją i pokrycie procentowe według sezonów"></div>
+{% endif %}
+</div>
+</section>
+
+<section class="panel" id="att-panel-trends" data-attendance-panel="trends" aria-labelledby="att-tab-trends">
+<h2>Trendy sezonowe</h2>
+<div class="panel-body" id="trendy">
+<p class="note">Sezony dla pozostałych filtrów; wybrany sezon jest wyróżniony. Trend liniowy średniej: <b>{{ raport.trend.nachylenie_etykieta }}</b>.</p>
+{% if raport.trend.punkty %}
+<div class="att-chart" data-attendance-chart data-chart="trend" role="img" aria-label="Średnia frekwencja według sezonów"></div>
+<div class="table-wrap att-table-wrap">
+<table class="att-table">
+<thead>
+<tr>
+<th scope="col">Sezon</th>
+<th scope="col" class="num">Rozegrane</th>
+<th scope="col" class="num">Znane</th>
+<th scope="col" class="num">Suma</th>
+<th scope="col" class="num">Średnia</th>
+<th scope="col" class="num">Mediana</th>
+<th scope="col" class="num">Q1</th>
+<th scope="col" class="num">Q3</th>
+<th scope="col" class="num">YoY</th>
+<th scope="col" class="num">Śr. 3 sezony</th>
+</tr>
+</thead>
+<tbody>
+{% for punkt in raport.trend.punkty %}
+{% set wiersz = punkt.sezon.podsumowanie %}
+<tr{% if punkt.sezon.id_sezon == raport.filtry.id_sezon %} class="att-selected"{% endif %}>
+<th scope="row">{{ punkt.sezon.nazwa }}</th>
+<td class="num">{{ wiersz.rozegrane_etykieta }}</td>
+<td class="num">{{ wiersz.znane_etykieta }}</td>
+<td class="num">{{ wiersz.suma_etykieta }}</td>
+<td class="num"><b>{{ wiersz.srednia_etykieta }}</b></td>
+<td class="num">{{ wiersz.mediana_etykieta }}</td>
+<td class="num">{{ wiersz.q1_etykieta }}</td>
+<td class="num">{{ wiersz.q3_etykieta }}</td>
+<td class="num">{{ zmiana(punkt.zmiana, punkt.zmiana_etykieta) }}</td>
+<td class="num">{{ punkt.srednia_kroczaca_etykieta }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="note">Brak rozegranych meczów dla wybranych filtrów.</p>
+{% endif %}
+</div>
+</section>
+
+<section class="panel" id="att-panel-clubs" data-attendance-panel="clubs" aria-labelledby="att-tab-clubs">
+<h2>Frekwencja gospodarzy według klubu</h2>
+<div class="panel-body" id="kluby" data-attendance-filter>
+<div class="toolbar">
+<div class="left">
+<input type="search" placeholder="Szukaj klubu" aria-label="Szukaj klubu" data-filter-input>
+<span class="note">Tylko mecze u siebie, sortowanie według średniej. Top {{ raport.ranking|length }} klubów ze znaną frekwencją.{% if raport.para_sezonow %} YoY: {{ raport.para_sezonow.opis }}.{% endif %}</span>
+</div>
+</div>
+{% if raport.ranking %}
+<div class="att-chart" data-attendance-chart-clubs data-chart="clubs" role="img" aria-label="Średnia frekwencja na meczach u siebie, najlepsze kluby"></div>
+<div class="table-wrap att-table-wrap">
+<table class="att-table" data-attendance-clubs data-filter-table>
+<thead>
+<tr>
+<th scope="col" class="num">#</th>
+<th scope="col">Klub</th>
+<th scope="col" class="num">Mecze dom</th>
+<th scope="col" class="num">Znane</th>
+<th scope="col" class="num">Suma</th>
+<th scope="col" class="num">Średnia</th>
+<th scope="col" class="num">Mediana</th>
+<th scope="col" class="num">Min</th>
+<th scope="col" class="num">Max</th>
+<th scope="col" class="num">YoY</th>
+</tr>
+</thead>
+<tbody>
+{% for wiersz in raport.ranking %}
+{% set klub = wiersz.klub.podsumowanie %}
+<tr data-filter-text="{{ wiersz.klub.nazwa|lower }}">
+<td class="num">{{ wiersz.pozycja }}</td>
+<td><a href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=wiersz.klub.id_zespol) }}">{{ wiersz.klub.nazwa }}</a></td>
+<td class="num">{{ klub.rozegrane_etykieta }}</td>
+<td class="num">{{ klub.znane_etykieta }}</td>
+<td class="num">{{ klub.suma_etykieta }}</td>
+<td class="num"><b>{{ klub.srednia_etykieta }}</b></td>
+<td class="num">{{ klub.mediana_etykieta }}</td>
+<td class="num">{{ klub.minimum_etykieta }}</td>
+<td class="num">{{ klub.maksimum_etykieta }}</td>
+<td class="num">{{ zmiana(wiersz.zmiana, wiersz.zmiana_etykieta) }}</td>
+</tr>
+{% endfor %}
+<tr class="att-empty" hidden><td colspan="10" class="note">Brak klubów pasujących do wyszukiwania.</td></tr>
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="note">Brak klubów ze znaną frekwencją u siebie dla wybranych filtrów.</p>
+{% endif %}
+</div>
+</section>
+
+<section class="panel" id="att-panel-cities" data-attendance-panel="cities" aria-labelledby="att-tab-cities">
+<h2>Frekwencja według miasta klubu gospodarza</h2>
+<div class="panel-body" id="miasta">
+{% set miasta = raport.miasta %}
+<p class="note">{{ miasta.uwaga }}</p>
+<div class="att-kpis">
+<div class="att-kpi-warn"><span>Mecze bez miasta klubu</span><b>{{ miasta.mecze_bez_miasta_etykieta }}</b><small>Rozegrane mecze pominięte w rankingu miast</small></div>
+<div class="att-kpi-good"><span>Miasta w rankingu</span><b>{{ miasta.ranking|length }}</b></div>
+<div><span>Wiersze wkładu klubów</span><b>{{ miasta.wklady|length }}</b></div>
+</div>
+{% if miasta.uwaga_o_brakach %}<p class="att-warning">{{ miasta.uwaga_o_brakach }}</p>{% endif %}
+{% if miasta.ma_dane %}
+<div class="att-chart" data-attendance-chart-cities data-chart="cities" role="img" aria-label="Suma frekwencji na meczach u siebie według miasta klubu, najlepsze miasta"></div>
+<div class="att-subpanel" data-attendance-filter>
+<h3>Ranking miast</h3>
+<div class="toolbar">
+<div class="left">
+<input type="search" placeholder="Szukaj miasta" aria-label="Szukaj miasta" data-filter-input>
+<span class="note">Sortowanie według sumy widzów, potem średniej. Top {{ miasta.ranking|length }} miast ze znaną frekwencją.</span>
+</div>
+</div>
+<div class="table-wrap att-table-wrap">
+<table class="att-table" data-attendance-cities data-filter-table>
+<thead>
+<tr>
+<th scope="col" class="num">#</th>
+<th scope="col">Miasto</th>
+{{ naglowki_miar() }}
+<th scope="col" class="num">Kluby</th>
+<th scope="col" class="num">Rozgrywki</th>
+</tr>
+</thead>
+<tbody>
+{% for wiersz in miasta.ranking %}
+{% set miasto = wiersz.miasto %}
+<tr data-filter-text="{{ (miasto.miasto ~ ' ' ~ miasto.klucz)|lower }}">
+<td class="num">{{ wiersz.pozycja }}</td>
+<th scope="row">{{ miasto.miasto }}</th>
+{{ komorki_miar(miasto, miasto.rozklad) }}
+<td class="num">{{ miasto.liczba_klubow_etykieta }}</td>
+<td class="num">{{ miasto.liczba_rozgrywek_etykieta }}</td>
+</tr>
+{% endfor %}
+<tr class="att-empty" hidden><td colspan="13" class="note">Brak miast pasujących do wyszukiwania.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">* mała próba: mniej niż 5 meczów ze znaną frekwencją. Dominanta to najczęstsza wartość widzów wśród meczów ze znaną frekwencją (przy remisie najmniejsza); przy rozproszonych wynikach bywa mało informatywna.</p>
+</div>
+
+<div class="att-subpanel" data-city-charts>
+<h3>Wybrane miasto: sezony, rozgrywki i hale</h3>
+<div class="toolbar">
+<div class="left">
+<label class="note">Miasto
+<select aria-label="Miasto do wykresów szczegółowych" data-city-select>
+{% for pozycja in wykres.miastaSzczegoly %}
+<option value="{{ pozycja.klucz }}">{{ pozycja.nazwa }}</option>
+{% endfor %}
+</select>
+</label>
+<span class="note">Domyślnie miasto z największą sumą widzów; lista obejmuje miasta z wykresu rankingu.</span>
+</div>
+</div>
+<div class="att-chart-grid">
+<div class="att-chart att-chart-sm" data-attendance-chart-city-seasons data-chart="citySeasons" role="img" aria-label="Średnia i mediana frekwencji według sezonów dla wybranego miasta"></div>
+<div class="att-chart att-chart-sm" data-attendance-chart-city-competitions data-chart="cityCompetitions" role="img" aria-label="Suma frekwencji według rozgrywek dla wybranego miasta"></div>
+<div class="att-chart att-chart-sm" data-attendance-chart-city-halls data-chart="cityHalls" role="img" aria-label="Suma frekwencji według hal dla wybranego miasta"></div>
+</div>
+</div>
+
+<div class="att-subpanel" data-attendance-filter id="miasta-sezony">
+<h3>Sezony w miastach</h3>
+{{ pasek_miast('Szukaj miasta lub sezonu', miasta, 'Wszystkie sezony miast z rankingu, od najstarszego; do ' ~ miasta.sezony|length ~ ' wierszy.') }}
+<div class="table-wrap att-table-wrap">
+<table class="att-table" data-attendance-city-seasons data-filter-table>
+<thead>
+<tr>
+<th scope="col">Miasto</th>
+<th scope="col">Sezon</th>
+{{ naglowki_miar() }}
+</tr>
+</thead>
+<tbody>
+{% for wiersz in miasta.ranking %}
+{% for sezon in wiersz.sezony %}
+<tr data-filter-text="{{ (wiersz.miasto.miasto ~ ' ' ~ sezon.sezon)|lower }}" data-filter-miasto="{{ wiersz.miasto.klucz }}">
+<th scope="row">{{ wiersz.miasto.miasto }}</th>
+<td>{{ sezon.sezon }}</td>
+{{ komorki_miar(sezon.agregat, sezon.rozklad) }}
+</tr>
+{% endfor %}
+{% endfor %}
+<tr class="att-empty" hidden><td colspan="10" class="note">Brak sezonów pasujących do filtrów.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="att-subpanel" data-attendance-filter id="miasta-rozgrywki">
+<h3>Rozgrywki w miastach</h3>
+{{ pasek_miast('Szukaj miasta lub rozgrywek', miasta, 'Zestawienie miasto × rozgrywki (bez podziału na kluby), według sumy; do ' ~ miasta.wg_rozgrywek|length ~ ' wierszy.') }}
+<div class="table-wrap att-table-wrap">
+<table class="att-table" data-attendance-city-competitions data-filter-table>
+<thead>
+<tr>
+<th scope="col">Miasto</th>
+<th scope="col">Rozgrywki</th>
+<th scope="col" class="num">Kluby</th>
+{{ naglowki_miar() }}
+</tr>
+</thead>
+<tbody>
+{% for wiersz in miasta.ranking %}
+{% for pozycja in wiersz.wg_rozgrywek %}
+<tr data-filter-text="{{ (wiersz.miasto.miasto ~ ' ' ~ pozycja.rozgrywki)|lower }}" data-filter-miasto="{{ wiersz.miasto.klucz }}">
+<th scope="row">{{ wiersz.miasto.miasto }}</th>
+<td>{{ pozycja.rozgrywki }}</td>
+<td class="num">{{ pozycja.liczba_klubow }}</td>
+{{ komorki_miar(pozycja.agregat, pozycja.rozklad) }}
+</tr>
+{% endfor %}
+{% endfor %}
+<tr class="att-empty" hidden><td colspan="11" class="note">Brak rozgrywek pasujących do filtrów.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="att-subpanel" data-attendance-filter id="miasta-hale">
+<h3>Hale w miastach</h3>
+<p class="note">{{ miasta.uwaga_o_halach }}</p>
+{{ pasek_miast('Szukaj miasta lub hali', miasta, 'Najważniejsze hale każdego miasta według sumy; do ' ~ miasta.hale|length ~ ' wierszy.') }}
+<div class="table-wrap att-table-wrap">
+<table class="att-table" data-attendance-city-halls data-filter-table>
+<thead>
+<tr>
+<th scope="col">Miasto klubu</th>
+<th scope="col">Hala</th>
+<th scope="col">Miasto hali</th>
+{{ naglowki_miar() }}
+</tr>
+</thead>
+<tbody>
+{% for wiersz in miasta.ranking %}
+{% for hala in wiersz.hale %}
+<tr data-filter-text="{{ (wiersz.miasto.miasto ~ ' ' ~ hala.hala ~ ' ' ~ (hala.miasto_hali or ''))|lower }}" data-filter-miasto="{{ wiersz.miasto.klucz }}">
+<th scope="row">{{ wiersz.miasto.miasto }}</th>
+<td>{{ hala.hala }}</td>
+<td>{{ hala.miasto_hali_etykieta }}</td>
+{{ komorki_miar(hala.agregat, hala.rozklad) }}
+</tr>
+{% endfor %}
+{% endfor %}
+<tr class="att-empty" hidden><td colspan="11" class="note">Brak hal pasujących do filtrów.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="att-subpanel" data-attendance-filter>
+<h3>Skąd pochodzi frekwencja</h3>
+<div class="toolbar">
+<div class="left">
+<input type="search" placeholder="Szukaj klubu, miasta lub rozgrywek" aria-label="Szukaj klubu, miasta lub rozgrywek" data-filter-input>
+<select aria-label="Miasto" data-filter-select="miasto">
+<option value="">Wszystkie miasta</option>
+{% for wiersz in miasta.ranking %}
+<option value="{{ wiersz.miasto.klucz }}">{{ wiersz.miasto.miasto }}</option>
+{% endfor %}
+</select>
+<select aria-label="Rozgrywki" data-filter-select="rozgrywki">
+<option value="">Wszystkie rozgrywki</option>
+{% for nazwa in miasta.rozgrywki %}
+<option value="{{ nazwa|lower }}">{{ nazwa }}</option>
+{% endfor %}
+</select>
+<span class="note">Klub × rozgrywki × miasto, mecze u siebie; do {{ miasta.wklady|length }} wierszy w kolejności rankingu miast.</span>
+</div>
+</div>
+<div class="table-wrap att-table-wrap">
+<table class="att-table" data-attendance-contributions data-filter-table>
+<thead>
+<tr>
+<th scope="col">Miasto</th>
+<th scope="col">Klub</th>
+<th scope="col">Rozgrywki</th>
+<th scope="col" class="num">Mecze</th>
+<th scope="col" class="num">Znane</th>
+<th scope="col" class="num">Suma</th>
+<th scope="col" class="num">Średnia</th>
+<th scope="col" class="num">Max</th>
+</tr>
+</thead>
+<tbody>
+{% for wiersz in miasta.ranking %}
+{% for wklad in wiersz.wklady %}
+{% set agregat = wklad.agregat %}
+<tr data-filter-text="{{ (wiersz.miasto.miasto ~ ' ' ~ wklad.klub ~ ' ' ~ wklad.rozgrywki)|lower }}" data-filter-miasto="{{ wiersz.miasto.klucz }}" data-filter-rozgrywki="{{ wklad.rozgrywki|lower }}">
+<th scope="row">{{ wiersz.miasto.miasto }}</th>
+<td><a href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=wklad.id_zespol) }}">{{ wklad.klub }}</a></td>
+<td>{{ wklad.rozgrywki }}</td>
+<td class="num">{{ agregat.rozegrane_etykieta }}</td>
+<td class="num">{{ agregat.znane_etykieta }}{% if agregat.mala_proba %} <span class="att-flag" title="Mała próba (mniej niż 5 meczów)">*</span>{% endif %}</td>
+<td class="num"><b>{{ agregat.suma_etykieta }}</b></td>
+<td class="num">{{ agregat.srednia_etykieta }}</td>
+<td class="num">{{ agregat.maksimum_etykieta }}</td>
+</tr>
+{% endfor %}
+{% endfor %}
+<tr class="att-empty" hidden><td colspan="8" class="note">Brak wierszy pasujących do filtrów.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+{% else %}
+<p class="note">Brak miast klubów gospodarzy ze znaną frekwencją dla wybranych filtrów.</p>
+{% endif %}
+</div>
+</section>
+
+<section class="panel" id="att-panel-records" data-attendance-panel="records" aria-labelledby="att-tab-records">
+<h2>Rekordy frekwencji</h2>
+<div class="panel-body" id="rekordy">
+<p class="note">Top {{ raport.rekordy|length }} meczów według liczby widzów w wybranym zakresie filtrów.</p>
+{{ tabela_rekordow(raport.rekordy, 'Brak meczów ze znaną frekwencją dla wybranych filtrów.') }}
+</div>
+</section>
+
+<section class="panel" id="att-panel-extended" data-attendance-panel="extended" aria-labelledby="att-tab-extended">
+<h2>Rozszerzone rekordy</h2>
+<div class="panel-body" id="rekordy-rozszerzone">
+<p class="note">Rekordy w wybranym zakresie filtrów, każdy z odnośnikiem do meczu. Rekordy klubów dotyczą meczów u siebie.</p>
+{% set rozszerzone = raport.rekordy_rozszerzone %}
+<div class="att-subpanel">
+<h3>Rekordy sezonów</h3>
+<p class="note">Mecz z największą frekwencją w każdym sezonie.</p>
+{{ tabela_rekordow(rozszerzone.sezony, 'Brak rekordów sezonów dla wybranych filtrów.') }}
+</div>
+<div class="att-subpanel">
+<h3>Rekordy klubów (top {{ rozszerzone.kluby|length }})</h3>
+<p class="note">Najlepszy mecz u siebie każdego klubu.</p>
+{{ tabela_rekordow(rozszerzone.kluby, 'Brak rekordów klubów dla wybranych filtrów.') }}
+</div>
+<div class="att-subpanel">
+<h3>Rekordy hal (top {{ rozszerzone.hale|length }})</h3>
+<p class="note">Najlepszy mecz w każdej hali.</p>
+{{ tabela_rekordow(rozszerzone.hale, 'Brak rekordów hal dla wybranych filtrów.') }}
+</div>
+<div class="att-subpanel">
+<h3>Finały</h3>
+<p class="note">Dopasowanie przybliżone: nazwa rundy, kolejki lub rozgrywek zawiera „fina” (finał, półfinał, finały).</p>
+{{ tabela_rekordow(rozszerzone.finaly, 'Brak meczów finałowych dla wybranych filtrów.') }}
+</div>
+<div class="att-subpanel">
+<h3>Pary drużyn (top {{ rozszerzone.pary|length }})</h3>
+<p class="note">Najlepszy mecz każdej pary drużyn, niezależnie od gospodarza.</p>
+{{ tabela_rekordow(rozszerzone.pary, 'Brak rekordów par drużyn dla wybranych filtrów.') }}
+</div>
+</div>
+</section>
+
+<section class="panel" id="att-panel-opponents" data-attendance-panel="opponents" aria-labelledby="att-tab-opponents">
+<h2>Przeciwnicy</h2>
+<div class="panel-body" id="przeciwnicy">
+{% set przeciwnicy = raport.przeciwnicy %}
+{% if not przeciwnicy.aktywny %}
+<p class="note">{{ przeciwnicy.uwaga }}</p>
+{% else %}
+<p class="note">Średnia frekwencja na meczach wybranego gospodarza u siebie według rywala. Średnia gospodarza: <b>{{ podsumowanie.srednia_etykieta }}</b>. Różnica to średnia z meczów z danym rywalem minus średnia gospodarza.</p>
+{% if przeciwnicy.wiersze %}
+<div class="att-chart" data-attendance-chart-opponents data-chart="opponents" role="img" aria-label="Średnia frekwencja na meczach gospodarza u siebie według rywala"></div>
+<div class="table-wrap att-table-wrap">
+<table class="att-table">
+<thead>
+<tr>
+<th scope="col" class="num">#</th>
+<th scope="col">Przeciwnik</th>
+<th scope="col" class="num">Mecze</th>
+<th scope="col" class="num">Znane</th>
+<th scope="col" class="num">Średnia</th>
+<th scope="col" class="num">Max</th>
+<th scope="col" class="num">Różnica vs średnia gospodarza</th>
+<th scope="col" class="num">Pokrycie</th>
+</tr>
+</thead>
+<tbody>
+{% for wiersz in przeciwnicy.wiersze %}
+{% set rywal = wiersz.przeciwnik %}
+<tr>
+<td class="num">{{ wiersz.pozycja }}</td>
+<td><a href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=rywal.id_zespol) }}">{{ rywal.nazwa }}</a></td>
+<td class="num">{{ rywal.rozegrane_etykieta }}</td>
+<td class="num">{{ rywal.znane_etykieta }}{% if rywal.mala_proba %} <span class="att-flag" title="Mała próba (mniej niż 5 meczów)">*</span>{% endif %}</td>
+<td class="num"><b>{{ rywal.srednia_etykieta }}</b></td>
+<td class="num">{{ rywal.maksimum_etykieta }}</td>
+<td class="num">{{ zmiana(wiersz.roznica, wiersz.roznica_etykieta) }}</td>
+<td class="num">{{ rywal.pokrycie_etykieta }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<p class="note">* mała próba: mniej niż 5 meczów ze znaną frekwencją.</p>
+{% else %}
+<p class="note">Brak przeciwników ze znaną frekwencją dla wybranych filtrów.</p>
+{% endif %}
+{% endif %}
+</div>
+</section>
+
+<section class="panel" id="att-panel-calendar" data-attendance-panel="calendar" aria-labelledby="att-tab-calendar">
+<h2>Kalendarz</h2>
+<div class="panel-body" id="kalendarz">
+{% set kalendarz = raport.kalendarz %}
+<p class="note">{{ kalendarz.uwaga }} Rozegrane to mecze z terminem, znane to mecze ze znaną frekwencją; * oznacza mniej niż 5 znanych meczów.</p>
+{% if kalendarz.ma_dane %}
+<div class="att-chart-grid">
+<div class="att-chart att-chart-sm" data-attendance-chart-months data-chart="months" role="img" aria-label="Średnia frekwencja według miesiąca"></div>
+<div class="att-chart att-chart-sm" data-attendance-chart-weekdays data-chart="weekdays" role="img" aria-label="Średnia frekwencja według dnia tygodnia"></div>
+<div class="att-chart att-chart-sm" data-attendance-chart-hours data-chart="hours" role="img" aria-label="Średnia frekwencja według godziny rozpoczęcia"></div>
+</div>
+<div class="att-cal-grid">
+{{ tabela_kalendarza(kalendarz.miesiace, 'Miesiąc', 'Miesiąc') }}
+{{ tabela_kalendarza(kalendarz.dni_tygodnia, 'Dzień tygodnia', 'Dzień') }}
+{{ tabela_kalendarza(kalendarz.godziny, 'Godzina rozpoczęcia', 'Godzina') }}
+{{ tabela_kalendarza(kalendarz.weekend, 'Weekend i dni robocze', 'Typ dnia') }}
+</div>
+{{ tabela_kalendarza(kalendarz.rundy, 'Runda / faza rozgrywek', 'Runda') }}
+<div class="att-subpanel">
+<h3>Mapa cieplna: dzień tygodnia × godzina</h3>
+{% if kalendarz.heatmapa.ma_dane %}
+<div class="att-chart att-heatmap" data-attendance-heatmap data-chart="heatmap" role="img" aria-label="Mapa cieplna średniej frekwencji według dnia tygodnia i godziny rozpoczęcia"></div>
+<details class="att-details">
+<summary>Tabela mapy cieplnej (średnia i liczba znanych meczów)</summary>
+<div class="table-wrap att-table-wrap">
+<table class="att-table">
+<thead>
+<tr>
+<th scope="col">Dzień</th>
+{% for godzina in kalendarz.heatmapa.etykiety_godzin %}
+<th scope="col" class="num">{{ godzina }}</th>
+{% endfor %}
+</tr>
+</thead>
+<tbody>
+{% for dzien in kalendarz.heatmapa.dni %}
+{% set numer_dnia = loop.index %}
+<tr>
+<th scope="row">{{ dzien }}</th>
+{% for godzina in kalendarz.heatmapa.godziny %}
+{% set komorka = kalendarz.heatmapa.komorka(numer_dnia, godzina) %}
+<td class="num">{% if komorka %}<b>{{ komorka.srednia_etykieta }}</b> <small>({{ komorka.znane_etykieta }})</small>{% else %}—{% endif %}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</details>
+{% else %}
+<p class="note">Brak meczów ze znaną godziną rozpoczęcia.</p>
+{% endif %}
+</div>
+{% else %}
+<p class="note">Brak meczów z terminem dla wybranych filtrów.</p>
+{% endif %}
+</div>
+</section>
+
+<section class="panel" id="att-panel-science" data-attendance-panel="science" aria-labelledby="att-tab-science">
+<h2>Data Science</h2>
+<div class="panel-body" id="data-science">
+{% if ds.ma_dane %}
+<p class="note">Analiza próbki {{ ds.n }} meczów ze znaną frekwencją w wybranym zakresie filtrów. Obliczenia wykonuje Python; wykres tylko prezentuje wynik.</p>
+{% if ds.uwaga_o_probce %}<p class="att-warning">{{ ds.uwaga_o_probce }}</p>{% endif %}
+
+<div class="att-subpanel" id="ds-rozklad">
+<h3>Rozkład frekwencji i percentyle</h3>
+<div class="att-chart" data-attendance-histogram data-chart="histogram" role="img" aria-label="Histogram frekwencji: liczba meczów w przedziałach liczby widzów"></div>
+<div class="table-wrap att-table-wrap att-table-short">
+<table class="att-table">
+<thead>
+<tr>
+{% for percentyl in ds.histogram.percentyle %}
+<th scope="col" class="num">p{{ percentyl.procent }}</th>
+{% endfor %}
+</tr>
+</thead>
+<tbody>
+<tr>
+{% for percentyl in ds.histogram.percentyle %}
+<td class="num"><b>{{ percentyl.wartosc_etykieta }}</b></td>
+{% endfor %}
+</tr>
+</tbody>
+</table>
+</div>
+<details class="att-details">
+<summary>Tabela histogramu</summary>
+<div class="table-wrap att-table-wrap att-table-short">
+<table class="att-table">
+<thead><tr><th scope="col">Przedział widzów</th><th scope="col" class="num">Mecze</th></tr></thead>
+<tbody>
+{% for przedzial in ds.histogram.przedzialy %}
+<tr><th scope="row">{{ przedzial.etykieta }}</th><td class="num">{{ przedzial.liczba }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</details>
+</div>
+
+<div class="att-subpanel" id="ds-rozrzut">
+<h3>Rozrzut: odchylenie standardowe i współczynnik zmienności</h3>
+{% set rozrzut = ds.rozrzut %}
+<div class="att-kpis">
+<div><span>n</span><b>{{ rozrzut.n }}</b></div>
+<div class="att-kpi-good"><span>Średnia</span><b>{{ rozrzut.srednia_etykieta }}</b></div>
+<div class="att-kpi-warn"><span>Odchylenie standardowe</span><b>{{ rozrzut.odchylenie_etykieta }}</b></div>
+<div><span>Współczynnik zmienności (CV)</span><b>{{ rozrzut.wspolczynnik_etykieta }}</b></div>
+</div>
+{% if rozrzut.ostrzezenie %}<p class="att-warning">{{ rozrzut.ostrzezenie }}</p>{% endif %}
+</div>
+
+<div class="att-subpanel" id="ds-anomalie">
+<h3>Anomalie (reguła IQR)</h3>
+{% set anomalie = ds.anomalie %}
+{% if anomalie.ma_dane %}
+<p class="note">Granice: poniżej <b>{{ anomalie.dolna_etykieta }}</b> lub powyżej <b>{{ anomalie.gorna_etykieta }}</b> widzów (Q1 − 1,5·IQR, Q3 + 1,5·IQR). Wysokie: {{ anomalie.liczba_wysokich }}, niskie: {{ anomalie.liczba_niskich }}; tabele pokazują do 15 najbardziej odstających.</p>
+<div class="att-cal-grid">
+{{ tabela_anomalii(anomalie.wysokie, 'Anomalie wysokie') }}
+{{ tabela_anomalii(anomalie.niskie, 'Anomalie niskie') }}
+</div>
+{% else %}
+<p class="note">Za mało meczów (co najmniej 4) do wyznaczenia granic IQR.</p>
+{% endif %}
+</div>
+
+<div class="att-subpanel" id="ds-dni">
+<h3>Efekt dnia tygodnia</h3>
+{% if ds.dni_tygodnia %}
+<p class="note">Średnia frekwencja w dniu tygodnia i jej różnica względem średniej próbki; * oznacza n&lt;5.</p>
+<div class="att-chart att-chart-sm" data-attendance-chart-weekday-effect data-chart="weekdayEffect" role="img" aria-label="Średnia frekwencja według dnia tygodnia w próbce Data Science"></div>
+{{ tabela_efektu(ds.dni_tygodnia, 'Dzień') }}
+{% else %}
+<p class="note">Brak meczów z terminem.</p>
+{% endif %}
+</div>
+
+<div class="att-subpanel" id="ds-przeciwnik">
+<h3>Efekt przeciwnika</h3>
+{% if ds.przeciwnicy is none %}
+<p class="note">{{ ds.uwaga_o_braku_klubu }}</p>
+{% elif ds.przeciwnicy %}
+<p class="note">Średnia na meczach wybranego gospodarza u siebie według rywala (do 30 rywali, od najwyższej średniej); * oznacza n&lt;5.</p>
+{{ tabela_efektu(ds.przeciwnicy, 'Przeciwnik') }}
+{% else %}
+<p class="note">Brak meczów z rywalami w próbce.</p>
+{% endif %}
+</div>
+
+<div class="att-subpanel" id="ds-korelacje">
+<h3>Korelacja Pearsona</h3>
+<div class="table-wrap att-table-wrap att-table-short">
+<table class="att-table">
+<thead>
+<tr>
+<th scope="col">Zmienna</th>
+<th scope="col" class="num">n</th>
+<th scope="col" class="num">r</th>
+<th scope="col">Siła</th>
+<th scope="col">Kierunek</th>
+</tr>
+</thead>
+<tbody>
+{% for korelacja in ds.korelacje %}
+<tr>
+<th scope="row">{{ korelacja.nazwa }}</th>
+<td class="num">{{ korelacja.n }}{% if korelacja.mala_proba %} <span class="att-flag" title="Mała próba (n&lt;5)">*</span>{% endif %}</td>
+<td class="num"><b>{{ korelacja.wspolczynnik_etykieta }}</b></td>
+<td>{{ korelacja.sila }}</td>
+<td>{{ korelacja.kierunek }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<p class="att-warning">{{ ds.uwaga_o_korelacji }}</p>
+</div>
+
+<div class="att-subpanel" id="ds-prognoza">
+<h3>Prognoza liniowa (OLS, eksperyment)</h3>
+<p class="note">{{ ds.uwaga_o_prognozie }}</p>
+{% set wynik = ds.prognoza %}
+{% if wynik.prognoza %}
+{% set prognoza = wynik.prognoza %}
+<div class="att-kpis">
+<div><span>Mecze uczące</span><b>{{ prognoza.n_uczace }}</b></div>
+<div><span>Mecze testowe</span><b>{{ prognoza.n_testowe }}</b></div>
+<div class="att-kpi-good"><span>MAE modelu</span><b>{{ prognoza.mae_etykieta }}</b></div>
+<div class="att-kpi-warn"><span>RMSE modelu</span><b>{{ prognoza.rmse_etykieta }}</b></div>
+<div><span>MAE: średnia ze zbioru uczącego</span><b>{{ prognoza.mae_sredniej_uczacej_etykieta }}</b></div>
+<div><span>MAE: średnia krocząca gospodarza</span><b>{{ prognoza.mae_sredniej_kroczacej_etykieta }}</b></div>
+</div>
+<p class="note">{% if prognoza.lepsza_od_sredniej %}Model myli się średnio mniej niż stała średnia ze zbioru uczącego.{% else %}Model nie jest lepszy od stałej średniej ze zbioru uczącego; nie należy go używać do prognoz.{% endif %}</p>
+<div class="table-wrap att-table-wrap att-table-short">
+<table class="att-table">
+<thead>
+<tr><th scope="col">Cecha</th><th scope="col" class="num">Współczynnik (widzowie na jednostkę cechy)</th></tr>
+</thead>
+<tbody>
+{% for wspolczynnik in prognoza.wspolczynniki %}
+<tr><th scope="row">{{ wspolczynnik.nazwa }}</th><td class="num">{{ wspolczynnik.wartosc_etykieta }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="note">{{ wynik.powod_pominiecia }}</p>
+{% endif %}
+</div>
+{% else %}
+<p class="note">Brak meczów ze znaną frekwencją dla wybranych filtrów.</p>
+{% endif %}
+</div>
+</section>
+</div>
+<script src="{{ url_for('static', filename='js/goal_charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/attendance_analytics.js') }}"></script>
+{% endblock %}

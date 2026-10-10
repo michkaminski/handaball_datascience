@@ -1,6 +1,18 @@
 # Stan projektu
 
-Aktualizacja: 2026-10-05.
+Aktualizacja: 2026-10-10.
+
+## Frekwencja: dashboard Stage 1–3 — 2026-10-10
+
+Na zlecenie użytkownika raport Raporty › Frekwencja (`GET /administracja/raporty/frekwencja`) obejmuje:
+
+- **Etap 1:** KPI (suma, pokrycie, średnia, mediana, rekord, YoY, wypełnienie przy znanej pojemności), trendy sezonowe (ECharts), ranking gospodarzy (top 100), TOP 50 rekordów.
+- **Etap 2:** przeciwnicy (wymaga filtra Gospodarz), kalendarz z heatmapą dzień × godzina, rozszerzone rekordy (sezony, kluby, hale, finały, pary).
+- **Etap 3:** Data Science — rozkład, σ/CV, anomalie IQR, efekty dnia i przeciwnika, korelacje (opisane jako związek, nie przyczynowość), prognoza OLS chronologiczna bez cech z przyszłości.
+
+Dashboard ma zakładki (Podsumowanie, Trendy, Kluby, Rekordy, Przeciwnicy, Kalendarz, Rekordy+, Data Science; parametr `?zakladka=` lub `?tab=`) i 10 wykresów ECharts (trend, pokrycie, kluby, heatmapa, miesiące, dni, godziny, przeciwnicy, histogram, efekt dnia); wykresy inicjują się przy pierwszym otwarciu zakładki.
+
+Filtry: sezon, rozgrywki, płeć, gospodarz, hala, pomijanie zer. `NULL` w `mecze.widzowie` nie jest zerem. Opis: [dashboard.md](../src/handball/interface/templates/admin/reports/attendance/dashboard.md). Bazy nie zmieniano.
 
 ## Raporty drużyn PDF: raport drużyny i zestawienia sezonu — 2026-10-05
 

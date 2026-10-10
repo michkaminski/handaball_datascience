@@ -44,6 +44,7 @@ SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
         [
             PozycjaMenu("raporty", "Katalog raportów", "administracja.lista_raportow", "▦"),
             PozycjaMenu("rozkłady", "Rozkłady", "administracja.lista_rozkladow", "▥"),
+            PozycjaMenu("frekwencja", "Frekwencja", "administracja.raport_frekwencji", "◐"),
             PozycjaMenu("raporty_druzyn", "Raporty drużyn", "administracja.raporty_druzyn", "▤"),
             PozycjaMenu(
                 "prognozy_meczow",
