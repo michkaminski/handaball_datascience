@@ -358,7 +358,20 @@
 </div>
 {% if miasta.uwaga_o_brakach %}<p class="att-warning">{{ miasta.uwaga_o_brakach }}</p>{% endif %}
 {% if miasta.ma_dane %}
-<div class="att-chart" data-attendance-chart-cities data-chart="cities" role="img" aria-label="Suma frekwencji na meczach u siebie według miasta klubu, najlepsze miasta"></div>
+<div class="att-city-rank-charts">
+<div>
+<h3 class="att-subtitle">Suma widzów</h3>
+<div class="att-chart att-chart-cities" data-attendance-chart-cities data-chart="cities" role="img" aria-label="Suma frekwencji według miasta, od największej do najmniejszej"></div>
+</div>
+<div>
+<h3 class="att-subtitle">Średnia frekwencja</h3>
+<div class="att-chart att-chart-cities" data-attendance-chart-cities-mean data-chart="citiesMean" role="img" aria-label="Średnia frekwencja według miasta, od największej do najmniejszej"></div>
+</div>
+<div>
+<h3 class="att-subtitle">Mediana frekwencji</h3>
+<div class="att-chart att-chart-cities" data-attendance-chart-cities-median data-chart="citiesMedian" role="img" aria-label="Mediana frekwencji według miasta, od największej do najmniejszej"></div>
+</div>
+</div>
 <div class="att-subpanel" data-attendance-filter>
 <h3>Ranking miast</h3>
 <div class="toolbar">

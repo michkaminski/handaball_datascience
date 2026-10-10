@@ -372,8 +372,13 @@ repeating-linear-gradient(to top,transparent 0,transparent 24%,rgba(23,56,82,.08
 [data-attendance-panel][hidden]{display:none}
 .att-chart-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
 .att-chart-grid .att-chart{margin:0}
+.att-city-rank-charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start;margin:0 0 14px}
+.att-city-rank-charts .att-subtitle{margin:0 0 6px;font-size:.9rem}
+.att-city-rank-charts .att-chart{margin:0}
 .att-chart-sm{min-height:240px}
-@media(max-width:1200px){.att-chart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:900px){.att-cal-grid,.att-chart-grid{grid-template-columns:1fr}}
+.att-chart-cities{min-height:680px}
+.att-subtitle{margin:0 0 6px;color:var(--ink-soft,#173e65);font-size:.9rem}
+@media(max-width:1200px){.att-chart-grid,.att-city-rank-charts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.att-cal-grid,.att-chart-grid,.att-city-rank-charts{grid-template-columns:1fr}}
 @media(max-width:1100px){.filters.att-filters{grid-template-columns:repeat(2,minmax(150px,1fr))}.att-kpis{grid-template-columns:repeat(2,minmax(150px,1fr))}}
 @media(max-width:700px){.filters.att-filters,.att-kpis{grid-template-columns:1fr}}

@@ -348,6 +348,8 @@ def test_dashboard_renderuje_hosty_wykresow() -> None:
         "coverage",
         "clubs",
         "cities",
+        "citiesMean",
+        "citiesMedian",
         "heatmap",
         "months",
         "weekdays",
@@ -361,6 +363,8 @@ def test_dashboard_renderuje_hosty_wykresow() -> None:
         "data-attendance-chart-coverage",
         "data-attendance-chart-clubs",
         "data-attendance-chart-cities",
+        "data-attendance-chart-cities-mean",
+        "data-attendance-chart-cities-median",
         "data-attendance-chart-months",
         "data-attendance-chart-weekdays",
         "data-attendance-chart-hours",
@@ -404,6 +408,11 @@ def test_dashboard_renderuje_zakladke_miast() -> None:
     assert "Szukaj miasta" in tresc
     assert "Szukaj klubu, miasta lub rozgrywek" in tresc
     assert 'data-chart="cities"' in tresc
+    assert 'data-chart="citiesMean"' in tresc
+    assert 'data-chart="citiesMedian"' in tresc
+    assert "Suma widzów" in tresc
+    assert "Średnia frekwencja" in tresc
+    assert "Mediana frekwencji" in tresc
     assert '<th scope="row">Kielce</th>' in tresc
     assert "Industria Kielce" in tresc
     assert "Puchar Polski" in tresc

@@ -198,9 +198,9 @@
     `n: ${formatuj(grupa.n)}`,
   ]);
 
-  const opcjePoziome = (pozycje, kolorPozycji, opisz, wartosc = pozycja => pozycja.srednia, nazwaSerii = 'Średnia') => ({
+  const opcjePoziome = (pozycje, kolorPozycji, opisz, wartosc = pozycja => pozycja.srednia, nazwaSerii = 'Średnia', opcje = {}) => ({
     animationDuration: 320,
-    grid: {left: 150, right: 36, top: 12, bottom: 28},
+    grid: {left: opcje.lewy ?? 150, right: opcje.prawy ?? 36, top: opcje.gora ?? 12, bottom: opcje.dol ?? 28},
     tooltip: {
       trigger: 'axis',
       axisPointer: {type: 'shadow'},
@@ -211,23 +211,40 @@
     },
     xAxis: {
       type: 'value',
-      axisLabel: {formatter: formatuj},
+      axisLabel: {formatter: formatuj, fontSize: opcje.czcionka ?? 11},
       splitLine: {lineStyle: {color: KOLORY.siatka}},
     },
     yAxis: {
       type: 'category',
       inverse: true,
       data: pozycje.map(pozycja => pozycja.nazwa),
-      axisLabel: {width: 136, overflow: 'truncate', fontSize: 11},
+      axisLabel: {width: opcje.szerokoscEtykiety ?? 136, overflow: 'truncate', fontSize: opcje.czcionka ?? 11},
     },
     series: [{
       name: nazwaSerii,
       type: 'bar',
       data: pozycje.map(pozycja => ({value: wartosc(pozycja), itemStyle: {color: kolorPozycji(pozycja)}})),
-      barMaxWidth: 22,
-      label: {show: pozycje.length <= 20, position: 'right', fontSize: 10, formatter: parametry => formatuj(parametry.value)},
+      barMaxWidth: opcje.szerokoscSlupka ?? 22,
+      label: {
+        show: pozycje.length <= (opcje.limitEtykiet ?? 20),
+        position: 'right',
+        fontSize: opcje.czcionkaEtykiety ?? 10,
+        formatter: parametry => formatuj(parametry.value),
+      },
     }],
   });
+
+  const OPCJE_MIAST_RANKING = {
+    lewy: 118,
+    prawy: 40,
+    gora: 8,
+    dol: 18,
+    szerokoscEtykiety: 104,
+    czcionka: 11,
+    czcionkaEtykiety: 10,
+    szerokoscSlupka: 16,
+    limitEtykiet: 40,
+  };
 
   const opcjeKlubow = kluby => opcjePoziome(kluby, () => KOLORY.glowny, klub => [
     `<b>${klub.nazwa}</b>`,
@@ -235,20 +252,45 @@
     `Znane mecze: ${formatuj(klub.znane)}`,
   ]);
 
+  const opisMiasta = miasto => [
+    `<b>${miasto.nazwa}</b>`,
+    `Suma: ${formatuj(miasto.suma)}`,
+    `Średnia: ${formatuj(miasto.srednia)}`,
+    `Mediana: ${formatuj(miasto.mediana)}`,
+    `Dominanta: ${formatuj(miasto.dominanta)}`,
+    `Znane mecze: ${formatuj(miasto.znane)}`,
+    `Kluby: ${formatuj(miasto.kluby)}`,
+  ];
+
+  const miastaMalejaco = (miasta, klucz) => [...miasta]
+    .filter(miasto => miasto[klucz] !== null && miasto[klucz] !== undefined)
+    .sort((a, b) => (b[klucz] - a[klucz]) || String(a.nazwa).localeCompare(String(b.nazwa), 'pl'));
+
   const opcjeMiast = miasta => opcjePoziome(
-    miasta,
+    miastaMalejaco(miasta, 'suma'),
     () => KOLORY.wybrany,
-    miasto => [
-      `<b>${miasto.nazwa}</b>`,
-      `Suma: ${formatuj(miasto.suma)}`,
-      `Średnia: ${formatuj(miasto.srednia)}`,
-      `Mediana: ${formatuj(miasto.mediana)}`,
-      `Dominanta: ${formatuj(miasto.dominanta)}`,
-      `Znane mecze: ${formatuj(miasto.znane)}`,
-      `Kluby: ${formatuj(miasto.kluby)}`,
-    ],
+    opisMiasta,
     miasto => miasto.suma,
     'Suma',
+    OPCJE_MIAST_RANKING,
+  );
+
+  const opcjeSredniejMiast = miasta => opcjePoziome(
+    miastaMalejaco(miasta, 'srednia'),
+    () => KOLORY.glowny,
+    opisMiasta,
+    miasto => miasto.srednia,
+    'Średnia',
+    OPCJE_MIAST_RANKING,
+  );
+
+  const opcjeMedianMiast = miasta => opcjePoziome(
+    miastaMalejaco(miasta, 'mediana'),
+    () => KOLORY.akcent,
+    opisMiasta,
+    miasto => miasto.mediana,
+    'Mediana',
+    OPCJE_MIAST_RANKING,
   );
 
   const opisPozycjiMiasta = pozycja => [
@@ -432,6 +474,16 @@
       ma: dane => maPozycje(dane.miasta),
       pusty: 'Brak miast klubów ze znaną frekwencją.',
       opcje: dane => opcjeMiast(dane.miasta),
+    },
+    citiesMean: {
+      ma: dane => maSrednie(dane.miasta),
+      pusty: 'Brak miast klubów ze znaną średnią frekwencją.',
+      opcje: dane => opcjeSredniejMiast(dane.miasta),
+    },
+    citiesMedian: {
+      ma: dane => maPozycje(dane.miasta) && dane.miasta.some(miasto => miasto.mediana !== null && miasto.mediana !== undefined),
+      pusty: 'Brak miast klubów ze znaną medianą frekwencji.',
+      opcje: dane => opcjeMedianMiast(dane.miasta),
     },
     citySeasons: {
       ma: (dane, stan) => maPozycje(wybraneMiasto(dane, stan)?.sezony),

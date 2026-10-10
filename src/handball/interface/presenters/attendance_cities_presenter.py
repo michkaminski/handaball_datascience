@@ -5,7 +5,7 @@ from typing import Any
 from handball.domain.attendance_aggregate import AgregatFrekwencji, MiaryRozkladu
 from handball.domain.attendance_cities import RaportMiast, WierszMiasta
 
-LIMIT_MIAST_NA_WYKRESIE = 15
+LIMIT_MIAST_NA_WYKRESIE = 30
 
 
 class MiastaWykresPresenter:
