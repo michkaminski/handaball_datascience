@@ -47,10 +47,11 @@ class PobieranieMeczowSQLAlchemyRepository:
 
     def _pozycja(self, wiersz: Any, filtry: FiltryPobierania) -> tuple[PozycjaTerminarza, bool]:
         pozycja = self._zapytanie.pozycja(wiersz)
+        nazwa = str(wiersz[23] or "").strip()
+        pozycja = replace(pozycja, nazwa_rozgrywek=nazwa or None)
         if filtry.id_rozgrywki is None:
-            nazwa = str(wiersz[23] or "").strip() or "Rozgrywki"
             runda = (pozycja.runda or "").strip() or "Bez rundy"
-            pozycja = replace(pozycja, runda=f"{nazwa} · {runda}")
+            pozycja = replace(pozycja, runda=f"{nazwa or 'Rozgrywki'} · {runda}")
         return pozycja, bool(wiersz[22])
 
 

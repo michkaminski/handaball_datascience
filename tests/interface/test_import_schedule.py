@@ -1,4 +1,5 @@
 import base64
+from dataclasses import replace
 
 import pytest
 from flask import Flask
@@ -14,7 +15,18 @@ from handball.request_dependencies import ZaleznosciZadaniaFactory
 class MeczeDoPobrania:
     def pobierz(self, filtry: FiltryPobierania) -> list[tuple[PozycjaTerminarza, bool]]:
         self.filtry = filtry
-        return [(pozycja, pozycja.id_mecz == 201) for pozycja in pozycje_terminarza()]
+        return [
+            (
+                replace(
+                    pozycja,
+                    nazwa_rozgrywek=(
+                        "LOTTO Superliga" if pozycja.id_mecz < 300 else "II Liga Mężczyzn"
+                    ),
+                ),
+                pozycja.id_mecz == 201,
+            )
+            for pozycja in pozycje_terminarza()
+        ]
 
 
 def aplikacja(haslo: str) -> Flask:
@@ -61,8 +73,12 @@ def test_lista_ma_zaznaczenie_i_filtry(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "Zaznacz wszystko" in tresc
     assert "Odznacz wszystko" in tresc
     assert "Zaznacz kolejkę" in tresc
+    assert "Tylko mecze bez wyników" in tresc
     assert "Wynik bez danych" in tresc
     assert "Kolejki zakończone" in tresc
+    assert "Superligi" in tresc
+    assert "Ligi centralne" in tresc
+    assert "Puchary Polski" in tresc
     assert "js/import_pobieranie.js" in tresc
     assert "Pobieranie meczów" in tresc
     assert '<a class="active" href="/administracja/import/mecze">' in tresc
@@ -110,3 +126,35 @@ def test_bez_rozgrywek_i_filtra_prosi_o_wybor(monkeypatch: pytest.MonkeyPatch) -
     )
     assert "data-schedule-prompt" in tresc
     assert "data-import-z-terminarza" not in tresc
+
+
+def test_bez_wynikow_zostawia_mecze_zaplanowane(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HDS_IMPORT_PASSWORD", "testowe-haslo")
+    tresc = (
+        aplikacja("testowe-haslo")
+        .test_client()
+        .get(
+            "/administracja/import/mecze?id_sezon=5&bez_wynikow=y",
+            headers=naglowki("testowe-haslo"),
+        )
+        .get_data(as_text=True)
+    )
+    assert 'name="mecze" value="204"' in tresc
+    assert 'name="mecze" value="301"' in tresc
+    assert 'name="mecze" value="201"' not in tresc
+
+
+def test_poziom_ii_ligi_zostawia_te_rozgrywki(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HDS_IMPORT_PASSWORD", "testowe-haslo")
+    tresc = (
+        aplikacja("testowe-haslo")
+        .test_client()
+        .get(
+            "/administracja/import/mecze?id_sezon=5&grupa=ii_liga",
+            headers=naglowki("testowe-haslo"),
+        )
+        .get_data(as_text=True)
+    )
+    assert 'name="mecze" value="301"' in tresc
+    assert 'name="mecze" value="201"' not in tresc
+    assert 'value="ii_liga" checked' in tresc

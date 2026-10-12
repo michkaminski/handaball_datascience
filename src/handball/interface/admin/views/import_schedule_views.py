@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from flask import Response, abort, make_response, render_template, request
 from flask.views import MethodView
 
 from handball.domain.errors import BladOdczytuDanych
 from handball.domain.imports import LIMIT_WYBRANYCH_MECZOW
-from handball.interface.admin.forms.import_schedule_filters import PobieranieMeczowFilterForm
+from handball.interface.admin.forms.import_schedule_filters import (
+    GRUPY_POZIOMU,
+    PobieranieMeczowFilterForm,
+)
 from handball.interface.admin.import_access import (
     logowanie_importu_poprawne,
     odmowa_logowania_importu,
@@ -40,11 +45,8 @@ class PobieranieMeczowView(MethodView):
             abort(400, description=str(formularz.errors))
         try:
             opcje = self._fabryka.utworz_serwis_terminarza().pobierz_opcje(formularz.do_wyboru())
-            lista = self._fabryka.utworz_serwis_pobierania_meczow().pobierz(
-                opcje.wybor,
-                bool(formularz.wynik_bez_danych.data),
-                bool(formularz.kolejki_zakonczone.data),
-            )
+            kryteria = replace(formularz.do_kryteriow(), wybor=opcje.wybor)
+            lista = self._fabryka.utworz_serwis_pobierania_meczow().pobierz(kryteria)
         except ValueError as wyjatek:
             abort(400, description=str(wyjatek))
         except BladOdczytuDanych as wyjatek:
@@ -57,8 +59,11 @@ class PobieranieMeczowView(MethodView):
             terminarz=(
                 self._fabryka.utworz_presenter_terminarza().przygotuj(lista) if lista else None
             ),
-            wynik_bez_danych=bool(formularz.wynik_bez_danych.data),
-            kolejki_zakonczone=bool(formularz.kolejki_zakonczone.data),
+            wynik_bez_danych=kryteria.wynik_bez_danych,
+            kolejki_zakonczone=kryteria.kolejki_zakonczone,
+            bez_wynikow=kryteria.bez_wynikow,
+            poziomy=GRUPY_POZIOMU,
+            wybrane_grupy=kryteria.grupy,
             csrf_importu=token_importu() if lista and lista.rundy else None,
             limit_meczow=LIMIT_WYBRANYCH_MECZOW,
         )

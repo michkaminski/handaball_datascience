@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from handball.domain.competition_levels import GrupaRozgrywek
 from handball.domain.match_rules import MeczPolicy, StatusMeczu
 from handball.domain.matches import DaneMeczu
 from handball.domain.options import OpcjaWyboru
@@ -31,6 +32,15 @@ class FiltryPobierania:
     id_rozgrywki: int | None = None
     id_runda: int | None = None
     id_kolejka: int | None = None
+
+
+@dataclass(frozen=True)
+class KryteriaPobierania:
+    wybor: WyborTerminarza
+    wynik_bez_danych: bool = False
+    kolejki_zakonczone: bool = False
+    bez_wynikow: bool = False
+    grupy: frozenset[GrupaRozgrywek] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -65,6 +75,7 @@ class PozycjaTerminarza:
     id_kolejka: int | None = None
     kolejka: str | None = None
     nr_kolejki: int | None = None
+    nazwa_rozgrywek: str | None = None
 
     @property
     def termin(self) -> datetime | None:

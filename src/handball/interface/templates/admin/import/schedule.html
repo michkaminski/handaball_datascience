@@ -35,20 +35,25 @@
 </select>
 </label>
 <div class="schedule-import-flags">
+<label class="import-choice"><input type="checkbox" name="bez_wynikow" value="y"{% if bez_wynikow %} checked{% endif %}> Tylko mecze bez wyników</label>
 <label class="import-choice"><input type="checkbox" name="wynik_bez_danych" value="y"{% if wynik_bez_danych %} checked{% endif %}> Wynik bez danych</label>
 <label class="import-choice"><input type="checkbox" name="kolejki_zakonczone" value="y"{% if kolejki_zakonczone %} checked{% endif %}> Kolejki zakończone</label>
+</div>
+<div class="schedule-import-flags">
+<span class="schedule-flag-label">Poziom</span>
+{% for grupa, etykieta in poziomy %}<label class="import-choice"><input type="checkbox" name="grupa" value="{{ grupa.value }}"{% if grupa in wybrane_grupy %} checked{% endif %}> {{ etykieta }}</label>{% endfor %}
 </div>
 <div class="schedule-filter-actions">
 <button class="btn" type="submit">Filtruj</button>
 <a class="btn secondary" href="{{ url_for('administracja.pobieranie_meczow') }}">Wyczyść</a>
 </div>
-<p class="note">Wynik bez danych: mecz ma wynik, a brakuje składu albo strzelców (strona, która zdobyła bramki, nie ma zawodnika z wpisanymi bramkami). Kolejki zakończone: w kolejce nie ma już meczu zaplanowanego. Bez rozgrywek te dwa filtry obejmują cały sezon.</p>
+<p class="note">Tylko mecze bez wyników: mecz zaplanowany, bez wpisanego wyniku. Wynik bez danych: mecz ma wynik, a brakuje składu albo strzelców. Kolejki zakończone: w kolejce nie ma już meczu zaplanowanego. Superligi to najwyższa klasa (także Ekstraklasa i baraże o Superligę). Poziom i te filtry bez wybranych rozgrywek obejmują cały sezon. Zaznaczone poziomy łączą się.</p>
 </form>
 </section>
 {% if terminarz is none %}
 <section class="panel">
 <div class="panel-body">
-<p class="notice" data-schedule-prompt>Wybierz sezon i rozgrywki albo jeden z filtrów: wynik bez danych, kolejki zakończone.</p>
+<p class="notice" data-schedule-prompt>Wybierz sezon i rozgrywki, poziom albo jeden z filtrów: bez wyników, wynik bez danych, kolejki zakończone.</p>
 </div>
 </section>
 {% elif not terminarz.rundy %}
