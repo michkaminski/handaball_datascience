@@ -14,6 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from handball.contracts.import_storage import ImportStore
 from handball.domain.imports import (
     BladImportu,
+    MeczImportu,
     OpcjaImportu,
     PrzebiegImportu,
     RekordImportu,
@@ -88,6 +89,67 @@ class ImportSQLAlchemyRepository:
                     polaczenie.rollback()
         except SQLAlchemyError as blad:
             raise BladImportu("Nie można odczytać meczów wymagających uzupełnienia.") from blad
+
+    def pobierz_mecz(self, id_mecz: int) -> MeczImportu | None:
+        return next(iter(self.pobierz_mecze([id_mecz])), None)
+
+    def pobierz_mecze(self, id_mecze: list[int]) -> list[MeczImportu]:
+        if not id_mecze:
+            return []
+        zapytanie = text("""
+            SELECT m.id, m.id_sezon, s.nazwa AS sezon, m.id_rozgrywki, m.id_kolejka,
+                r.nazwa AS rozgrywki,
+                COALESCE(NULLIF(btrim(zg.nazwa), ''), '—') AS gospodarz,
+                COALESCE(NULLIF(btrim(zw.nazwa), ''), '—') AS gosc,
+                to_char(m.data_faktyczna, 'YYYY-MM-DD HH24:MI') AS termin
+            FROM public.mecze m
+            JOIN public.rozgrywki r ON r.id = m.id_rozgrywki
+            JOIN public.sezony s ON s.id = m.id_sezon
+            LEFT JOIN public.zespoly_sezony zg
+                ON zg.id_zespol = m.id_zespol_gosp AND zg.id_sezon = m.id_sezon
+            LEFT JOIN public.zespoly_sezony zw
+                ON zw.id_zespol = m.id_zespol_gosc AND zw.id_sezon = m.id_sezon
+            WHERE m.id IN :mecze
+        """).bindparams(bindparam("mecze", expanding=True))
+        try:
+            with self._silnik.connect().execution_options(
+                postgresql_readonly=True, isolation_level="REPEATABLE READ"
+            ) as polaczenie:
+                try:
+                    wiersze = (
+                        polaczenie.execute(
+                            zapytanie, {"mecze": list(dict.fromkeys(id_mecze))}
+                        )
+                        .mappings()
+                        .all()
+                    )
+                finally:
+                    polaczenie.rollback()
+        except SQLAlchemyError as blad:
+            raise BladImportu("Nie można odczytać meczów z bazy.") from blad
+        znalezione = {
+            mecz.id: mecz for wiersz in wiersze if (mecz := self._mecz_importu(wiersz)) is not None
+        }
+        return [
+            znalezione[identyfikator] for identyfikator in id_mecze if identyfikator in znalezione
+        ]
+
+    @staticmethod
+    def _mecz_importu(wiersz: Any) -> MeczImportu | None:
+        if wiersz["id_kolejka"] is None:
+            return None
+        opis = f"{wiersz['gospodarz']} – {wiersz['gosc']}"
+        if wiersz["termin"]:
+            opis += f" ({wiersz['termin']})"
+        return MeczImportu(
+            int(wiersz["id"]),
+            int(wiersz["id_rozgrywki"]),
+            int(wiersz["id_kolejka"]),
+            str(wiersz["rozgrywki"]),
+            opis,
+            int(wiersz["id_sezon"]),
+            str(wiersz["sezon"]),
+        )
 
     def pobierz_sezony(self) -> list[OpcjaImportu]:
         return self._opcje(
@@ -238,6 +300,20 @@ class ImportSQLAlchemyRepository:
         except SQLAlchemyError as blad:
             raise BladImportu("Nie można porównać danych z bazą. Sprawdź połączenie.") from blad
 
+    @staticmethod
+    def _parametry_przebiegu(przebieg: PrzebiegImportu) -> dict[str, Any]:
+        parametry: dict[str, Any] = {
+            "hds_id": przebieg.id,
+            "sezon": przebieg.id_sezon,
+            "ligi": przebieg.ligi,
+            "tryb": przebieg.tryb,
+        }
+        if przebieg.id_mecz:
+            parametry["mecz"] = przebieg.id_mecz
+        if przebieg.id_mecze:
+            parametry["mecze"] = przebieg.id_mecze
+        return parametry
+
     def zastosuj(self, przebieg: PrzebiegImportu) -> int:
         try:
             with (
@@ -276,16 +352,7 @@ class ImportSQLAlchemyRepository:
                             "VALUES ('hds-1.0', 'hds-admin', CAST(:parametry AS jsonb)) "
                             "RETURNING id"
                         ),
-                        {
-                            "parametry": json.dumps(
-                                {
-                                    "hds_id": przebieg.id,
-                                    "sezon": przebieg.id_sezon,
-                                    "ligi": przebieg.ligi,
-                                    "tryb": przebieg.tryb,
-                                }
-                            )
-                        },
+                        {"parametry": json.dumps(self._parametry_przebiegu(przebieg))},
                     ).scalar_one()
                 )
                 pliki = self._zrodla(polaczenie, przebieg, id_przebieg)

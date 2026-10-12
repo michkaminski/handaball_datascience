@@ -281,7 +281,8 @@ class ZprpImportMapper:
         mid = self.ident(r.get("Id", r.get("IdZawody")))
         if "mid" in kontekst and mid != kontekst["mid"]:
             raise BladImportu("Szczegóły dotyczą innego meczu.")
-        for pole, oczekiwane in (("ID_sezon", 195), ("Id_rozgrywki", kontekst["cid"])):
+        sezon = kontekst.get("sid", SEZON_IMPORTU)
+        for pole, oczekiwane in (("ID_sezon", sezon), ("Id_rozgrywki", kontekst["cid"])):
             if pole in r and self.ident(r[pole]) != oczekiwane:
                 raise BladImportu("Niezgodność sezonu lub ligi w meczu.")
         if str(r.get("Kategoria", "1")) != "1":
@@ -355,7 +356,7 @@ class ZprpImportMapper:
             klucz_hali = {p: hala.get(p) for p in ("nazwa", "miasto", "ulica", "numer")}
             self.dodaj("hale", klucz_hali, self.pola(r, liczby={"pojemnosc": "Hala_pojemnosc"}))
             dane["id_hala"] = {"tabela": "hale", "klucz": klucz_hali}
-        dane.update(id_sezon=195, id_rozgrywki=kontekst["cid"], id_kolejka=kontekst["did"])
+        dane.update(id_sezon=sezon, id_rozgrywki=kontekst["cid"], id_kolejka=kontekst["did"])
         self.dodaj("mecze", {"id": mid}, dane)
         return mid
 

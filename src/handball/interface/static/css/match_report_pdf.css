@@ -1,0 +1,204 @@
+@page{size:A4 portrait;margin:8mm 9mm 9mm;
+  @bottom-right{content:"Sportomatyka \201E Bawimy się danymi\201D";font-family:"DejaVu Sans",Arial,sans-serif;font-size:6.4pt;color:#7a8591;letter-spacing:.02em;vertical-align:top;padding-top:1.5mm}}
+
+html{font-family:"DejaVu Sans","Segoe UI",Arial,sans-serif;font-size:7.2pt;line-height:1.28;color:#14202b}
+body{margin:0}
+h1,h2,h3,p,ul{margin:0;padding:0}
+table{border-collapse:collapse;width:100%}
+b{font-weight:700}
+
+.mast{background:#0f2236;background:linear-gradient(135deg,#0d1e31 0%,#173a5c 62%,#1d4a70 100%);color:#fff;border-radius:2.2mm;padding:2.2mm 4mm 2mm}
+.mast-top td{font-size:6.3pt;color:#b9cadb;vertical-align:baseline;white-space:nowrap}
+.mast-top .kicker{font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#f0b07f;width:30mm}
+.mast-top .context{text-align:center;white-space:normal}
+.mast-top .when{text-align:right;width:52mm}
+.scoreline{margin-top:1.6mm;table-layout:fixed}
+.scoreline td{vertical-align:middle}
+.scoreline .team{font-size:13.5pt;font-weight:700;line-height:1.1}
+.scoreline .team.home{text-align:right;padding-right:4mm}
+.scoreline .team.away{text-align:left;padding-left:4mm}
+.scoreline .bar{display:inline-block;width:1.4mm;height:6mm;border-radius:.6mm;vertical-align:middle}
+.scoreline .home .bar{background:#5aa3df;margin-right:2.4mm}
+.scoreline .away .bar{background:#f08a4b;margin-left:2.4mm}
+.scoreline .score{width:38mm;text-align:center;font-size:27pt;font-weight:700;letter-spacing:.02em;line-height:1}
+.mast-sub{text-align:center;font-size:7.6pt;color:#dbe6f1;margin-top:1mm}
+.mast-meta{text-align:center;font-size:6.6pt;color:#a9bdd1;margin-top:.4mm}
+
+.headline{margin:2.2mm 0 1mm;font-size:10.4pt;font-weight:700;line-height:1.22;color:#0f2236;border-left:1.2mm solid #f08a4b;padding-left:2.6mm}
+.insights{list-style:none;columns:2;column-gap:5mm;margin:0 0 1.6mm}
+.insights li{position:relative;padding-left:3mm;margin:0 0 .5mm;break-inside:avoid;font-size:6.7pt;color:#2b3742}
+.insights li::before{content:"";position:absolute;left:0;top:1.2mm;width:1.3mm;height:1.3mm;border-radius:50%;background:#2b6ea4}
+
+.kpis{table-layout:fixed;margin:0 0 1.4mm;border-top:.5pt solid #d5dbe2;border-bottom:.5pt solid #d5dbe2}
+.kpi{padding:1.1mm 2mm 1mm;border-left:.5pt solid #e3e7ec;vertical-align:top}
+.kpi:first-child{border-left:0;padding-left:0}
+.kpi-label{display:block;font-size:5.4pt;letter-spacing:.12em;text-transform:uppercase;color:#6b7782}
+.kpi b{display:block;font-size:13pt;line-height:1.15;color:#0f2236;font-variant-numeric:tabular-nums}
+.kpi small{display:block;font-size:5.9pt;color:#6b7782;line-height:1.2}
+.kpi.hot b{color:#c2622a}
+
+.cols{table-layout:fixed}
+.cols>tbody>tr>td.col,.cols>tr>td.col{vertical-align:top;width:50%;padding:0 3mm 0 0}
+.cols td.col+td.col{padding:0 0 0 3mm;border-left:.5pt solid #e3e7ec}
+.cols td.col.full{width:100%;padding-right:0}
+
+.section-title{font-size:8pt;font-weight:700;margin:1.4mm 0 .8mm;padding-bottom:.5mm;border-bottom:.6pt solid #14202b;color:#0f2236}
+.section-title .no{display:inline-block;width:3.6mm;height:3.6mm;line-height:3.6mm;text-align:center;border-radius:50%;background:#0f2236;color:#fff;font-size:5.8pt;margin-right:1.4mm}
+.section-title small{font-size:6pt;font-weight:400;color:#6b7782}
+
+.compare{table-layout:fixed}
+.compare thead th{font-size:6pt;font-weight:700;padding:0 0 .6mm;color:#6b7782;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;overflow:hidden}
+.compare thead th.h{text-align:right;color:#2b6ea4}
+.compare thead th.a{text-align:left;color:#c2622a}
+.compare thead th:nth-child(2){width:24mm}
+.compare tbody th{font-weight:400;font-size:6.6pt;color:#45505b;text-align:center;padding:.4mm 0;border-bottom:.3pt solid #edf0f3}
+.compare td.side{padding:.4mm 0;border-bottom:.3pt solid #edf0f3;white-space:nowrap}
+.compare .track{display:inline-block;width:27mm;height:2.3mm;background:#f0f2f5;border-radius:.6mm;vertical-align:middle;position:relative}
+.compare .home .track{text-align:right}
+.compare .fill{display:inline-block;height:2.3mm;border-radius:.6mm;vertical-align:top}
+.compare .home .fill{background:#9cc0e0}
+.compare .away .fill{background:#f1c3a5}
+.compare .home.better .fill{background:#2b6ea4}
+.compare .away.better .fill{background:#c2622a}
+.compare .val{display:inline-block;width:9mm;font-variant-numeric:tabular-nums;vertical-align:middle;font-size:7pt}
+.compare .home{text-align:right}
+.compare .home .val{text-align:right;margin-right:1.2mm}
+.compare .away .val{text-align:left;margin-left:1.2mm}
+.compare .better .val{font-weight:700}
+
+.caption{font-size:5.8pt;color:#6b7782;line-height:1.3;margin-top:.6mm}
+.caption.legend{margin-top:1mm}
+
+.prob-label{font-size:5.6pt;letter-spacing:.1em;text-transform:uppercase;color:#6b7782;margin-bottom:.5mm}
+.prob{table-layout:auto;height:5mm;margin-bottom:1.2mm}
+.prob td{font-size:7pt;font-weight:700;color:#fff;text-align:center;vertical-align:middle;padding:.6mm 0;white-space:nowrap}
+.prob .p-home{background:#2b6ea4;border-radius:.8mm 0 0 .8mm}
+.prob .p-draw{background:#9aa5b1}
+.prob .p-away{background:#c2622a;border-radius:0 .8mm .8mm 0}
+.prob-legend{font-size:5.6pt;color:#6b7782;margin-left:2mm;letter-spacing:0;text-transform:none}
+.sw{display:inline-block;width:2mm;height:2mm;border-radius:.4mm;vertical-align:middle;margin:0 .6mm 0 1.6mm}
+.sw:first-child{margin-left:0}
+.sw.home{background:#2b6ea4}.sw.draw{background:#9aa5b1}.sw.away{background:#c2622a}
+
+.xg{table-layout:fixed;margin-bottom:1mm}
+.xg td{padding:.2mm 1.2mm .4mm;border-left:.5pt solid #e3e7ec;vertical-align:top}
+.xg td:first-child{border-left:0;padding-left:0}
+.xg span{display:block;font-size:5.4pt;letter-spacing:.08em;text-transform:uppercase;color:#6b7782}
+.xg b{font-size:10pt;font-variant-numeric:tabular-nums}
+.xg b.small{font-size:7.4pt}
+
+.hist{display:block;margin-top:.4mm}
+.model-note{font-size:6.4pt;color:#2b3742;margin:.8mm 0 1mm}
+.ratings{font-size:6.4pt}
+.ratings th{font-size:5.4pt;font-weight:400;color:#6b7782;text-transform:uppercase;letter-spacing:.06em;text-align:right;padding:0 0 .4mm}
+.ratings td{text-align:right;padding:.35mm 0;border-top:.3pt solid #edf0f3;font-variant-numeric:tabular-nums}
+.ratings td:first-child{text-align:left;font-weight:700;white-space:nowrap;overflow:hidden;max-width:40mm}
+.ratings .home td:first-child{color:#2b6ea4}
+.ratings .away td:first-child{color:#c2622a}
+
+.rating{display:block;margin-top:.4mm}
+
+.teams{margin-top:.8mm}
+.team-title{font-size:9.4pt;font-weight:700;margin:0 0 .2mm;color:#0f2236}
+.team-title .bar{display:inline-block;width:1.2mm;height:3.6mm;border-radius:.5mm;margin-right:1.6mm;vertical-align:middle}
+.home .team-title .bar{background:#2b6ea4}
+.away .team-title .bar{background:#c2622a}
+.team-col .section-title{border-bottom-color:#9aa5b1}
+
+.scorers{table-layout:fixed;font-size:6.7pt}
+.scorers th{font-size:5.4pt;font-weight:400;text-transform:uppercase;letter-spacing:.05em;color:#6b7782;text-align:right;padding:0 .6mm .4mm;border-bottom:.5pt solid #9aa5b1}
+.scorers td{text-align:right;padding:.2mm .6mm;border-bottom:.3pt solid #edf0f3;white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}
+.scorers .n{width:5mm;color:#6b7782;text-align:center}
+.scorers .l{text-align:left}
+.scorers th.l{width:auto}
+.scorers .g{width:6mm;font-weight:700;font-size:7.4pt}
+.scorers .b{width:16mm;padding-left:.4mm}
+.scorers th:nth-child(5){width:7.5mm}
+.scorers th:nth-child(6){width:5mm}
+.scorers th:nth-child(7){width:9mm}
+.scorers th:nth-child(8){width:8.5mm}
+.scorers .track{display:block;height:1.9mm;background:#f0f2f5;border-radius:.5mm}
+.scorers .fill{display:block;height:1.9mm;border-radius:.5mm}
+.home .scorers .fill{background:#2b6ea4}
+.away .scorers .fill{background:#c2622a}
+.scorers .muted{color:#7a8591}
+.scorers .up{color:#1c7c46;font-weight:700}
+.scorers .down{color:#a5343a}
+.scorers tr.star td{background:#fff6e0}
+.star-mark{color:#d08a00;font-size:7pt}
+
+.strip{display:block;margin:.2mm 0 .2mm}
+.season-line{font-size:6.6pt;color:#2b3742;margin:.1mm 0}
+.season-line span{display:inline-block;width:12mm;font-size:5.6pt;text-transform:uppercase;letter-spacing:.06em;color:#6b7782}
+
+.form-line{margin-top:.8mm;font-size:6.6pt}
+.form-label{display:inline-block;width:12mm;font-size:5.6pt;text-transform:uppercase;letter-spacing:.06em;color:#6b7782}
+.fm{display:inline-block;width:4mm;height:4mm;line-height:4mm;text-align:center;border-radius:.7mm;color:#fff;font-weight:700;font-size:6.4pt;margin-right:.7mm}
+.fm.win{background:#2f7d4f}.fm.draw{background:#7a8794}.fm.loss{background:#b23a3a}
+.fm.now{outline:.6pt solid #14202b;outline-offset:.4mm}
+.form-sum{margin-left:1.6mm;color:#6b7782}
+
+.scoreline.long .team{font-size:11pt}
+.scoreline.long .score{font-size:24pt}
+
+.struct-team{font-size:7pt;font-weight:700;margin:1.2mm 0 .5mm}
+.struct-team.home{color:#2b6ea4}
+.struct-team.away{color:#c2622a}
+.struct-bar{table-layout:fixed;height:5.4mm;width:100%}
+.struct-bar td{color:#fff;font-weight:700;font-size:7pt;text-align:center;vertical-align:middle;padding:0;overflow:hidden}
+.struct-bar.home .s1{background:#1d4f7a}.struct-bar.home .s2{background:#2b6ea4}.struct-bar.home .s3{background:#5b93c4}.struct-bar.home .rest{background:#a9c6e0;color:#1d4f7a}
+.struct-bar.away .s1{background:#8f4316}.struct-bar.away .s2{background:#c2622a}.struct-bar.away .s3{background:#dc8c5c}.struct-bar.away .rest{background:#f1c8ad;color:#8f4316}
+.struct-labels{table-layout:fixed}
+.struct-labels td{font-size:5.8pt;color:#45505b;padding:.3mm .4mm 0;white-space:nowrap;overflow:hidden;vertical-align:top}
+
+.h2h{table-layout:fixed;margin:.2mm 0 .4mm;border-collapse:separate;border-spacing:.8mm}
+.h2h td{padding:.8mm 1mm;border:.4pt solid #e3e7ec;border-radius:1mm;vertical-align:middle;white-space:nowrap}
+.h2h td.empty{border:0}
+.h2h .fm{margin-right:1mm;vertical-align:middle}
+.h2h b{font-size:7.6pt;vertical-align:middle;font-variant-numeric:tabular-nums}
+.h2h small{display:block;font-size:5.6pt;color:#6b7782;margin-top:.3mm}
+.h2h small.comp{margin-top:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.h2h td{overflow:hidden}
+.cols.short{margin-top:2mm}
+
+.skrocony .mast{padding:3mm 5mm 2.8mm}
+.skrocony .scoreline .team{font-size:14.5pt}
+.skrocony .scoreline.long .team{font-size:12pt}
+.skrocony .scoreline .score{font-size:32pt;width:42mm}
+.skrocony .mast-sub{font-size:9pt;margin-top:1.4mm}
+.skrocony .mast-meta{font-size:7.6pt}
+.skrocony .cols.short{margin-top:4mm}
+.skrocony .section-title{font-size:10pt;margin:2.6mm 0 1.4mm}
+.skrocony .section-title small{font-size:7pt}
+.skrocony .section-title .no{width:4.4mm;height:4.4mm;line-height:4.4mm;font-size:7pt}
+.skrocony .compare thead th{font-size:7pt}
+.skrocony .compare thead th:nth-child(2){width:31mm}
+.skrocony .compare tbody th{font-size:7.8pt;padding:1.05mm 0}
+.skrocony .compare td.side{padding:1.05mm 0}
+.skrocony .compare .val{font-size:8.6pt;width:10mm}
+.skrocony .compare .track{width:24mm}
+.skrocony .compare .track,.skrocony .compare .fill{height:3.2mm}
+.skrocony .caption{font-size:6.6pt}
+.skrocony .h2h td{padding:1.5mm 1.4mm}
+.skrocony .h2h b{font-size:9.4pt}
+.skrocony .h2h small{font-size:6.5pt}
+.skrocony .h2h .fm{width:4.6mm;height:4.6mm;line-height:4.6mm;font-size:7.2pt}
+.skrocony .teams{margin-top:4mm}
+.skrocony .team-title{font-size:12pt;margin-bottom:.8mm}
+.skrocony .team-title .bar{height:4.6mm}
+.skrocony .scorers{font-size:8pt}
+.skrocony .scorers th{font-size:6.4pt;padding-bottom:.8mm;white-space:nowrap}
+.skrocony .scorers td{padding:.75mm .6mm}
+.skrocony .scorers .g{font-size:9pt;width:7mm}
+.skrocony .scorers .n{width:6mm}
+.skrocony .scorers .b{width:11mm}
+.skrocony .scorers th:nth-child(5){width:8mm}
+.skrocony .scorers th:nth-child(6){width:6mm}
+.skrocony .scorers th:nth-child(7){width:12mm}
+.skrocony .scorers th:nth-child(8){width:8.5mm}
+.skrocony .scorers .track,.skrocony .scorers .fill{height:2.5mm}
+.skrocony .star-mark{font-size:8.4pt}
+.skrocony .strip{margin:1mm 0 .6mm}
+.skrocony .season-line{font-size:8pt;margin:.4mm 0}
+.skrocony .season-line span{width:15mm;font-size:6.4pt}
+.skrocony .caption.legend{margin-top:3mm}

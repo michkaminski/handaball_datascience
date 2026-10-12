@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from handball.domain.match_rules import MeczPolicy, StatusMeczu
 from handball.domain.matches import DaneMeczu
 from handball.domain.options import OpcjaWyboru
 
@@ -19,6 +21,14 @@ class WyborTerminarza:
 class FiltryTerminarza:
     id_sezon: int
     id_rozgrywki: int
+    id_runda: int | None = None
+    id_kolejka: int | None = None
+
+
+@dataclass(frozen=True)
+class FiltryPobierania:
+    id_sezon: int
+    id_rozgrywki: int | None = None
     id_runda: int | None = None
     id_kolejka: int | None = None
 
@@ -98,3 +108,53 @@ class Terminarz:
     @property
     def liczba_meczow(self) -> int:
         return sum(kolejka.liczba_meczow for runda in self.rundy for kolejka in runda.kolejki)
+
+
+class ZakresPobierania:
+    def __init__(self, reguly: MeczPolicy) -> None:
+        self._reguly = reguly
+
+    def zakonczone_kolejki(self, terminarz: Terminarz) -> Terminarz:
+        return self._rundy(terminarz, lambda kolejka: self._zakonczona(kolejka), None)
+
+    def tylko_mecze(self, terminarz: Terminarz, identyfikatory: set[int]) -> Terminarz:
+        return self._rundy(terminarz, lambda _kolejka: True, identyfikatory)
+
+    def _zakonczona(self, kolejka: KolejkaTerminarza) -> bool:
+        mecze = [pozycja for dzien in kolejka.dni for pozycja in dzien.mecze]
+        return bool(mecze) and all(
+            self._reguly.status(pozycja.mecz) is not StatusMeczu.ZAPLANOWANY for pozycja in mecze
+        )
+
+    def _rundy(
+        self,
+        terminarz: Terminarz,
+        zostaw_kolejke: Callable[[KolejkaTerminarza], bool],
+        identyfikatory: set[int] | None,
+    ) -> Terminarz:
+        rundy: list[RundaTerminarza] = []
+        for runda in terminarz.rundy:
+            kolejki: list[KolejkaTerminarza] = []
+            for kolejka in runda.kolejki:
+                if not zostaw_kolejke(kolejka):
+                    continue
+                dni = self._dni(kolejka, identyfikatory)
+                if dni:
+                    kolejki.append(
+                        KolejkaTerminarza(kolejka.id_kolejka, kolejka.nazwa, kolejka.nr, tuple(dni))
+                    )
+            if kolejki:
+                rundy.append(RundaTerminarza(runda.id_runda, runda.nazwa, tuple(kolejki)))
+        return Terminarz(terminarz.filtry, tuple(rundy))
+
+    def _dni(
+        self, kolejka: KolejkaTerminarza, identyfikatory: set[int] | None
+    ) -> list[DzienTerminarza]:
+        dni: list[DzienTerminarza] = []
+        for dzien in kolejka.dni:
+            mecze = dzien.mecze
+            if identyfikatory is not None:
+                mecze = tuple(pozycja for pozycja in mecze if pozycja.id_mecz in identyfikatory)
+            if mecze:
+                dni.append(DzienTerminarza(dzien.dzien, mecze))
+        return dni

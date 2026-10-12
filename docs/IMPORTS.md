@@ -2,7 +2,7 @@
 
 Opis aktualnego kodu na dzień 2026-09-23. Dokument dotyczy importera w pakiecie `handball`, dostępnego pod `/administracja/import`. Starszy importer z katalogu nadrzędnego działa osobno.
 
-Tryby pełny i uzupełniający pobierają dane wybranych seniorskich rozgrywek sezonu **2026/2027 (ID 195)**; tryb „Tylko tabele” — tabele wybranych rozgrywek dowolnego sezonu z bazy (opis niżej). Importer przygotowuje różnice względem bazy i pokazuje je administratorowi. **Dane w PostgreSQL zapisuje dopiero po zatwierdzeniu podglądu.** Podczas pobierania zapisuje już lokalne pliki i stan roboczy w SQLite.
+Tryby pełny i uzupełniający pobierają dane wybranych seniorskich rozgrywek sezonu **2026/2027 (ID 195)**, tryb „Jeden mecz” — szczegóły jednego meczu tego sezonu, tryb „Wybrane mecze” — szczegóły listy meczów tego sezonu; tryb „Tylko tabele” — tabele wybranych rozgrywek dowolnego sezonu z bazy (opis niżej). Importer przygotowuje różnice względem bazy i pokazuje je administratorowi. **Dane w PostgreSQL zapisuje dopiero po zatwierdzeniu podglądu.** Podczas pobierania zapisuje już lokalne pliki i stan roboczy w SQLite.
 
 ## Tryb pełny i uzupełniający
 
@@ -29,6 +29,38 @@ Wybrane ligi
 W tym trybie mapper nie zleca pobierania składów sezonowych. Dane nowych zawodników pochodzą ze szczegółów meczu; istniejące dane osobowe są tylko uzupełniane. Nie odkrywa nowych meczów ani nie sprawdza całego terminarza. Brak kandydatów daje od razu pusty podgląd, bez wywołań API. Każdy nowy przebieg ponownie ocenia braki — nie ma jeszcze odraczania kolejnej próby dla konkretnego meczu.
 
 Pole `PrzebiegImportu.tryb` jest zapisywane w lokalnym stanie i parametrach historii PostgreSQL. Stare przebiegi bez tego pola mają domyślnie `pelny`. Tryb jest widoczny na stronie przebiegu i w historii. Poniższy opis przechodzenia przez sezony, rundy i kolejki dotyczy trybu pełnego; porównanie i zatwierdzenie są wspólne.
+
+## Import jednego meczu
+
+Tryb `tryb="mecz"` („Jeden mecz”, sekcja `#import-meczu` panelu) pobiera i zapisuje dane jednego meczu sezonu 2026/2027 bez przechodzenia przez cały zakres rozgrywek.
+
+```text
+Numer meczu ZPRP albo adres strony meczu
+    -> ImportPanelView._numer_meczu(): numer z pola
+    -> READ ONLY: ImportSQLAlchemyRepository.pobierz_mecz() — mecz sezonu 195 z kolejką
+    -> jedno zadanie pokaz_mecze_szczegoly.php (kontekst mid, cid, did z bazy)
+    -> mapper szczegoly(): mecz, hala, drużyny, zawodnicy, mecze_zawodnicy
+    -> porównanie jak w pełnym imporcie: nowe rekordy i korekty wartości
+    -> podgląd i osobne zatwierdzenie
+```
+
+- Mecz musi już istnieć w bazie. Odpowiedź szczegółów nie podaje identyfikatora kolejki (tylko jej nazwę), więc nowy mecz pobiera pełny import jego rozgrywek; nieznany numer kończy się komunikatem z tą podpowiedzią.
+- Nie obowiązuje lista `LIGI_IMPORTU`. Sezon przebiegu jest sezonem meczu z bazy. Pełny import rozgrywek nadal dotyczy sezonu 2026/2027.
+- W odróżnieniu od trybu uzupełniającego wartości niepuste też są aktualizowane (korekty wyniku, widzów, hali, statystyk). Składy sezonowe nie są pobierane. Rekordy nieobecne w odpowiedzi, np. zawodnik usunięty z protokołu, nie są usuwane.
+- `PrzebiegImportu.id_mecz` i `opis` (drużyny, termin) są widoczne w przebiegu i historii; parametry w `logs.import_przebiegi` zawierają `mecz`.
+
+## Import wybranych meczów
+
+Tryb `tryb="mecze"` („Wybrane mecze”) pobiera szczegóły wielu meczów jednego sezonu bez przechodzenia przez cały zakres rozgrywek. Porównanie i zapis są te same co przy jednym meczu: brakujące rekordy są dopisywane, zmienione wartości (także korekty) aktualizowane, nic nie jest usuwane, składy sezonowe nie są pobierane. Zapis nadal wymaga zatwierdzenia podglądu.
+
+Dwa wejścia:
+
+- panel `#import-meczu` — pole `mecz` przyjmuje jeden albo wiele numerów lub adresów (osobny wiersz, spacja albo przecinek); jeden numer zostaje trybem „Jeden mecz”;
+- strona **Pobieranie meczów** (`/administracja/import/mecze`) — checkbox przy meczu, „Zaznacz wszystko”, „Odznacz wszystko”, „Zaznacz kolejkę” i „Pobierz zaznaczone”. Formularz wysyła `akcja=rozpocznij_mecze` oraz `mecze` z identyfikatorami. Publiczny Terminarz tego zaznaczenia nie ma.
+
+Filtry strony: sezon, rozgrywki, runda, kolejka oraz **Wynik bez danych** i **Kolejki zakończone**. Bez rozgrywek te dwa filtry obejmują cały sezon, a nazwa rozgrywek jest dopisywana do rundy. Wynik bez danych: oba wyniki pełne są wpisane, mecz nie jest wycofany ani walkowerem, i brakuje składu gospodarza albo gościa, albo strona z bramkami nie ma zawodnika z `bramki > 0`. Kolejki zakończone: w kolejce żaden mecz nie ma statusu zaplanowanego. Gdy oba filtry są włączone, najpierw odpadają niedokończone kolejki, a potem zostają tylko mecze z brakiem danych. Kontrakt strony: [schedule.md](../src/handball/interface/templates/admin/import/schedule.md).
+
+Jedno zaznaczenie też zostaje trybem „Jeden mecz”. Lista ma limit 80 meczów (`LIMIT_WYBRANYCH_MECZOW`). Mecze z różnych sezonów są odrzucane. Nieznany numer odrzuca cały wybór. Przebieg trzyma `id_mecze` i `opisy_meczow`; historia pokazuje liczbę meczów, a parametry w `logs.import_przebiegi` zawierają `mecze`. Starsze pliki przebiegów bez tych pól wczytują się z pustą listą. Zadanie szczegółów dostaje `sid` sezonu meczu, więc mapper nie odrzuca sezonu innego niż 2026/2027.
 
 ## Import tabel wybranego sezonu
 
@@ -257,7 +289,7 @@ Historia widoczna na stronie pochodzi z lokalnego magazynu SQLite i pokazuje ost
 
 ## 6. Zakres i ograniczenia obecnej implementacji
 
-- Obsługiwany jest tylko sezon 2026/2027 i zamknięta lista rozgrywek z `LIGI_IMPORTU`.
+- Obsługiwany jest tylko sezon 2026/2027 i zamknięta lista rozgrywek z `LIGI_IMPORTU` (import jednego meczu: dowolny mecz sezonu 2026/2027 znany w bazie; import tabel: dowolny sezon z bazy).
 - Nowy przebieg ponownie pobiera dane wybranego zakresu, także rozegrane mecze. Dzięki temu może wykryć korekty wcześniejszych wyników; nie jest to wyłącznie pobranie nowych meczów.
 - Importer nie usuwa rekordów nieobecnych w kolejnej odpowiedzi API. Takie zniknięcie nie powoduje automatycznego skasowania danych.
 - Skład sezonowy służy obecnie do uzupełnienia drużyny i zawodników; mapper nie zapisuje tabeli `sklady`. Statystyki występów pochodzą ze szczegółów meczu i trafiają do `mecze_zawodnicy`.

@@ -1,5 +1,6 @@
 from flask import Blueprint
 
+from handball.interface.admin.import_access import haslo_importu
 from handball.interface.admin.views.attendance_analytics_views import FrekwencjaView
 from handball.interface.admin.views.attendance_appeal_views import (
     AtrakcyjnoscEksportView,
@@ -28,7 +29,12 @@ from handball.interface.admin.views.distribution_views import (
     RozkladBramekView,
     RozkladyListView,
 )
-from handball.interface.admin.views.match_views import MeczListView, MeczSzczegolyView
+from handball.interface.admin.views.import_schedule_views import PobieranieMeczowView
+from handball.interface.admin.views.match_views import (
+    MeczListView,
+    MeczSzczegolyView,
+    RaportMeczuPdfView,
+)
 from handball.interface.admin.views.opponent_defense_views import DefensywaRywalaZawodnikaView
 from handball.interface.admin.views.player_detail_views import ZawodnikSzczegolyView
 from handball.interface.admin.views.player_views import ZawodnikListView
@@ -92,7 +98,17 @@ def utworz_blueprint_administracji(fabryka_zaleznosci: ZaleznosciZadaniaFactory)
         view_func=MeczSzczegolyView.as_view("szczegoly_meczu", fabryka_zaleznosci),
     )
     blueprint.add_url_rule(
+        "/mecze/<int:id_mecz>/raport",
+        view_func=RaportMeczuPdfView.as_view("raport_meczu_pdf", fabryka_zaleznosci),
+    )
+    blueprint.add_url_rule(
         "/terminarz", view_func=TerminarzView.as_view("terminarz", fabryka_zaleznosci)
+    )
+    blueprint.add_url_rule(
+        "/import/mecze",
+        view_func=PobieranieMeczowView.as_view(
+            "pobieranie_meczow", fabryka_zaleznosci, haslo_importu()
+        ),
     )
     blueprint.add_url_rule(
         "/terminarz/typowania",

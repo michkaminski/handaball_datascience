@@ -1,6 +1,30 @@
 # Stan projektu
 
-Aktualizacja: 2026-10-10.
+Aktualizacja: 2026-10-12.
+
+## Pobieranie meczów — 2026-10-12
+
+Na zlecenie użytkownika zaznaczanie meczów do importu jest osobną stroną **Pobieranie meczów** (`/administracja/import/mecze`, menu Import / eksport), a publiczny Terminarz znowu tylko pokazuje terminarz. Strona ma filtry sezonu, rozgrywek, rundy i kolejki oraz dwa raporty: **Wynik bez danych** (mecz z wynikiem, bez składu albo bez strzelca po stronie, która zdobyła bramki) i **Kolejki zakończone** (w kolejce nie ma już meczu zaplanowanego). Przyciski: Zaznacz kolejkę, Zaznacz wszystko, Odznacz wszystko. Pobranie idzie tym samym podglądem co lista numerów w panelu importu; zapis dopiero po zatwierdzeniu. Limit 80 meczów. Jeden przebieg obejmuje mecze jednego sezonu — sezon bierze się z bazy, nie tylko 2026/2027. Opis: [IMPORTS.md](IMPORTS.md#import-wybranych-meczów), [schedule.md](../src/handball/interface/templates/admin/import/schedule.md).
+
+Weryfikacja: testy serwisu listy, strony (logowanie, filtry, zaznaczenie) i JavaScript; mypy i Ruff w zmienionych plikach. Bazy nie zmieniano. Przepływu w przeglądarce nie klikano.
+
+## Raport meczu PDF (Data Science) — 2026-10-11
+
+Na zlecenie użytkownika powstał jednostronicowy raport rozegranego meczu (A4, WeasyPrint): przycisk „Raport meczu (PDF, A4)” na stronie szczegółów meczu, trasa `/administracja/mecze/<id_mecz>/raport`. Zawiera zdanie przewodnie z modelu, wnioski (także wyjątkowy występ zawodnika z rozkładu Poissona i wyjątkowy wynik drużyny na tle sezonu), kafelki KPI, porównanie drużyn, historię spotkań, sekcję modelu `team_strength_v1` (szanse 1/X/2, prognoza vs wynik, histogram reszt ligi z indeksem zaskoczenia, ratingi i ranking), wykres siły drużyn w czasie, strzelców ze średnią sezonu i Δ oraz wykresy „na tle sezonu”; bez modelu prawa kolumna pokazuje strukturę ataku. Wersja skrócona (`?wariant=skrocony`, przycisk „Raport skrócony (PDF)”): nagłówek, porównanie drużyn, historia spotkań z rozgrywkami, strzelcy i tło sezonu, bez modelu (ok. 1 s). Podpis: tylko Sportomatyka „Bawimy się danymi”. Opis i metody: [report_pdf.md](../src/handball/interface/templates/admin/matches/report_pdf.md).
+
+Weryfikacja: 19 nowych testów (domena na syntetycznej lidze z prawdziwym backtestem, wykresy, presenter, interfejs); mypy bez błędów, Ruff bez uwag w zmienionych plikach. Na bazie (tylko odczyt) wygenerowano i obejrzano PDF (pełny i skrócony) dla 7 meczów (Superliga mężczyzn i kobiet, I liga, Superpuchar bez modelu, mecz z `zamiana`, mecz bez danych zawodników) — każdy mieści się na jednej stronie; generowanie trwa ok. 3,5 s (backtest przy każdym żądaniu). Bazy nie zmieniano.
+
+## Szczegóły meczu: zakładka Analiza meczu — 2026-10-11
+
+Szczegóły meczu (`/administracja/mecze/<id_mecz>`, także w modalu listy) mają nową zakładkę **Analiza meczu** między „Dane podstawowe” a „Wynik i statystyki”: do trzech automatycznych wniosków (rozstrzygnięcie remisu, odrobiona strata lub lepsza druga połowa, najlepszy strzelec, karne, różnica kar), porównanie drużyn z paskami udziału (bramki, połowy, karne i skuteczność, czasy, kary, upomnienia, dyskwalifikacje), pięciu najlepszych strzelców każdej drużyny oraz formę obu drużyn w sezonie: ostatnie 5 rozegranych meczów do tego meczu włącznie, z bilansem W/R/P i rozstrzygnięciem dogrywki lub serii karnych. Obliczenia są w `match_statistics` (domena), formę czyta nowe repozytorium `FormaMeczuSQLAlchemyRepository` (jedno zapytanie na drużynę), a całość składa `StatystykiMeczuService`. Opis: [detail.md](../src/handball/interface/templates/admin/matches/detail.md#analiza-meczu).
+
+Weryfikacja: 10 nowych testów (domena, serwis, presenter, repozytorium, interfejs); pełny zestaw 831 testów Pythona (poza istniejącym błędem `SECRET_KEY`) i 66 testów JavaScript, mypy bez błędów, Ruff bez uwag w zmienionych plikach. Na bazie (tryb tylko do odczytu) sprawdzono mecze 207606, 206511, 1783 (`zamiana`), 208133 (seria karnych) i nierozegrany 206625; wygląd zakładki obejrzano w Chromium headless przy 1440 px i 390 px, bez poziomego przewijania. Bazy nie zmieniano.
+
+## Import jednego meczu — 2026-10-11
+
+Na zlecenie użytkownika panel Import danych ma sekcję **Jeden mecz** (`#import-meczu`): numer meczu ZPRP albo adres strony meczu → pobranie `pokaz_mecze_szczegoly.php` tylko tego meczu → podgląd zmian → zapis po zatwierdzeniu. Tryb `mecz` („Jeden mecz”) aktualizuje wynik, widzów, halę, drużyny i występy zawodników (także korekty), dopisuje brakujące rekordy, niczego nie usuwa i nie pobiera składów sezonowych. Mecz musi istnieć w bazie w sezonie 2026/2027 — szczegóły z API nie podają identyfikatora kolejki, więc nowe mecze nadal pobiera pełny import. Opis: [IMPORTS.md](IMPORTS.md#import-jednego-meczu), [panel.md](../src/handball/interface/templates/admin/import/panel.md).
+
+Weryfikacja: 9 nowych testów (serwis, interfejs); pełny zestaw 821 testów Pythona (poza istniejącym błędem `SECRET_KEY`), mypy bez błędów, Ruff bez uwag w zmienionych plikach. Odczyt meczu sprawdzony na bazie w transakcji `READ ONLY` (mecze 207606 i 206511 odnalezione, nieznane numery odrzucone). Bazy nie zmieniano.
 
 ## Frekwencja: dashboard Stage 1–3 — 2026-10-10
 

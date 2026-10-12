@@ -71,6 +71,12 @@ SIDEBAR: list[tuple[str, list[PozycjaMenu]]] = [
         "Import / eksport",
         [
             PozycjaMenu("import", "Import danych", "administracja.import_danych", "⇪"),
+            PozycjaMenu(
+                "pobieranie_meczow",
+                "Pobieranie meczów",
+                "administracja.pobieranie_meczow",
+                "☑",
+            ),
             PozycjaMenu("historia_importow", "Historia importów", None, "⇄"),
             PozycjaMenu("eksport_danych", "Eksport danych", None, "⇩"),
         ],

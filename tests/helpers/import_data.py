@@ -20,9 +20,9 @@ class ImportTestClient(ZprpClient):
             self.awarie_dla[zadanie.endpoint] -= 1
             raise BladImportu("Testowa awaria pojedynczego zadania")
         mecz = {
-            "Id": "206511",
+            "Id": str(zadanie.parametry.get("Zawody", "206511")),
             "ID_sezon": "195",
-            "Id_rozgrywki": "12007",
+            "Id_rozgrywki": str(zadanie.kontekst.get("cid", "12007")),
             "ID_zespoly_gosp": "15890",
             "ID_zespoly_gosc": "0",
             "ID_zespoly_gosp_ZespolNazwa": "Testowy zespół",

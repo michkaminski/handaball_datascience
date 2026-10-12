@@ -13,11 +13,13 @@ from handball.contracts.competition_repository import RozgrywkiReadRepository
 from handball.contracts.core_catalog_repository import KatalogPodstawowyReadRepository
 from handball.contracts.database_stats_repository import StatystykiBazyReadRepository
 from handball.contracts.goal_distribution_repository import RozkladBramekReadRepository
+from handball.contracts.import_schedule_repository import PobieranieMeczowReadRepository
 from handball.contracts.match_prediction_repository import MeczeLigoweReadRepository
 from handball.contracts.match_preview_repository import ZapowiedzMeczuReadRepository
 from handball.contracts.match_protocol_repository import ProtokolMeczuReadRepository
 from handball.contracts.match_repository import MeczReadRepository
 from handball.contracts.match_stage_repository import EtapMeczowReadRepository
+from handball.contracts.match_statistics_repository import FormaMeczuReadRepository
 from handball.contracts.match_tip_repository import TypowaniaReadRepository
 from handball.contracts.news_repository import AktualnosciReadRepository
 from handball.contracts.opponent_defense_repository import DefensywaRywalaReadRepository
@@ -51,7 +53,13 @@ from handball.domain.match_preview import (
     StatystykiZapowiedziCalculator,
 )
 from handball.domain.match_protocol import KolejnoscZawodnikowProtokoluPolicy
+from handball.domain.match_report import (
+    AnalizaModeluCalculator,
+    AtakDruzynyCalculator,
+    TloSezonuCalculator,
+)
 from handball.domain.match_rules import MeczPolicy
+from handball.domain.match_statistics import StatystykiMeczuCalculator
 from handball.domain.team_details import KolejnoscPozycjiPolicy, WystepDruzynyPolicy
 from handball.domain.team_report import KolejnoscZawodnikowRaportuPolicy, MiejscaPolicy
 from handball.extensions import baza_danych
@@ -75,6 +83,9 @@ from handball.infrastructure.repositories.database_stats_repository import (
 from handball.infrastructure.repositories.goal_distribution_repository import (
     RozkladBramekSQLAlchemyRepository,
 )
+from handball.infrastructure.repositories.import_schedule_repository import (
+    PobieranieMeczowSQLAlchemyRepository,
+)
 from handball.infrastructure.repositories.match_prediction_repository import (
     MeczeLigoweSQLAlchemyRepository,
 )
@@ -87,6 +98,9 @@ from handball.infrastructure.repositories.match_protocol_repository import (
 from handball.infrastructure.repositories.match_repository import MeczSQLAlchemyRepository
 from handball.infrastructure.repositories.match_stage_repository import (
     EtapMeczowSQLAlchemyRepository,
+)
+from handball.infrastructure.repositories.match_statistics_repository import (
+    FormaMeczuSQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.match_tip_repository import (
     TypowaniaSQLAlchemyRepository,
@@ -116,6 +130,11 @@ from handball.infrastructure.repositories.venue_detail_repository import (
     SzczegolyHaliSQLAlchemyRepository,
 )
 from handball.infrastructure.repositories.venue_repository import HalaSQLAlchemyRepository
+from handball.interface.match_report_charts import (
+    HistogramResztBuilder,
+    WykresRatinguBuilder,
+    WykresSezonuBuilder,
+)
 from handball.interface.presenters.attendance_analytics_presenter import (
     FrekwencjaWykresPresenter,
 )
@@ -134,6 +153,8 @@ from handball.interface.presenters.match_protocol_presenter import (
     ProtokolMeczuPresenter,
     UkladProtokoluPolicy,
 )
+from handball.interface.presenters.match_report_presenter import RaportMeczuPresenter
+from handball.interface.presenters.match_statistics_presenter import StatystykiMeczuPresenter
 from handball.interface.presenters.match_tip_presenter import TypowaniaPresenter
 from handball.interface.presenters.news_presenter import AktualnosciPresenter
 from handball.interface.presenters.opponent_defense_presenter import DefensywaRywalaPresenter
@@ -161,6 +182,7 @@ from handball.services.classification_service import KlasyfikacjaService
 from handball.services.database_stats_service import StatystykiBazyService
 from handball.services.goal_distribution_service import RozkladBramekService
 from handball.services.goal_statistics import StatystykiBramekCalculator
+from handball.services.import_schedule_service import PobieranieMeczowService
 from handball.services.match_dictionary_service import SlownikiMeczowService
 from handball.services.match_prediction_service import (
     BacktestPrognozService,
@@ -168,6 +190,7 @@ from handball.services.match_prediction_service import (
     PodsumowaniePrognozCalculator,
     PodzialSezonowPolicy,
     PrognozaZapowiedziService,
+    PrognozyModeluService,
     RaportPrognozService,
     SzczegolyPrognozyService,
 )
@@ -178,7 +201,9 @@ from handball.services.match_preview_service import (
     ZegarWarszawa,
 )
 from handball.services.match_protocol_service import ProtokolMeczuService
+from handball.services.match_report_service import RaportMeczuService
 from handball.services.match_service import MeczService
+from handball.services.match_statistics_service import StatystykiMeczuService
 from handball.services.match_tip_service import RaportTypowanService, TypowaniaKolejkiService
 from handball.services.mathematics_service import BibliotekaMatematycznaService
 from handball.services.news_service import AktualnosciService
@@ -237,7 +262,15 @@ class ZaleznosciZadaniaFactory:
         fabryka_frekwencji: Callable[[], FrekwencjaReadRepository] | None = None,
         magazyn_modeli_maf: ModeleMafReadStore | None = None,
         rejestr_matematyki: MathRegistry | None = None,
+        fabryka_formy_meczu: Callable[[], FormaMeczuReadRepository] | None = None,
+        fabryka_pobierania_meczow: Callable[[], PobieranieMeczowReadRepository] | None = None,
     ) -> None:
+        self._fabryka_pobierania_meczow = fabryka_pobierania_meczow or (
+            lambda: PobieranieMeczowSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
+        self._fabryka_formy_meczu = fabryka_formy_meczu or (
+            lambda: FormaMeczuSQLAlchemyRepository(cast(Session, baza_danych.session))
+        )
         self._magazyn_modeli_maf = magazyn_modeli_maf or ArtifactStore(katalog_modeli())
         self._rejestr_matematyki = rejestr_matematyki or default_registry()
         self._fabryka_frekwencji = fabryka_frekwencji or (
@@ -341,6 +374,37 @@ class ZaleznosciZadaniaFactory:
         formatowanie = MeczFormat()
         reguly = MeczPolicy()
         return MeczPresenter(reguly, formatowanie, SkladMeczuPresenter(formatowanie, reguly))
+
+    def utworz_serwis_statystyk_meczu(self) -> StatystykiMeczuService:
+        reguly = MeczPolicy()
+        return StatystykiMeczuService(
+            self._fabryka_repozytorium_meczow(),
+            self._fabryka_formy_meczu(),
+            StatystykiMeczuCalculator(reguly),
+            reguly,
+        )
+
+    def utworz_presenter_statystyk_meczu(self) -> StatystykiMeczuPresenter:
+        return StatystykiMeczuPresenter(MeczFormat())
+
+    def utworz_serwis_raportu_meczu(self) -> RaportMeczuService:
+        return RaportMeczuService(
+            self.utworz_serwis_statystyk_meczu(),
+            self._fabryka_zapowiedzi_meczu(),
+            PrognozyModeluService(self.utworz_backtest_prognoz(), self._katalog_modeli_prognoz),
+            AnalizaModeluCalculator(),
+            AtakDruzynyCalculator(),
+            TloSezonuCalculator(),
+            StatystykiZapowiedziCalculator(),
+        )
+
+    def utworz_presenter_raportu_meczu(self) -> RaportMeczuPresenter:
+        return RaportMeczuPresenter(
+            self.utworz_presenter_statystyk_meczu(),
+            HistogramResztBuilder(),
+            WykresRatinguBuilder(),
+            WykresSezonuBuilder(),
+        )
 
     def utworz_serwis_zawodnikow(self) -> ZawodnikService:
         return ZawodnikService(self._fabryka_repozytorium_zawodnikow())
@@ -503,6 +567,11 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_presenter_prognoz_meczow(self) -> PrognozaMeczuPresenter:
         return PrognozaMeczuPresenter(MeczFormat(), PrognozaFormat())
+
+    def utworz_serwis_pobierania_meczow(self) -> PobieranieMeczowService:
+        return PobieranieMeczowService(
+            self.utworz_serwis_terminarza(), self._fabryka_pobierania_meczow()
+        )
 
     def utworz_serwis_terminarza(self) -> TerminarzService:
         return TerminarzService(

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block tytul %}Pobieranie meczów — Handball DataScience{% endblock %}
+
+{% block tresc %}
+<section class="pagehead">
+<div class="crumb">Start › Import › Pobieranie meczów</div>
+<h1>Pobieranie meczów</h1>
+<p>Lista meczów do pobrania z ZPRP. Zaznacz spotkania, które chcesz dopisać albo zaktualizować. Zapis do bazy następuje dopiero po zatwierdzeniu podglądu.</p>
+</section>
+<section class="panel">
+<h2>Filtry</h2>
+<form class="panel-body schedule-filters" method="get" data-schedule-filters>
+<label class="schedule-field schedule-field-season"><span>Sezon</span>
+<select name="id_sezon" data-schedule-level="0">
+{% for opcja in opcje.sezony %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == opcje.wybor.id_sezon %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+<label class="schedule-field schedule-field-competition"><span>Rozgrywki</span>
+<select name="id_rozgrywki" data-schedule-level="1">
+<option value="">Wszystkie</option>
+{% for opcja in opcje.rozgrywki %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == opcje.wybor.id_rozgrywki %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+<label class="schedule-field"><span>Runda</span>
+<select name="id_runda" data-schedule-level="2"{% if not opcje.rundy %} disabled{% endif %}>
+<option value="">Wszystkie</option>
+{% for opcja in opcje.rundy %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == opcje.wybor.id_runda %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+<label class="schedule-field"><span>Kolejka</span>
+<select name="id_kolejka" data-schedule-level="3"{% if not opcje.kolejki %} disabled{% endif %}>
+<option value="">Wszystkie</option>
+{% for opcja in opcje.kolejki %}<option value="{{ opcja.wartosc }}"{% if opcja.wartosc == opcje.wybor.id_kolejka %} selected{% endif %}>{{ opcja.etykieta }}</option>{% endfor %}
+</select>
+</label>
+<div class="schedule-import-flags">
+<label class="import-choice"><input type="checkbox" name="wynik_bez_danych" value="y"{% if wynik_bez_danych %} checked{% endif %}> Wynik bez danych</label>
+<label class="import-choice"><input type="checkbox" name="kolejki_zakonczone" value="y"{% if kolejki_zakonczone %} checked{% endif %}> Kolejki zakończone</label>
+</div>
+<div class="schedule-filter-actions">
+<button class="btn" type="submit">Filtruj</button>
+<a class="btn secondary" href="{{ url_for('administracja.pobieranie_meczow') }}">Wyczyść</a>
+</div>
+<p class="note">Wynik bez danych: mecz ma wynik, a brakuje składu albo strzelców (strona, która zdobyła bramki, nie ma zawodnika z wpisanymi bramkami). Kolejki zakończone: w kolejce nie ma już meczu zaplanowanego. Bez rozgrywek te dwa filtry obejmują cały sezon.</p>
+</form>
+</section>
+{% if terminarz is none %}
+<section class="panel">
+<div class="panel-body">
+<p class="notice" data-schedule-prompt>Wybierz sezon i rozgrywki albo jeden z filtrów: wynik bez danych, kolejki zakończone.</p>
+</div>
+</section>
+{% elif not terminarz.rundy %}
+<section class="panel">
+<div class="panel-body">
+<p class="note" data-schedule-empty>Brak meczów dla wybranych filtrów.</p>
+</div>
+</section>
+{% else %}
+<section class="schedule" aria-label="Pobieranie meczów">
+<p class="schedule-total">Meczów na liście: <b>{{ terminarz.liczba_meczow }}</b></p>
+<form method="post" action="{{ url_for('administracja.import_danych') }}" data-import-z-terminarza data-limit="{{ limit_meczow }}">
+<input type="hidden" name="csrf" value="{{ csrf_importu }}"><input type="hidden" name="akcja" value="rozpocznij_mecze">
+<div class="schedule-import">
+<button class="btn secondary small" type="button" data-zaznacz="widoczne">Zaznacz wszystko</button>
+<button class="btn secondary small" type="button" data-zaznacz="zadne">Odznacz wszystko</button>
+<button class="btn" type="submit">Pobierz zaznaczone — sprawdź zmiany</button>
+<span data-stan-zaznaczenia role="status" aria-live="polite">Zaznaczono: 0</span>
+<p class="note">Najwyżej {{ limit_meczow }} meczów naraz. Brakujące rekordy zostaną dopisane, zmienione wartości zaktualizowane.</p>
+</div>
+{% for runda in terminarz.rundy %}
+<h2 class="schedule-round">{{ runda.nazwa }}</h2>
+{% for kolejka in runda.kolejki %}
+<section class="schedule-matchday">
+<h3 class="schedule-matchday-title">{{ kolejka.nazwa }}</h3>
+<p class="schedule-matchday-tools"><button class="btn secondary small" type="button" data-zaznacz-kolejke>Zaznacz kolejkę</button></p>
+<p class="schedule-matchday-meta">{{ kolejka.zakres_dat }} · zakończone {{ kolejka.liczba_zakonczonych }}/{{ kolejka.liczba_meczow }}</p>
+{% for dzien in kolejka.dni %}
+<h4 class="schedule-day">{{ dzien.data }}</h4>
+<ul class="schedule-list">
+{% for mecz in dzien.mecze %}
+<li class="schedule-row schedule-row-pick status-{{ mecz.status }}">
+<label class="schedule-pick"><input type="checkbox" name="mecze" value="{{ mecz.id_mecz }}" aria-label="Pobierz mecz {{ mecz.gospodarz }} – {{ mecz.gosc }}"></label>
+<span class="schedule-time">{{ mecz.godzina }}{% if mecz.termin_proponowany %} <small>prop.</small>{% endif %}</span>
+<span class="schedule-home" title="{{ mecz.gospodarz }}">{{ mecz.gospodarz }}</span>
+<span class="schedule-score">{{ mecz.wynik }}{% if mecz.dopisek %} <small>{{ mecz.dopisek }}</small>{% endif %}</span>
+<span class="schedule-away" title="{{ mecz.gosc }}">{{ mecz.gosc }}</span>
+<span class="schedule-venue" title="{{ mecz.hala }}">{{ mecz.hala }}</span>
+<span class="schedule-status"><span class="schedule-badge">{% if mecz.status == 'rozegrany' %}✓ {% endif %}{{ mecz.etykieta_statusu }}</span></span>
+<span class="schedule-actions"><a href="{{ url_for('administracja.szczegoly_meczu', id_mecz=mecz.id_mecz) }}" target="_blank" rel="noopener">Szczegóły</a></span>
+</li>
+{% endfor %}
+</ul>
+{% endfor %}
+</section>
+{% endfor %}
+{% endfor %}
+<div class="schedule-import">
+<button class="btn" type="submit">Pobierz zaznaczone — sprawdź zmiany</button>
+<span data-stan-zaznaczenia aria-hidden="true">Zaznaczono: 0</span>
+</div>
+</form>
+</section>
+{% endif %}
+<script src="{{ url_for('static', filename='js/schedule.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/import_pobieranie.js') }}" defer></script>
+{% endblock %}

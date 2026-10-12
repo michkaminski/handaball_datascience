@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>{{ raport.tytul_dokumentu }}</title>
+<meta name="author" content="Sportomatyka">
+<meta name="description" content="{{ raport.kontekst }} · {{ raport.termin }}">
+</head>
+{% set KOLOR = {'home': '#2b6ea4', 'away': '#c2622a'} %}
+{% macro tytul(numer, tekst, dopisek='') -%}
+<h2 class="section-title">{% if numer %}<span class="no">{{ numer }}</span>{% endif %}{{ tekst }}{% if dopisek %} <small>{{ dopisek }}</small>{% endif %}</h2>
+{%- endmacro %}
+{% macro historia_spotkan(raport, numer='') -%}
+{% if raport.historia %}{% set hs = raport.historia %}
+{{ tytul(numer, 'Historia spotkań', hs.liczba ~ ' wcześniejszych · ' ~ raport.gospodarz ~ ': ' ~ hs.bilans ~ ' · ' ~ hs.bramki) }}
+<table class="h2h">{% for rzad in hs.mecze | batch(4) %}<tr>{% for m in rzad %}<td><span class="fm {{ m.klasa }}">{{ m.rezultat }}</span><b>{{ m.wynik }}</b><small>{{ m.data }} · {{ m.miejsce }}</small><small class="comp">{{ m.rozgrywki }}</small></td>{% endfor %}{% for _ in range(4 - rzad | length) %}<td class="empty"></td>{% endfor %}</tr>{% endfor %}</table>
+{% endif %}
+{%- endmacro %}
+{% macro wykres_sezonu(wykres, strona, opis) -%}
+<svg class="strip" viewBox="0 0 {{ wykres.szerokosc }} {{ wykres.wysokosc }}" width="100%" role="img" aria-label="{{ opis }}">
+{% for p in wykres.os_x %}<line x1="{{ p.pozycja }}" x2="{{ p.pozycja }}" y1="2" y2="{{ wykres.wysokosc - 10 }}" stroke="#e6e9ee" stroke-width="0.6"/><text x="{{ p.pozycja }}" y="{{ wykres.wysokosc - 2 }}" font-size="6.5" text-anchor="middle" fill="#7a8591">{{ p.etykieta }}</text>{% endfor %}
+{% for rzad in wykres.rzedy %}
+<text x="0" y="{{ rzad.y + 2.4 }}" font-size="7" fill="#45505b">{{ rzad.etykieta }}</text>
+{% if rzad.srednia_x is not none %}<line x1="{{ rzad.srednia_x }}" x2="{{ rzad.srednia_x }}" y1="{{ rzad.y - 8 }}" y2="{{ rzad.y + 8 }}" stroke="#14202b" stroke-width="1" stroke-dasharray="2 1.4"/>{% endif %}
+{% for k in rzad.kropki %}{% if k.biezaca %}<circle cx="{{ k.x }}" cy="{{ k.y }}" r="4.4" fill="{{ KOLOR[strona] }}" stroke="#fff" stroke-width="1.2"/>{% else %}<circle cx="{{ k.x }}" cy="{{ k.y }}" r="1.9" fill="#b8c0c9"/>{% endif %}{% endfor %}
+{% endfor %}
+</svg>
+{%- endmacro %}
+<body class="{{ 'skrocony' if skrocony else '' }}">
+<header class="mast">
+<table class="mast-top"><tr>
+<td class="kicker">Raport meczowy{% if skrocony %} · skrót{% endif %}</td>
+<td class="context">{{ raport.kontekst }}</td>
+<td class="when">{{ raport.termin }}</td>
+</tr></table>
+<table class="scoreline{% if raport.dlugie_nazwy %} long{% endif %}"><tr>
+<td class="team home"><span class="bar"></span>{{ raport.gospodarz }}</td>
+<td class="score">{{ raport.wynik }}</td>
+<td class="team away">{{ raport.gosc }}<span class="bar"></span></td>
+</tr></table>
+<p class="mast-sub">{{ raport.przebieg }}{% if raport.dopisek %} · <b>{{ raport.dopisek }}</b>{% endif %}</p>
+<p class="mast-meta">{{ raport.hala }}{% if raport.widzowie %} · {{ raport.widzowie }} widzów{% endif %}</p>
+</header>
+
+{% if not skrocony %}
+<p class="headline">{{ raport.naglowek }}</p>
+{% if raport.wnioski %}
+<ul class="insights">{% for w in raport.wnioski %}<li>{{ w }}</li>{% endfor %}</ul>
+{% endif %}
+
+<table class="kpis"><tr>
+{% for k in raport.kafelki %}<td class="kpi {{ k.klasa }}"><span class="kpi-label">{{ k.etykieta }}</span><b>{{ k.wartosc }}</b><small>{{ k.opis }}</small></td>{% endfor %}
+</tr></table>
+{% endif %}
+
+<table class="cols{% if skrocony %} short{% endif %}"><tr>
+<td class="col{% if (skrocony and not raport.historia) or (not skrocony and not raport.model and not raport.struktura) %} full{% endif %}">
+{{ tytul(1, 'Porównanie drużyn') }}
+<table class="compare">
+<thead><tr><th class="h">{{ raport.gospodarz }}</th><th></th><th class="a">{{ raport.gosc }}</th></tr></thead>
+<tbody>
+{% for w in raport.porownanie %}
+<tr>
+<td class="side home{% if w.lepszy == 'home' %} better{% endif %}"><span class="val">{{ w.gospodarz }}</span><span class="track"><span class="fill" style="width: {{ w.pasek_gospodarza }}%"></span></span></td>
+<th>{{ w.etykieta }}</th>
+<td class="side away{% if w.lepszy == 'away' %} better{% endif %}"><span class="track"><span class="fill" style="width: {{ w.pasek_goscia }}%"></span></span><span class="val">{{ w.gosc }}</span></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+<p class="caption">Pasek: wartość względem lepszej drużyny (karne: skuteczność); pogrubienie — przewaga.</p>
+{% if not skrocony %}{{ historia_spotkan(raport) }}{% endif %}
+</td>
+{% if skrocony %}{% if raport.historia %}
+<td class="col">{{ historia_spotkan(raport, 2) }}</td>{% endif %}
+{% elif raport.model %}{% set m = raport.model %}
+<td class="col">
+{{ tytul(2, 'Model siły drużyn', m.nazwa) }}
+<p class="prob-label">Szanse przed meczem <span class="prob-legend"><span class="sw home"></span>gospodarz <span class="sw draw"></span>remis <span class="sw away"></span>gość</span></p>
+<table class="prob"><tr>
+{% if m.szansa_gospodarza %}<td class="p-home" style="width: {{ m.szansa_gospodarza }}%">{{ m.szansa_gospodarza }}%</td>{% endif %}
+{% if m.szansa_remisu %}<td class="p-draw" style="width: {{ m.szansa_remisu }}%">{% if m.szansa_remisu >= 6 %}{{ m.szansa_remisu }}%{% endif %}</td>{% endif %}
+{% if m.szansa_goscia %}<td class="p-away" style="width: {{ m.szansa_goscia }}%">{{ m.szansa_goscia }}%</td>{% endif %}
+</tr></table>
+<table class="xg"><tr>
+<td><span>Prognoza</span><b>{{ m.oczekiwany_wynik }}</b></td>
+<td><span>Wynik</span><b>{{ m.wynik }}</b></td>
+<td><span>Ponad prognozę</span><b>{{ m.reszta }}</b></td>
+<td><span>Trafność</span><b class="small">{{ m.ocena }}</b></td>
+</tr></table>
+{% if m.histogram %}{% set h = m.histogram %}
+<svg class="hist" viewBox="0 0 {{ h.szerokosc }} {{ h.wysokosc }}" width="100%" role="img" aria-label="{{ m.opis_histogramu }}">
+{% for s in h.slupki %}<rect x="{{ s.x }}" y="{{ s.y }}" width="{{ s.szerokosc }}" height="{{ s.wysokosc }}" fill="{{ '#e1a17a' if s.ogon else '#cdd5de' }}"/>{% endfor %}
+<polyline points="{{ h.krzywa }}" fill="none" stroke="#14202b" stroke-width="0.9" stroke-opacity="0.7"/>
+<line x1="4" x2="{{ h.szerokosc - 4 }}" y1="{{ h.os_y }}" y2="{{ h.os_y }}" stroke="#8a949e" stroke-width="0.6"/>
+<line x1="{{ h.zero_x }}" x2="{{ h.zero_x }}" y1="6" y2="{{ h.os_y }}" stroke="#8a949e" stroke-width="0.5" stroke-dasharray="1.5 1.5"/>
+<line x1="{{ h.znacznik_x }}" x2="{{ h.znacznik_x }}" y1="4" y2="{{ h.os_y }}" stroke="#c2622a" stroke-width="1.6"/>
+<rect x="{{ h.etykieta_x }}" y="2.5" width="{{ h.etykieta_szerokosc }}" height="10" rx="1.5" fill="#fff" fill-opacity="0.92"/>
+<text x="{{ h.etykieta_x + 2 }}" y="10" font-size="7.5" font-weight="bold" fill="#c2622a">{{ h.znacznik_etykieta }}</text>
+{% for p in h.os_x %}<text x="{{ p.pozycja }}" y="{{ h.os_y + 9 }}" font-size="6.5" text-anchor="middle" fill="#7a8591">{{ p.etykieta }}</text>{% endfor %}
+</svg>
+<p class="caption">{{ m.opis_histogramu }}</p>
+{% endif %}
+<table class="ratings">
+<tr><th></th><th>rating przed</th><th>zmiana</th><th>ranking</th></tr>
+<tr class="home"><td>{{ raport.gospodarz }}</td><td>{{ m.rating_gospodarza }}</td><td>{{ m.zmiana_gospodarza }}</td><td>{{ m.ranking_gospodarza }}</td></tr>
+<tr class="away"><td>{{ raport.gosc }}</td><td>{{ m.rating_goscia }}</td><td>{{ m.zmiana_goscia }}</td><td>{{ m.ranking_goscia }}</td></tr>
+</table>
+</td>
+{% elif raport.struktura %}
+<td class="col">
+{{ tytul(2, 'Struktura ataku', 'udział strzelców w bramkach drużyny') }}
+{% for st in raport.struktura %}
+<p class="struct-team {{ st.strona }}">{{ st.nazwa }}</p>
+<table class="struct-bar {{ st.strona }}"><tr>{% for seg in st.segmenty %}<td class="{{ seg.klasa }}" style="width: {{ seg.szerokosc }}%">{{ seg.bramki }}</td>{% endfor %}</tr></table>
+<table class="struct-labels"><tr>{% for seg in st.segmenty %}<td style="width: {{ seg.szerokosc }}%">{{ seg.etykieta }}</td>{% endfor %}</tr></table>
+<p class="caption">{{ st.opis }}</p>
+{% endfor %}
+<p class="caption">Efektywna liczba strzelców = (suma bramek)² / suma kwadratów bramek zawodników: im wyższa, tym bardziej rozproszony atak.</p>
+</td>
+{% endif %}
+</tr></table>
+
+{% if raport.wykres_ratingu and not skrocony %}{% set w = raport.wykres_ratingu %}
+{{ tytul(3, 'Siła drużyn w czasie', 'rating po każdym meczu w lidze · ostatnie 20 meczów drużyny, kolejno') }}
+<svg class="rating" viewBox="0 0 {{ w.szerokosc }} {{ w.wysokosc }}" width="100%" role="img" aria-label="Rating obu drużyn w ostatnich meczach ligowych. {{ raport.opis_ratingu }}">
+{% for p in w.os_y %}<line x1="34" x2="{{ w.prawa_krawedz }}" y1="{{ p.pozycja }}" y2="{{ p.pozycja }}" stroke="#e8ebef" stroke-width="0.6"/><text x="30" y="{{ p.pozycja + 2.4 }}" font-size="7" text-anchor="end" fill="#7a8591">{{ p.etykieta }}</text>{% endfor %}
+{% if w.srednia_y is not none %}<line x1="34" x2="{{ w.prawa_krawedz }}" y1="{{ w.srednia_y }}" y2="{{ w.srednia_y }}" stroke="#8a949e" stroke-width="0.8" stroke-dasharray="3 2"/><text x="36" y="{{ w.srednia_y - 2 }}" font-size="6.3" fill="#7a8591">1500 = start</text>{% endif %}
+{% for p in w.os_x %}<text x="{{ p.pozycja }}" y="{{ w.wysokosc - 4 }}" font-size="6.5" text-anchor="middle" fill="#7a8591">{{ p.etykieta }}</text>{% endfor %}
+{% for sx in w.separatory %}<line x1="{{ sx }}" x2="{{ sx }}" y1="4" y2="{{ w.os_dol }}" stroke="#c4cbd3" stroke-width="0.8"/>{% endfor %}
+<line x1="{{ w.analizowany_x }}" x2="{{ w.analizowany_x }}" y1="4" y2="{{ w.os_dol }}" stroke="#14202b" stroke-width="0.6" stroke-dasharray="1.5 1.5"/>
+{% for l in w.linie %}
+{% for odcinek in l.odcinki %}<polyline points="{{ odcinek }}" fill="none" stroke="{{ KOLOR[l.klasa] }}" stroke-width="1.8" stroke-linejoin="round"{% if l.klasa == 'away' %} stroke-dasharray="5 1.6"{% endif %}/>{% endfor %}
+{% for x, y in l.kropki %}<circle cx="{{ x }}" cy="{{ y }}" r="1.5" fill="{{ KOLOR[l.klasa] }}"/>{% endfor %}
+<circle cx="{{ l.koniec_x }}" cy="{{ l.koniec_y }}" r="3.4" fill="#fff" stroke="{{ KOLOR[l.klasa] }}" stroke-width="1.6"/>
+<text x="{{ w.prawa_krawedz + 4 }}" y="{{ l.etykieta_y + 2.6 }}" font-size="7.4" font-weight="bold" fill="{{ KOLOR[l.klasa] }}">{{ l.etykieta }}</text>
+{% endfor %}
+</svg>
+<p class="caption">{{ raport.opis_ratingu }} Przerywana — gość, kreska — ten mecz; rating rośnie po wyniku lepszym od prognozy.</p>
+{% endif %}
+
+
+{% set dane_druzyn = raport.druzyny | selectattr('atak') | list or raport.druzyny | selectattr('tlo') | list %}
+{% if not skrocony or dane_druzyn %}
+<table class="cols teams"><tr>
+{% for d in raport.druzyny %}
+<td class="col team-col {{ d.strona }}">
+<h2 class="team-title"><span class="bar"></span>{{ d.nazwa }}</h2>
+{% if d.atak %}
+{{ tytul('', 'Strzelcy', 'efektywna liczba strzelców ' ~ d.atak.efektywna_liczba ~ ' · top 3: ' ~ d.atak.udzial_trzech ~ ' bramek') }}
+<table class="scorers">
+<thead><tr><th class="n">#</th><th class="l">Zawodnik</th><th class="g">Br.</th><th class="b"></th><th>K</th><th>2'</th><th>śr. sez.</th><th>Δ</th></tr></thead>
+<tbody>
+{% for s in d.atak.strzelcy %}
+<tr{% if s.wyjatkowy %} class="star"{% endif %}><td class="n">{{ s.nr }}</td><td class="l name">{{ s.zawodnik }}{% if s.wyjatkowy %} <span class="star-mark">★</span>{% endif %}</td><td class="g">{{ s.bramki }}</td><td class="b"><span class="track"><span class="fill" style="width: {{ s.pasek }}%"></span></span></td><td>{{ s.karne }}</td><td>{{ s.kary }}</td><td class="muted">{{ s.srednia }}</td><td class="{{ s.klasa_roznicy }}">{{ s.roznica }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% if d.atak.pozostali %}<p class="caption">Pozostali: {{ d.atak.pozostali }}.</p>{% endif %}
+{% endif %}
+{% if d.tlo %}
+{{ tytul('', 'Na tle sezonu', 'ten mecz vs wcześniejsze mecze w rozgrywkach') }}
+{% if d.tlo.wykres %}{{ wykres_sezonu(d.tlo.wykres, d.strona, d.tlo.opis_aria) }}{% endif %}
+<p class="season-line"><span>zdobyte</span> {{ d.tlo.zdobyte }}</p>
+<p class="season-line"><span>stracone</span> {{ d.tlo.stracone }}</p>
+{% endif %}
+{% if d.forma and d.forma.mecze and not skrocony %}
+<p class="form-line"><span class="form-label">Forma</span>{% for f in d.forma.mecze %}<span class="fm {{ f.klasa }}{% if f.analizowany %} now{% endif %}">{{ f.rezultat }}</span>{% endfor %}<span class="form-sum">{{ d.forma.bilans }} · {{ d.forma.bramki }}</span></p>
+{% endif %}
+</td>
+{% endfor %}
+</tr></table>
+{% endif %}
+{% if raport.przypisy %}<p class="caption legend">{{ raport.przypisy | join(' · ') }}.</p>{% endif %}
+</body>
+</html>

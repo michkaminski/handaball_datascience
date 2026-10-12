@@ -2,6 +2,7 @@ import base64
 from pathlib import Path
 from uuid import UUID
 
+import pytest
 from flask import Flask
 from tests.conftest import ustawienia_testowe
 from tests.helpers.import_data import ImportTestClient
@@ -142,3 +143,144 @@ def test_panel_ma_import_tabel_z_wyborem_sezonu(tmp_path: Path) -> None:
         data={"csrf": csrf, "akcja": "rozpocznij_tabele", "sezon_tabel": "194", "ligi": "12007"},
     )
     assert zle.status_code == 400
+
+
+@pytest.mark.parametrize(
+    "wpis",
+    ["206511", " 206511 ", "https://rozgrywki.zprp.pl/?Sezon=195&Rozgrywki=12007&Zawody=206511"],
+)
+def test_import_jednego_meczu_z_panelu(tmp_path: Path, wpis: str) -> None:
+    aplikacja = AplikacjaFactory(ustawienia_testowe()).utworz()
+    klient_api = ImportTestClient()
+    repo = ImportTestRepository()
+    serwis = ImportService(ImportFileStore(tmp_path), klient_api, repo)
+    aplikacja.view_functions["administracja.import_danych"] = ImportPanelView.as_view(
+        "test_import", serwis, "testowe-haslo"
+    )
+    klient = aplikacja.test_client()
+    naglowki = {"Authorization": "Basic " + base64.b64encode(b"admin:testowe-haslo").decode()}
+    html = klient.get("/administracja/import", headers=naglowki).get_data(as_text=True)
+    assert 'id="import-meczu"' in html and 'value="rozpocznij_mecz"' in html
+    with klient.session_transaction() as sesja:
+        csrf = sesja["import_csrf"]
+    odpowiedz = klient.post(
+        "/administracja/import",
+        headers=naglowki,
+        data={"csrf": csrf, "akcja": "rozpocznij_mecz", "mecz": wpis},
+    )
+    assert odpowiedz.status_code == 303
+    adres = odpowiedz.headers["Location"]
+    serwis.krok(UUID(adres.rsplit("/", 1)[1]).hex)
+    html = klient.get(adres, headers=naglowki).get_data(as_text=True)
+    assert "Jeden mecz" in html and "Mecz <strong>206511</strong>: A – B" in html
+    assert 'value="zastosuj"' in html
+    assert klient_api.zapytania == ["pokaz_mecze_szczegoly.php"]
+    klient.post(
+        adres, headers=naglowki, data={"csrf": csrf, "akcja": "zastosuj", "potwierdzenie": "tak"}
+    )
+    html = klient.get(adres, headers=naglowki).get_data(as_text=True)
+    assert "/mecze/206511" in html and "mecz 206511" in html
+    assert repo.zapisy == 1
+
+
+@pytest.mark.parametrize(
+    "wpis",
+    ["206511\n206512", "206511, 206512", "206511 206512"],
+)
+def test_import_listy_meczow_z_panelu(tmp_path: Path, wpis: str) -> None:
+    aplikacja = AplikacjaFactory(ustawienia_testowe()).utworz()
+    klient_api = ImportTestClient()
+    repo = ImportTestRepository()
+    serwis = ImportService(ImportFileStore(tmp_path), klient_api, repo)
+    aplikacja.view_functions["administracja.import_danych"] = ImportPanelView.as_view(
+        "test_import", serwis, "testowe-haslo"
+    )
+    klient = aplikacja.test_client()
+    naglowki = {"Authorization": "Basic " + base64.b64encode(b"admin:testowe-haslo").decode()}
+    html = klient.get("/administracja/import", headers=naglowki).get_data(as_text=True)
+    assert "Pobieranie meczów" in html and "<textarea" in html
+    with klient.session_transaction() as sesja:
+        csrf = sesja["import_csrf"]
+    odpowiedz = klient.post(
+        "/administracja/import",
+        headers=naglowki,
+        data={"csrf": csrf, "akcja": "rozpocznij_mecz", "mecz": wpis},
+    )
+    assert odpowiedz.status_code == 303
+    adres = odpowiedz.headers["Location"]
+    identyfikator = UUID(adres.rsplit("/", 1)[1]).hex
+    for _ in range(5):
+        if serwis.krok(identyfikator).status != "POBIERANIE":
+            break
+    html = klient.get(adres, headers=naglowki).get_data(as_text=True)
+    assert "Wybrane mecze" in html and "206512 — C – D" in html and "206511 — A – B" in html
+    assert klient_api.zapytania == ["pokaz_mecze_szczegoly.php", "pokaz_mecze_szczegoly.php"]
+    klient.post(
+        adres, headers=naglowki, data={"csrf": csrf, "akcja": "zastosuj", "potwierdzenie": "tak"}
+    )
+    html = klient.get(adres, headers=naglowki).get_data(as_text=True)
+    assert "2 mecze" in html and repo.zapisy == 1
+
+
+def test_import_zaznaczonych_meczow_z_terminarza(tmp_path: Path) -> None:
+    aplikacja = AplikacjaFactory(ustawienia_testowe()).utworz()
+    klient_api = ImportTestClient()
+    serwis = ImportService(ImportFileStore(tmp_path), klient_api, ImportTestRepository())
+    aplikacja.view_functions["administracja.import_danych"] = ImportPanelView.as_view(
+        "test_import", serwis, "testowe-haslo"
+    )
+    klient = aplikacja.test_client()
+    naglowki = {"Authorization": "Basic " + base64.b64encode(b"admin:testowe-haslo").decode()}
+    klient.get("/administracja/import", headers=naglowki)
+    with klient.session_transaction() as sesja:
+        csrf = sesja["import_csrf"]
+    odpowiedz = klient.post(
+        "/administracja/import",
+        headers=naglowki,
+        data={"csrf": csrf, "akcja": "rozpocznij_mecze", "mecze": ["206511", "206512"]},
+    )
+    assert odpowiedz.status_code == 303
+    assert klient_api.zapytania == []
+    assert serwis.magazyn.historia()[0].id_mecze == [206511, 206512]
+
+
+def test_import_zaznaczenia_odrzuca_pusta_liste(tmp_path: Path) -> None:
+    aplikacja = AplikacjaFactory(ustawienia_testowe()).utworz()
+    serwis = ImportService(ImportFileStore(tmp_path), ImportTestClient(), ImportTestRepository())
+    aplikacja.view_functions["administracja.import_danych"] = ImportPanelView.as_view(
+        "test_import", serwis, "testowe-haslo"
+    )
+    klient = aplikacja.test_client()
+    naglowki = {"Authorization": "Basic " + base64.b64encode(b"admin:testowe-haslo").decode()}
+    klient.get("/administracja/import", headers=naglowki)
+    with klient.session_transaction() as sesja:
+        csrf = sesja["import_csrf"]
+    odpowiedz = klient.post(
+        "/administracja/import",
+        headers=naglowki,
+        data={"csrf": csrf, "akcja": "rozpocznij_mecze"},
+    )
+    assert odpowiedz.status_code == 400
+    assert "Zaznacz przynajmniej jeden mecz." in odpowiedz.get_data(as_text=True)
+
+
+@pytest.mark.parametrize("wpis", ["", "abc", "999999"])
+def test_import_jednego_meczu_odrzuca_bledny_numer(tmp_path: Path, wpis: str) -> None:
+    aplikacja = AplikacjaFactory(ustawienia_testowe()).utworz()
+    klient_api = ImportTestClient()
+    serwis = ImportService(ImportFileStore(tmp_path), klient_api, ImportTestRepository())
+    aplikacja.view_functions["administracja.import_danych"] = ImportPanelView.as_view(
+        "test_import", serwis, "testowe-haslo"
+    )
+    klient = aplikacja.test_client()
+    naglowki = {"Authorization": "Basic " + base64.b64encode(b"admin:testowe-haslo").decode()}
+    klient.get("/administracja/import", headers=naglowki)
+    with klient.session_transaction() as sesja:
+        csrf = sesja["import_csrf"]
+    odpowiedz = klient.post(
+        "/administracja/import",
+        headers=naglowki,
+        data={"csrf": csrf, "akcja": "rozpocznij_mecz", "mecz": wpis},
+    )
+    assert odpowiedz.status_code == 400
+    assert klient_api.zapytania == []

@@ -38,8 +38,12 @@ class PdfRendererTestowy:
         return b"%PDF-testowy"
 
 
-def aplikacja(renderer_pdf: PdfRendererTestowy | None = None) -> Flask:
-    terminarz = TerminarzInMemoryRepository()
+def aplikacja(
+    renderer_pdf: PdfRendererTestowy | None = None,
+    repozytorium_terminarza: TerminarzInMemoryRepository | None = None,
+    repozytorium_sezonow: SezonyTerminarza | None = None,
+) -> Flask:
+    terminarz = repozytorium_terminarza or TerminarzInMemoryRepository()
     zapowiedzi = ZapowiedzMeczuInMemoryRepository(
         [
             mecz_zapowiedzi(),
@@ -57,7 +61,7 @@ def aplikacja(renderer_pdf: PdfRendererTestowy | None = None) -> Flask:
         [*mecze_dwoch_sezonow(), mecz_ligowy(204, datetime(2025, 9, 22, 18), 30, 10, None, None)]
     )
     zaleznosci = ZaleznosciZadaniaFactory(
-        fabryka_repozytorium_sezonow=lambda: SezonyTerminarza(),
+        fabryka_repozytorium_sezonow=lambda: repozytorium_sezonow or SezonyTerminarza(),
         fabryka_terminarza=lambda: terminarz,
         fabryka_zapowiedzi_meczu=lambda: zapowiedzi,
         fabryka_meczow_ligowych=lambda: ligowe,
@@ -116,6 +120,8 @@ def test_terminarz_grupuje_i_pokazuje_wyniki() -> None:
     assert "zakończone 3/3" in tresc
     assert 'href="/administracja/terminarz/204?id_sezon=5&amp;id_rozgrywki=501"' in tresc
     assert "Meczów w terminarzu: <b>5</b>" in tresc
+    assert "data-import-z-terminarza" not in tresc
+    assert 'name="mecze"' not in tresc
 
 
 def test_filtr_kolejki_i_puste_rozgrywki() -> None:

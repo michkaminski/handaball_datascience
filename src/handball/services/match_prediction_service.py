@@ -339,6 +339,18 @@ class SzczegolyPrognozyService:
         return tuple(reversed(druzyny[-self.DLUGOSC_HISTORII :]))
 
 
+class PrognozyModeluService:
+    def __init__(self, backtest: BacktestPrognozService, katalog: KatalogModeliPrognoz) -> None:
+        self._backtest = backtest
+        self._katalog = katalog
+
+    def nazwa(self, wersja_modelu: str) -> str:
+        return self._katalog.definicja(wersja_modelu).opis.nazwa
+
+    def prognozy(self, wersja_modelu: str) -> tuple[PrognozaMeczu, ...]:
+        return self._backtest.uruchom(wersja_modelu).prognozy
+
+
 class PrognozaZapowiedziService:
     def __init__(
         self,

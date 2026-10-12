@@ -53,7 +53,7 @@ class WierszeTerminarzaController {
   }
 
   elementInteraktywny(zdarzenie) {
-    return Boolean(zdarzenie.target.closest && zdarzenie.target.closest('a, button, input, select'));
+    return Boolean(zdarzenie.target.closest && zdarzenie.target.closest('a, button, input, select, label'));
   }
 }
 

@@ -30,6 +30,13 @@
 <button class="btn secondary" type="submit" name="tryb" value="uzupelniajacy">Uzupełnij brakujące dane meczów</button>
 <p class="note">Import uzupełniający sprawdza tylko znane mecze sprzed dzisiejszego dnia z brakującym wynikiem lub składem gospodarzy albo gości. Pomija walkowery i mecze wycofane. Zachowuje istniejące wartości; korekty i nowe mecze pobierzesz pełnym importem.</p>
 </form></div></section>
+<section class="panel" id="import-meczu"><h2>Wybrane mecze</h2><div class="panel-body">
+<form method="post" action="{{ url_for('administracja.import_danych') }}" class="import-form">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="rozpocznij_mecz">
+<label class="field">Numery meczów ZPRP albo adresy stron meczów <textarea name="mecz" required rows="4" autocomplete="off" placeholder="207606&#10;207607"></textarea></label>
+<button class="btn" type="submit">Pobierz mecze — sprawdź zmiany</button>
+<p class="note">Jeden numer albo adres pobiera ten mecz. Kilka wpisów — każdy w osobnym wierszu albo numery rozdzielone spacją lub przecinkiem — pobiera tylko tę listę. Mecze można też zaznaczyć na stronie <a href="{{ url_for('administracja.pobieranie_meczow') }}">Pobieranie meczów</a>. Pobiera z ZPRP szczegóły meczów znanych w bazie: wynik, widzów, halę, drużyny i składy z bramkami i karami. Dopisuje brakujące rekordy i aktualizuje zmienione wartości (także korekty); niczego nie usuwa. Zapis następuje dopiero po zatwierdzeniu podglądu. Najwyżej 80 meczów naraz.</p>
+</form></div></section>
 <section class="panel" id="import-tabel"><h2>Import tabel</h2><div class="panel-body">
 <p class="note">Pobiera z ZPRP wyłącznie tabele (klasyfikacje) wybranych rozgrywek i sezonu, bez meczów i składów. Brakujące drużyny są dopisywane, istniejące dane drużyn tylko uzupełniane. Zapis następuje dopiero po zatwierdzeniu podglądu; wiersze nie są usuwane.</p>
 {% if blad_opcji %}<p class="notice notice-error" role="alert">{{ blad_opcji }}</p>
@@ -61,9 +68,14 @@
 {% if przebieg %}
 <section class="panel" id="przebieg"><h2>Przebieg: {{ przebieg.status }}</h2><div class="panel-body">
 <p>Tryb: <strong>{{ przebieg.nazwa_trybu }}</strong> · sezon <strong>{{ przebieg.nazwa_sezonu }}</strong></p>
+{% if przebieg.tryb == 'mecz' %}<p>Mecz <strong>{{ przebieg.id_mecz }}</strong>: {{ przebieg.opis }} · {{ przebieg.nazwy_rozgrywek|join(', ') }}</p>
+{% elif przebieg.tryb == 'mecze' %}<p>Wybrane mecze: <strong>{{ przebieg.id_mecze|length }}</strong> · {{ przebieg.nazwy_rozgrywek|join(', ') }}</p>
+<details><summary>Lista meczów</summary><ul>{% for id_mecz, opis in przebieg.pary_meczow %}<li>{{ id_mecz }} — {{ opis }}</li>{% endfor %}</ul></details>{% endif %}
 <p>Pobrano <strong id="liczba-pobran">{{ przebieg.wykonane|length }}</strong> odpowiedzi API.
 Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</strong> odkrytych zadań.</p>
-{% if przebieg.tryb == 'uzupelniajacy' %}
+{% if przebieg.tryb in ('mecz', 'mecze') %}
+<p class="note">Pobierane są wyłącznie szczegóły wskazanych meczów, bez składów sezonowych.</p>
+{% elif przebieg.tryb == 'uzupelniajacy' %}
 <p class="note">Pobierane są wyłącznie szczegóły wybranych meczów, bez składów sezonowych. Brakujące odpowiedzi są pomijane.</p>
 {% if not przebieg.wykonane and not przebieg.kolejka %}<p role="status">Nie znaleziono meczów wymagających uzupełnienia.</p>{% endif %}
 {% elif przebieg.tryb == 'tabele' %}
@@ -93,6 +105,7 @@ Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</stron
 {% elif przebieg.status == 'ZAPISANO' %}
 <p class="notice notice-success">Aktualizacja zatwierdzona. Numer przebiegu w bazie: {{ przebieg.id_przebieg_bazy }}.</p>
 {% if przebieg.tryb == 'tabele' %}<p><a href="{{ url_for('administracja.lista_tabel', id_sezon=przebieg.id_sezon) }}">Przejdź do tabel sezonu {{ przebieg.nazwa_sezonu }}</a></p>
+{% elif przebieg.tryb == 'mecz' and przebieg.id_mecz %}<p><a href="{{ url_for('administracja.szczegoly_meczu', id_mecz=przebieg.id_mecz) }}">Przejdź do meczu {{ przebieg.id_mecz }}</a></p>
 {% else %}<p><a href="{{ url_for('administracja.lista_meczow', id_sezon=przebieg.id_sezon) }}">Przejdź do meczów sezonu {{ przebieg.nazwa_sezonu }}</a></p>{% endif %}
 {% endif %}</div></section>
 {% if przebieg.status in ('PODGLAD', 'ZAPISANO') %}
@@ -106,7 +119,7 @@ Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</stron
 </div></section>{% endif %}{% endif %}
 <section class="panel" id="historia"><h2>Historia pobrań w Handball DataScience</h2><div class="table-wrap">
 <table><thead><tr><th>Rozpoczęcie</th><th>Tryb</th><th>Sezon</th><th>Status</th><th>Ligi</th><th>Błąd</th></tr></thead><tbody>
-{% for wpis in historia %}<tr><td><a href="{{ url_for('administracja.import_danych', identyfikator=wpis.adres_id) }}">{{ wpis.rozpoczecie }}</a></td><td>{{ wpis.nazwa_trybu }}</td><td>{{ wpis.nazwa_sezonu }}</td><td>{{ wpis.status }}</td><td>{{ wpis.nazwy_rozgrywek|join(', ') }}</td><td>{{ wpis.blad or '—' }}</td></tr>
+{% for wpis in historia %}<tr><td><a href="{{ url_for('administracja.import_danych', identyfikator=wpis.adres_id) }}">{{ wpis.rozpoczecie }}</a></td><td>{{ wpis.nazwa_trybu }}</td><td>{{ wpis.nazwa_sezonu }}</td><td>{{ wpis.status }}</td><td>{{ wpis.nazwy_rozgrywek|join(', ') }}{% if wpis.dopisek_meczow %} · {{ wpis.dopisek_meczow }}{% endif %}</td><td>{{ wpis.blad or '—' }}</td></tr>
 {% else %}<tr><td colspan="6">Brak przebiegów. Wybierz ligi i sprawdź aktualizacje.</td></tr>{% endfor %}
 </tbody></table></div></section>
 <script src="{{ url_for('static', filename='js/import.js') }}" defer></script>

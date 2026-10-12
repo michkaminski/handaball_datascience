@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from flask import abort, render_template, request
+from pathlib import Path
+
+from flask import Response, abort, render_template, request
 from flask.views import MethodView
 
 from handball.domain.errors import BladOdczytuDanych, NieZnalezionoMeczu
 from handball.interface.admin.forms.match_filters import MeczFilterForm
+from handball.interface.admin.views.schedule_views import PdfResponseBuilder
 from handball.interface.errors import obsluz_blad_domeny
 from handball.request_dependencies import ZaleznosciZadaniaFactory
 
@@ -66,16 +69,46 @@ class MeczSzczegolyView(MethodView):
     def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
         self._fabryka_zaleznosci = fabryka_zaleznosci
         self._presenter = fabryka_zaleznosci.utworz_presenter_meczow()
+        self._presenter_statystyk = fabryka_zaleznosci.utworz_presenter_statystyk_meczu()
 
     def get(self, id_mecz: int) -> str:
-        serwis = self._fabryka_zaleznosci.utworz_serwis_meczow()
+        serwis = self._fabryka_zaleznosci.utworz_serwis_statystyk_meczu()
         try:
-            szczegoly = serwis.pobierz_szczegoly(id_mecz)
+            statystyki = serwis.pobierz(id_mecz)
         except (NieZnalezionoMeczu, BladOdczytuDanych) as wyjatek:
             obsluz_blad_domeny(wyjatek)
 
         return render_template(
             "admin/matches/detail.html",
             sekcja_aktywna="mecze",
-            szczegoly=self._presenter.przygotuj_szczegoly(szczegoly),
+            szczegoly=self._presenter.przygotuj_szczegoly(statystyki.szczegoly),
+            statystyki=self._presenter_statystyk.przygotuj(statystyki),
         )
+
+
+class RaportMeczuPdfView(MethodView):
+    ARKUSZ = Path("css") / "match_report_pdf.css"
+    LIMIT_SKROCONY = 16
+
+    def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+        self._fabryka_zaleznosci = fabryka_zaleznosci
+        self._pdf = PdfResponseBuilder(fabryka_zaleznosci)
+
+    def get(self, id_mecz: int) -> Response | str:
+        serwis = self._fabryka_zaleznosci.utworz_serwis_raportu_meczu()
+        wersja = self._fabryka_zaleznosci.utworz_katalog_modeli_prognoz().domyslna_wersja
+        skrocony = request.args.get("wariant") == "skrocony"
+        try:
+            raport = serwis.pobierz(id_mecz, wersja, z_modelem=not skrocony)
+        except (NieZnalezionoMeczu, BladOdczytuDanych) as wyjatek:
+            obsluz_blad_domeny(wyjatek)
+        presenter = self._fabryka_zaleznosci.utworz_presenter_raportu_meczu()
+        html = render_template(
+            "admin/matches/report_pdf.html",
+            raport=presenter.przygotuj(raport, self.LIMIT_SKROCONY if skrocony else None),
+            skrocony=skrocony,
+        )
+        if request.args.get("format") == "html":
+            return html
+        nazwa = f"raport-meczu-{id_mecz}{'-skrocony' if skrocony else ''}.pdf"
+        return self._pdf.odpowiedz(html, self.ARKUSZ, nazwa)

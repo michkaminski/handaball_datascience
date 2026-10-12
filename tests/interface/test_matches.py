@@ -12,6 +12,7 @@ from tests.conftest import ustawienia_testowe
 from tests.helpers.competition_repository import RozgrywkiInMemoryRepository
 from tests.helpers.match_repository import MeczInMemoryRepository
 from tests.helpers.match_stage_repository import EtapMeczowInMemoryRepository
+from tests.helpers.match_statistics_repository import FormaMeczuInMemoryRepository
 from tests.helpers.season_repository import SezonInMemoryRepository
 from tests.helpers.venue_repository import HalaInMemoryRepository
 
@@ -66,6 +67,7 @@ def _aplikacja_z_repozytorium(
         lambda: RozgrywkiInMemoryRepository(),
         lambda: HalaInMemoryRepository(),
         lambda: EtapMeczowInMemoryRepository(),
+        fabryka_formy_meczu=lambda: FormaMeczuInMemoryRepository(),
     )
     fabryka = AplikacjaFactory(
         ustawienia_testowe(),
@@ -299,3 +301,30 @@ def test_lista_meczow_pokazuje_widzow_z_separatorem_i_brak_danych() -> None:
     assert '<td class="num">4 250</td>' in tresc
     assert '<td class="num">—</td>' in tresc
     assert 'colspan="11"' not in tresc
+
+
+def test_szczegoly_meczu_maja_zakladke_analizy() -> None:
+    szczegoly = replace(
+        SZCZEGOLY_TESTOWE,
+        mecz=replace(SZCZEGOLY_TESTOWE.mecz, id_zespol_gosp=1, id_zespol_gosc=2),
+    )
+    klient = _aplikacja_z_repozytorium([], {12543: szczegoly}).test_client()
+
+    tresc = klient.get("/administracja/mecze/12543").get_data(as_text=True)
+
+    assert 'id="match-panel-analysis"' in tresc
+    assert "Porównanie drużyn" in tresc
+    assert "--home-share: 53%" in tresc
+    assert "Brak rozegranych meczów w sezonie." in tresc
+    assert tresc.index('id="match-tab-basic"') < tresc.index('id="match-tab-analysis"')
+    assert tresc.index('id="match-tab-analysis"') < tresc.index('id="match-tab-stats"')
+
+
+def test_szczegoly_meczu_bez_wyniku_pokazuja_informacje() -> None:
+    szczegoly = replace(SZCZEGOLY_TESTOWE, mecz=DaneMeczu(id=12543))
+    klient = _aplikacja_z_repozytorium([], {12543: szczegoly}).test_client()
+
+    tresc = klient.get("/administracja/mecze/12543").get_data(as_text=True)
+
+    assert "Mecz nie ma jeszcze wyniku" in tresc
+    assert "Porównanie drużyn" not in tresc

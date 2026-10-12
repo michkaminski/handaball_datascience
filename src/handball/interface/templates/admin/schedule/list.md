@@ -6,7 +6,7 @@ Docelowy szablon względem katalogu szablonów: `admin/schedule/list.html`. Tras
 
 ## Przeznaczenie
 
-Prosty terminarz jednych rozgrywek w jednym sezonie. Mecze są pogrupowane według rundy → kolejki → dnia i uporządkowane po numerze kolejki, terminie i ID. Zakończony mecz pokazuje wynik po 60 minutach (z dopiskiem dogrywki lub serii karnych), nierozegrany `– : –`. Każdy wiersz prowadzi do [zapowiedzi meczu](preview.md); link „Szczegóły” otwiera kartę meczu w nowej karcie. Nazwa kolejki (od 2026-09-26) otwiera okno dialogowe z [typowaniami kolejki](tips.md): dla każdego meczu sześć wartości prognozy modelu.
+Prosty terminarz jednych rozgrywek w jednym sezonie. Mecze są pogrupowane według rundy → kolejki → dnia i uporządkowane po numerze kolejki, terminie i ID. Zakończony mecz pokazuje wynik po 60 minutach (z dopiskiem dogrywki lub serii karnych), nierozegrany `– : –`. Każdy wiersz prowadzi do [zapowiedzi meczu](preview.md); link „Szczegóły” otwiera kartę meczu w nowej karcie. Nazwa kolejki (od 2026-09-26) otwiera okno dialogowe z [typowaniami kolejki](tips.md): dla każdego meczu sześć wartości prognozy modelu. Zaznaczanie meczów do importu jest na osobnej stronie [Pobieranie meczów](../import/schedule.md).
 
 ## Filtry
 

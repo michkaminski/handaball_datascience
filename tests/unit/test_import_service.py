@@ -4,7 +4,13 @@ from pathlib import Path
 import pytest
 from tests.helpers.import_data import ImportTestClient
 
-from handball.domain.imports import BladImportu, OpcjaImportu, PrzebiegImportu, ZadaniePobrania
+from handball.domain.imports import (
+    BladImportu,
+    MeczImportu,
+    OpcjaImportu,
+    PrzebiegImportu,
+    ZadaniePobrania,
+)
 from handball.infrastructure.import_store import ImportFileStore
 from handball.services.import_service import ImportService
 
@@ -13,9 +19,21 @@ class ImportTestRepository:
     def __init__(self) -> None:
         self.zapisy = 0
         self.brakujace: list[ZadaniePobrania] = []
+        self.mecze = {
+            206511: MeczImportu(206511, 12007, 66727, "LOTTO Superliga", "A – B"),
+            206512: MeczImportu(206512, 12009, 66728, "Superliga kobiet", "C – D"),
+        }
 
     def pobierz_brakujace(self, ligi: list[int]) -> list[ZadaniePobrania]:
         return self.brakujace.copy()
+
+    def pobierz_mecz(self, id_mecz: int) -> MeczImportu | None:
+        return self.mecze.get(id_mecz)
+
+    def pobierz_mecze(self, id_mecze: list[int]) -> list[MeczImportu]:
+        return [
+            self.mecze[identyfikator] for identyfikator in id_mecze if identyfikator in self.mecze
+        ]
 
     def pobierz_sezony(self) -> list[OpcjaImportu]:
         return [OpcjaImportu(195, "2026/2027"), OpcjaImportu(194, "2025/2026")]
@@ -236,3 +254,113 @@ def test_stary_przebieg_bez_sezonu_dotyczy_sezonu_2026_2027() -> None:
     przebieg = PrzebiegImportu("x", [12007], "2026-01-01T00:00:00")
     assert (przebieg.id_sezon, przebieg.nazwa_sezonu) == (195, "2026/2027")
     assert przebieg.nazwy_rozgrywek == ["Superliga mężczyzn"]
+
+
+def test_import_jednego_meczu_pobiera_tylko_jego_szczegoly(tmp_path: Path) -> None:
+    repo = ImportTestRepository()
+    klient = ImportTestClient()
+    serwis = ImportService(ImportFileStore(tmp_path), klient, repo)
+    przebieg = serwis.rozpocznij_mecz(206511)
+    assert przebieg.tryb == "mecz"
+    assert przebieg.ligi == [12007]
+    assert przebieg.id_mecz == 206511
+    assert przebieg.nazwy_rozgrywek == ["LOTTO Superliga"]
+    assert przebieg.nazwa_trybu == "Jeden mecz"
+    przebieg = serwis.krok(przebieg.id)
+    assert przebieg.status == "PODGLAD"
+    assert klient.zapytania == ["pokaz_mecze_szczegoly.php"]
+    assert not any(
+        r.uzupelnij for r in przebieg.rekordy if r.tabela in ("mecze", "mecze_zawodnicy")
+    )
+    mecz = next(r for r in przebieg.rekordy if r.tabela == "mecze")
+    assert mecz.klucz == {"id": 206511}
+    assert mecz.dane["id_kolejka"] == 66727 and mecz.dane["wynik_gosp_full"] == 29
+    assert any(r.tabela == "mecze_zawodnicy" for r in przebieg.rekordy)
+    assert serwis.zastosuj(przebieg.id).status == "ZAPISANO"
+    assert repo.zapisy == 1
+    assert serwis.magazyn.pobierz(przebieg.id).id_mecz == 206511
+
+
+def test_import_wybranych_meczow_pobiera_tylko_ich_szczegoly(tmp_path: Path) -> None:
+    repo = ImportTestRepository()
+    klient = ImportTestClient()
+    serwis = ImportService(ImportFileStore(tmp_path), klient, repo)
+    przebieg = serwis.rozpocznij_mecze([206512, 206511, 206512])
+    assert przebieg.tryb == "mecze"
+    assert przebieg.id_mecze == [206512, 206511]
+    assert przebieg.ligi == [12007, 12009]
+    assert przebieg.nazwa_trybu == "Wybrane mecze"
+    assert przebieg.dopisek_meczow == "2 mecze"
+    assert [zadanie.parametry["Zawody"] for zadanie in przebieg.kolejka] == [206512, 206511]
+    for _ in range(5):
+        przebieg = serwis.krok(przebieg.id)
+        if przebieg.status != "POBIERANIE":
+            break
+    assert przebieg.status == "PODGLAD", przebieg.blad
+    assert klient.zapytania == ["pokaz_mecze_szczegoly.php", "pokaz_mecze_szczegoly.php"]
+    identyfikatory = {r.klucz["id"] for r in przebieg.rekordy if r.tabela == "mecze"}
+    assert identyfikatory == {206511, 206512}
+    assert serwis.zastosuj(przebieg.id).status == "ZAPISANO"
+    assert repo.zapisy == 1
+
+
+def test_import_jednego_zaznaczenia_zostaje_trybem_jednego_meczu(tmp_path: Path) -> None:
+    serwis = ImportService(ImportFileStore(tmp_path), ImportTestClient(), ImportTestRepository())
+    przebieg = serwis.rozpocznij_mecze([206511])
+    assert przebieg.tryb == "mecz"
+    assert przebieg.id_mecz == 206511
+    assert przebieg.id_mecze == []
+
+
+@pytest.mark.parametrize(
+    "id_mecze",
+    [[], [0], [206511, 999999], list(range(1, 82))],
+)
+def test_import_wybranych_meczow_odrzuca_zly_wybor(tmp_path: Path, id_mecze: list[int]) -> None:
+    klient = ImportTestClient()
+    serwis = ImportService(ImportFileStore(tmp_path), klient, ImportTestRepository())
+    with pytest.raises(BladImportu):
+        serwis.rozpocznij_mecze(id_mecze)
+    assert klient.zapytania == []
+    assert serwis.magazyn.historia() == []
+
+
+def test_stary_przebieg_bez_listy_meczow_sie_wczytuje(tmp_path: Path) -> None:
+    magazyn = ImportFileStore(tmp_path)
+    dokument = {
+        "id": "a" * 32,
+        "ligi": [12007],
+        "rozpoczecie": "2026-01-01T00:00:00",
+        "status": "ZAPISANO",
+        "kolejka": [],
+        "wykonane": [],
+        "skroty_zrodel": {},
+        "rekordy": [],
+        "blad": None,
+        "id_przebieg_bazy": 1,
+        "tryb": "mecz",
+        "nieudane_probowania": {},
+        "pominiete": [],
+        "id_sezon": 195,
+        "nazwa_sezonu": "2026/2027",
+        "nazwy_lig": {},
+        "id_mecz": 206511,
+        "opis": "A – B",
+    }
+    with magazyn.polaczenie() as polaczenie:
+        polaczenie.execute("INSERT INTO przebiegi VALUES (?, ?)", ("a" * 32, json.dumps(dokument)))
+        polaczenie.commit()
+    przebieg = magazyn.pobierz("a" * 32)
+    assert przebieg.id_mecz == 206511
+    assert przebieg.id_mecze == []
+    assert przebieg.dopisek_meczow == "mecz 206511"
+
+
+@pytest.mark.parametrize("id_mecz", [0, 999999])
+def test_import_jednego_meczu_odrzuca_nieznany_mecz(tmp_path: Path, id_mecz: int) -> None:
+    klient = ImportTestClient()
+    serwis = ImportService(ImportFileStore(tmp_path), klient, ImportTestRepository())
+    with pytest.raises(BladImportu):
+        serwis.rozpocznij_mecz(id_mecz)
+    assert klient.zapytania == []
+    assert serwis.magazyn.historia() == []

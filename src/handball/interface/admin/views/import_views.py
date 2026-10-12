@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import re
 from hashlib import sha256
 from hmac import compare_digest
-from secrets import token_urlsafe
 from uuid import UUID
 
 from flask import Response, make_response, redirect, render_template, request, session, url_for
 from flask.views import MethodView
 
 from handball.domain.imports import LIGI_IMPORTU, BladImportu
+from handball.interface.admin.import_csrf import token_importu
 from handball.services.import_service import ImportService
+
+NUMER_MECZU = re.compile(r"(?:^|[\s,;]|[?&]Zawody=|/)(\d{4,9})(?=$|[\s,;/?&#])", re.IGNORECASE)
 
 
 class ImportPanelView(MethodView):
@@ -51,10 +54,7 @@ class ImportPanelView(MethodView):
         odmowa = self._dostep()
         if odmowa is not None:
             return odmowa
-        token = session.get("import_csrf")
-        if not isinstance(token, str):
-            token = token_urlsafe(32)
-            session["import_csrf"] = token
+        token = token_importu()
         opcje_tabel, blad_opcji = None, None
         try:
             opcje_tabel = self._serwis.opcje_tabel(request.args.get("sezon_tabel", type=int))
@@ -101,6 +101,17 @@ class ImportPanelView(MethodView):
                     int(request.form.get("sezon_tabel", "")),
                     [int(v) for v in request.form.getlist("ligi")],
                 )
+            elif identyfikator is None and akcja == "rozpocznij_mecz":
+                numery = self._numery_meczow(request.form.get("mecz", ""))
+                przebieg = (
+                    self._serwis.rozpocznij_mecz(numery[0])
+                    if len(numery) == 1
+                    else self._serwis.rozpocznij_mecze(numery)
+                )
+            elif identyfikator is None and akcja == "rozpocznij_mecze":
+                przebieg = self._serwis.rozpocznij_mecze(
+                    self._identyfikatory_meczow(request.form.getlist("mecze"))
+                )
             elif identyfikator and akcja == "krok":
                 przebieg = self._serwis.krok(identyfikator.hex)
             elif (
@@ -132,3 +143,21 @@ class ImportPanelView(MethodView):
             return make_response(
                 str(blad) if isinstance(blad, BladImportu) else "Nieprawidłowy wybór ligi.", 400
             )
+
+    @staticmethod
+    def _numery_meczow(wpis: str) -> list[int]:
+        numery = list(
+            dict.fromkeys(
+                int(dopasowanie.group(1)) for dopasowanie in NUMER_MECZU.finditer(wpis.strip())
+            )
+        )
+        if not numery:
+            raise BladImportu("Podaj numer meczu ZPRP albo adres strony meczu.")
+        return numery
+
+    @staticmethod
+    def _identyfikatory_meczow(wartosci: list[str]) -> list[int]:
+        try:
+            return [int(wartosc) for wartosc in wartosci]
+        except ValueError as blad:
+            raise BladImportu("Nieprawidłowy numer meczu.") from blad

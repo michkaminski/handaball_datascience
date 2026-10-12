@@ -95,7 +95,7 @@ def test_liderzy_wyznaczani_osobno_dla_druzyn_z_remisem() -> None:
 def test_zakladki_i_legenda_ponizej_tabel() -> None:
     klient = _aplikacja_z_repozytorium([], {12543: SZCZEGOLY_TESTOWE}).test_client()
     tresc = klient.get("/administracja/mecze/12543").get_data(as_text=True)
-    assert tresc.count('role="tab"') == 3
+    assert tresc.count('role="tab"') == 4
     assert 'id="match-panel-rosters"' in tresc
     assert tresc.index('class="roster-legend"') > tresc.rindex("</table>")
     assert "najlepszy strzelec danej drużyny" in tresc

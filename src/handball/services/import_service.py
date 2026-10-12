@@ -10,7 +10,9 @@ from handball.contracts.import_repository import ImportRepository
 from handball.contracts.import_storage import ImportStore, ZprpReadClient
 from handball.domain.imports import (
     LIGI_IMPORTU,
+    LIMIT_WYBRANYCH_MECZOW,
     BladImportu,
+    MeczImportu,
     OpcjeImportuTabel,
     PrzebiegImportu,
     ZadaniePobrania,
@@ -18,6 +20,20 @@ from handball.domain.imports import (
 from handball.services.import_mapping import ZprpImportMapper
 
 LIMIT_PROB_ZADANIA = 3
+
+
+def _zadanie_szczegolow(mecz: MeczImportu) -> ZadaniePobrania:
+    return ZadaniePobrania(
+        "pokaz_mecze_szczegoly.php",
+        {"Zawody": mecz.id},
+        "szczegoly",
+        {
+            "mid": mecz.id,
+            "cid": mecz.id_rozgrywki,
+            "did": mecz.id_kolejka,
+            "sid": mecz.id_sezon,
+        },
+    )
 
 
 class ImportService:
@@ -45,6 +61,74 @@ class ImportService:
                 ZadaniePobrania("pokaz_sezony.php", {}, "sezony"),
                 ZadaniePobrania("pokaz_rozgrywki.php", {"Sezon": 195}, "rozgrywki"),
             ]
+        self.magazyn.dodaj(przebieg)
+        return przebieg
+
+    def rozpocznij_mecz(self, id_mecz: int) -> PrzebiegImportu:
+        if id_mecz <= 0:
+            raise BladImportu("Podaj numer meczu ZPRP.")
+        mecz = self._repozytorium.pobierz_mecz(id_mecz)
+        if mecz is None:
+            raise BladImportu(
+                f"Nie znaleziono meczu {id_mecz} w bazie. "
+                "Nowe mecze sezonu 2026/2027 pobierzesz pełnym importem jego rozgrywek."
+            )
+        przebieg = PrzebiegImportu(
+            uuid4().hex,
+            [mecz.id_rozgrywki],
+            datetime.now(UTC).isoformat(),
+            tryb="mecz",
+            nazwy_lig={str(mecz.id_rozgrywki): mecz.nazwa_rozgrywek},
+            id_mecz=mecz.id,
+            opis=mecz.opis,
+            id_sezon=mecz.id_sezon,
+            nazwa_sezonu=mecz.nazwa_sezonu,
+        )
+        przebieg.kolejka = [_zadanie_szczegolow(mecz)]
+        self.magazyn.dodaj(przebieg)
+        return przebieg
+
+    def rozpocznij_mecze(self, id_mecze: list[int]) -> PrzebiegImportu:
+        identyfikatory = list(dict.fromkeys(id_mecze))
+        if not identyfikatory:
+            raise BladImportu("Zaznacz przynajmniej jeden mecz.")
+        if any(identyfikator <= 0 for identyfikator in identyfikatory):
+            raise BladImportu("Podaj numer meczu ZPRP.")
+        if len(identyfikatory) > LIMIT_WYBRANYCH_MECZOW:
+            raise BladImportu(
+                f"Można pobrać najwyżej {LIMIT_WYBRANYCH_MECZOW} meczów naraz. "
+                "Zawęź terminarz rundą albo kolejką."
+            )
+        if len(identyfikatory) == 1:
+            return self.rozpocznij_mecz(identyfikatory[0])
+        mecze = self._repozytorium.pobierz_mecze(identyfikatory)
+        znalezione = {mecz.id: mecz for mecz in mecze}
+        brakujace = [
+            identyfikator for identyfikator in identyfikatory if identyfikator not in znalezione
+        ]
+        if brakujace:
+            pokazane = ", ".join(str(identyfikator) for identyfikator in brakujace[:8])
+            if len(brakujace) > 8:
+                pokazane += f" i {len(brakujace) - 8} innych"
+            raise BladImportu(
+                f"Nie znaleziono meczów w bazie: {pokazane}. "
+                "Nowe mecze sezonu 2026/2027 pobierzesz pełnym importem ich rozgrywek."
+            )
+        kolejnosc = [znalezione[identyfikator] for identyfikator in identyfikatory]
+        if len({mecz.id_sezon for mecz in kolejnosc}) != 1:
+            raise BladImportu("Zaznacz mecze jednego sezonu.")
+        przebieg = PrzebiegImportu(
+            uuid4().hex,
+            sorted({mecz.id_rozgrywki for mecz in kolejnosc}),
+            datetime.now(UTC).isoformat(),
+            tryb="mecze",
+            nazwy_lig={str(mecz.id_rozgrywki): mecz.nazwa_rozgrywek for mecz in kolejnosc},
+            id_mecze=[mecz.id for mecz in kolejnosc],
+            opisy_meczow=[mecz.opis for mecz in kolejnosc],
+            id_sezon=kolejnosc[0].id_sezon,
+            nazwa_sezonu=kolejnosc[0].nazwa_sezonu,
+        )
+        przebieg.kolejka = [_zadanie_szczegolow(mecz) for mecz in kolejnosc]
         self.magazyn.dodaj(przebieg)
         return przebieg
 

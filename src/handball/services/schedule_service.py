@@ -56,7 +56,10 @@ class TerminarzService:
         )
 
     def pobierz_terminarz(self, filtry: FiltryTerminarza) -> Terminarz:
-        return Terminarz(filtry, self._grupuj(self._repozytorium.pobierz_mecze(filtry)))
+        return self.uloz(filtry, self._repozytorium.pobierz_mecze(filtry))
+
+    def uloz(self, filtry: FiltryTerminarza, pozycje: Sequence[PozycjaTerminarza]) -> Terminarz:
+        return Terminarz(filtry, self._grupuj(pozycje))
 
     def _sezon(self, sezony: Sequence[OpcjaWyboru], id_sezon: int | None) -> int | None:
         if id_sezon is None:

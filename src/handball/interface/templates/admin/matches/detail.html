@@ -4,6 +4,8 @@
 
 {% block tresc %}
 {% macro wiersz_zawodnika(zawodnik) %}<tr class="roster-player"{% if zawodnik.kolor_pozycji is not none %} style="--position-hue: {{ zawodnik.kolor_pozycji }}"{% endif %}><td>{{ zawodnik.nr_koszulki }}</td><td>{% if zawodnik.id_zawodnik %}<a class="player-link" href="{{ url_for('administracja.szczegoly_zawodnika', id_zawodnik=zawodnik.id_zawodnik) }}" target="_blank" rel="noopener" data-player-modal-link title="Kliknij: szczegóły zawodnika w oknie · dwuklik: karta w nowej karcie">{{ zawodnik.zawodnik }}</a>{% else %}{{ zawodnik.zawodnik }}{% endif %}</td><td>{{ zawodnik.pozycja }}</td><td{% if zawodnik.najlepszy_strzelec %} class="top-scorer" title="Najwięcej bramek w drużynie" aria-label="{{ zawodnik.bramki }} — najlepszy strzelec drużyny"{% endif %}>{{ zawodnik.bramki }}</td><td>{{ zawodnik.dwie_minuty }}</td><td>{{ zawodnik.upomnienie }}</td><td>{{ zawodnik.dyskwalifikacja }}</td><td>{{ zawodnik.kd }}</td><td>{{ zawodnik.wyjscie }}</td><td>{{ zawodnik.karne }}</td><td>{{ zawodnik.karne_seria }}</td></tr>{% endmacro %}
+{% macro forma_druzyny(nazwa, forma, strona) %}<div class="form-team {{ strona }}"><h3>{{ nazwa }}</h3>{% if forma and forma.mecze %}<p class="form-summary"><span>{{ forma.bilans }}</span> <span>bramki {{ forma.bramki }}</span></p><ol class="form-list">{% for mecz in forma.mecze %}<li class="form-match {{ mecz.klasa }}{% if mecz.analizowany %} current{% endif %}"><span class="form-result" aria-label="{{ {'W': 'wygrana', 'R': 'remis', 'P': 'porażka'}[mecz.rezultat] }}">{{ mecz.rezultat }}</span><span class="form-score">{{ mecz.wynik }}{% if mecz.dopisek %} <small>{{ mecz.dopisek }}</small>{% endif %}</span><span class="form-opponent">{% if mecz.miejsce == 'dom' %}vs{% else %}@{% endif %} {{ mecz.rywal }}</span><span class="form-meta">{{ mecz.data }} · {{ mecz.miejsce }}{% if mecz.analizowany %} · ten mecz{% endif %}</span></li>{% endfor %}</ol>{% else %}<p class="note">Brak rozegranych meczów w sezonie.</p>{% endif %}</div>{% endmacro %}
+{% macro strzelcy_druzyny(nazwa, strzelcy, strona) %}<div class="scorers-team {{ strona }}"><h3>{{ nazwa }}</h3>{% if strzelcy %}<ol class="scorers-list">{% for strzelec in strzelcy %}<li><span class="scorer-name">{{ strzelec.zawodnik }}</span><span class="scorer-goals">{{ strzelec.bramki }}</span>{% if strzelec.karne %}<small>{{ strzelec.karne }}</small>{% endif %}</li>{% endfor %}</ol>{% else %}<p class="note">Brak indywidualnych statystyk bramek.</p>{% endif %}</div>{% endmacro %}
 {% macro nazwa_druzyny(nazwa, id_zespol) %}{% if id_zespol %}<a class="team-link" href="{{ url_for('administracja.szczegoly_druzyny', id_zespol=id_zespol) }}" target="_blank" rel="noopener" data-team-modal-link title="Kliknij: karta drużyny w oknie · dwuklik: karta w nowej karcie">{{ nazwa }}</a>{% else %}{{ nazwa }}{% endif %}{% endmacro %}
 <div class="match-detail" data-match-detail>
 <section class="pagehead">
@@ -38,8 +40,10 @@
 <div class="toolbar" data-detail-navigation>
 <div class="left"><a class="btn secondary" href="{{ url_for('administracja.lista_meczow') }}">← Powrót do listy</a></div>
 </div>
+{% if statystyki.rozegrany %}<div class="toolbar match-report-bar"><div class="right"><a class="btn" href="{{ url_for('administracja.raport_meczu_pdf', id_mecz=szczegoly.id_mecz) }}" target="_blank" rel="noopener">Raport meczu (PDF, A4)</a><a class="btn secondary" href="{{ url_for('administracja.raport_meczu_pdf', id_mecz=szczegoly.id_mecz, wariant='skrocony') }}" target="_blank" rel="noopener">Raport skrócony (PDF)</a></div></div>{% endif %}
 <div class="match-tabs" role="tablist" aria-label="Szczegóły meczu" data-match-tabs hidden>
 <button type="button" role="tab" id="match-tab-basic" aria-controls="match-panel-basic" aria-selected="true">Dane podstawowe</button>
+<button type="button" role="tab" id="match-tab-analysis" aria-controls="match-panel-analysis" aria-selected="false" tabindex="-1">Analiza meczu</button>
 <button type="button" role="tab" id="match-tab-stats" aria-controls="match-panel-stats" aria-selected="false" tabindex="-1">Wynik i statystyki</button>
 <button type="button" role="tab" id="match-tab-rosters" aria-controls="match-panel-rosters" aria-selected="false" tabindex="-1">Składy</button>
 </div>
@@ -50,6 +54,42 @@
 <div class="match-field{% if wartosc == '—' %} empty{% endif %}"><dt>{{ etykieta }}</dt><dd>{{ wartosc }}</dd></div>
 {% endfor %}
 </dl>
+</section>
+<section class="panel match-analysis" id="match-panel-analysis" data-match-panel aria-labelledby="match-tab-analysis">
+<h2>Analiza meczu</h2>
+{% if statystyki.rozegrany %}
+{% if statystyki.wnioski %}
+<ul class="match-insights">
+{% for wniosek in statystyki.wnioski %}<li>{{ wniosek }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+<h3>Porównanie drużyn</h3>
+<div class="table-wrap">
+<table class="match-stats match-compare">
+<thead><tr><th scope="col" class="home">{{ szczegoly.gospodarz }}</th><th scope="col">Statystyka</th><th scope="col" class="away">{{ szczegoly.gosc }}</th></tr></thead>
+<tbody>
+{% for wiersz in statystyki.porownanie %}
+<tr><td class="home{% if wiersz.przewaga == 'home' %} lead{% endif %}">{{ wiersz.gospodarz }}</td><th scope="row">{{ wiersz.etykieta }}{% if wiersz.udzial_gospodarza is not none %}<span class="compare-bar" aria-hidden="true" style="--home-share: {{ wiersz.udzial_gospodarza }}%"></span>{% endif %}</th><td class="away{% if wiersz.przewaga == 'away' %} lead{% endif %}">{{ wiersz.gosc }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<p class="note">Pasek pod nazwą statystyki pokazuje udział gospodarza (niebieski) i gościa (pomarańczowy) w sumie obu drużyn; liczby w tabeli są pełnym odpowiednikiem paska. Podświetlone pole: przewaga w bramkach lub skuteczności karnych.</p>
+<h3>Najlepsi strzelcy</h3>
+<div class="grid2">
+{{ strzelcy_druzyny(szczegoly.gospodarz, statystyki.strzelcy_gospodarz, 'home') }}
+{{ strzelcy_druzyny(szczegoly.gosc, statystyki.strzelcy_gosc, 'away') }}
+</div>
+{% else %}
+<p class="note">Mecz nie ma jeszcze wyniku — porównanie i strzelcy pojawią się po wpisaniu wyniku.</p>
+{% endif %}
+<h3>Forma w sezonie</h3>
+<p class="note">Ostatnie {{ statystyki.limit_formy }} rozegranych meczów drużyny w sezonie, do tego meczu włącznie (bez walkowerów i meczów wycofanych). W/R/P według wyniku po 60 minutach; rozstrzygnięcie dogrywki lub serii karnych jest w dopisku.</p>
+<div class="grid2">
+{{ forma_druzyny(szczegoly.gospodarz, statystyki.forma_gospodarz, 'home') }}
+{{ forma_druzyny(szczegoly.gosc, statystyki.forma_gosc, 'away') }}
+</div>
 </section>
 <section class="panel" id="match-panel-stats" data-match-panel aria-labelledby="match-tab-stats">
 <h2>Wynik i statystyki</h2>

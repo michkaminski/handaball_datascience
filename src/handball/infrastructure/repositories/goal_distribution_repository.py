@@ -123,14 +123,18 @@ class RozkladBramekSQLAlchemyRepository:
 
     def pobierz_wyniki(self, filtry: FiltryRozkladuBramek) -> tuple[LiniaWyniku, ...]:
         try:
-            wiersze = self._sesja.execute(
-                WYNIKI_SQL,
-                {
-                    "id_sezon": filtry.id_sezon,
-                    "rozgrywki": filtry.rozgrywki,
-                    "plec": filtry.plec,
-                },
-            ).mappings().all()
+            wiersze = (
+                self._sesja.execute(
+                    WYNIKI_SQL,
+                    {
+                        "id_sezon": filtry.id_sezon,
+                        "rozgrywki": filtry.rozgrywki,
+                        "plec": filtry.plec,
+                    },
+                )
+                .mappings()
+                .all()
+            )
         except SQLAlchemyError as wyjatek:
             raise BladOdczytuDanych(
                 f"Nie udało się odczytać rozkładu bramek: {wyjatek}"
