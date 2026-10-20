@@ -2,6 +2,15 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+KATALOG_PROJEKTU = Path(__file__).resolve().parents[2]
+
+
+def zaladuj_env() -> None:
+    load_dotenv(KATALOG_PROJEKTU / ".env")
 
 
 @dataclass(frozen=True)
@@ -16,6 +25,7 @@ class Ustawienia:
 
     @classmethod
     def z_srodowiska(cls) -> Ustawienia:
+        zaladuj_env()
         return cls(
             tryb_debugowania=os.environ.get("FLASK_DEBUG", "0") == "1",
             tajny_klucz=os.environ.get("SECRET_KEY", "dev"),
