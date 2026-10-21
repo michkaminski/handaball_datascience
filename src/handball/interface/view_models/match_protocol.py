@@ -55,3 +55,21 @@ class ProtokolMeczuViewModel:
     druzyny: tuple[DruzynaProtokoluViewModel, ...]
     sedziowie: tuple[SedziaProtokoluViewModel, ...]
     uklad: UkladProtokoluViewModel
+
+
+@dataclass(frozen=True)
+class PlikProtokoluLiveViewModel:
+    nazwa_bazowa: str
+    dokument: dict[str, object]
+
+    @property
+    def nazwa_html(self) -> str:
+        return f"{self.nazwa_bazowa}.html"
+
+    @property
+    def nazwa_json(self) -> str:
+        return f"{self.nazwa_bazowa}.json"
+
+    @property
+    def nazwa_zip(self) -> str:
+        return f"{self.nazwa_bazowa}.zip"

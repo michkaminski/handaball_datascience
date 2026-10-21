@@ -1,5 +1,8 @@
+import json
+import zipfile
 from collections.abc import Sequence
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 
 from flask import Flask
@@ -529,3 +532,48 @@ def test_protokol_pdf_ma_pozycje_rocznik_i_statystyki_sezonu() -> None:
         '<td class="stat">2</td><td class="stat">0</td><td class="stat stat-last">0.0</td>'
     ) in druzyna_b
     assert '<td class="name">Bez Ewa</td><td class="stat"></td>' in druzyna_b
+
+
+def test_zapowiedz_ma_przycisk_protokolu_html_offline() -> None:
+    tresc = aplikacja().test_client().get("/administracja/terminarz/204").get_data(as_text=True)
+    assert (
+        'formaction="/administracja/terminarz/204/protokol-live" formtarget="_self" '
+        "data-preview-protocol-live" in tresc
+    )
+    assert "Protokół HTML offline</button>" in tresc
+
+
+def test_protokol_live_to_zip_z_html_i_json() -> None:
+    klient = aplikacja().test_client()
+    odpowiedz = klient.get("/administracja/terminarz/204/protokol-live?kolejnosc_protokolu=numery")
+    assert odpowiedz.status_code == 200
+    assert odpowiedz.mimetype == "application/zip"
+    nazwa = "2025-09-22_Gornik-Zabrze_Wisla-Plock"
+    assert odpowiedz.headers["Content-Disposition"] == f'attachment; filename="{nazwa}.zip"'
+    assert odpowiedz.headers["Cache-Control"] == "no-store"
+    archiwum = zipfile.ZipFile(BytesIO(odpowiedz.data))
+    assert sorted(archiwum.namelist()) == [f"{nazwa}/{nazwa}.html", f"{nazwa}/{nazwa}.json"]
+    dokument = json.loads(archiwum.read(f"{nazwa}/{nazwa}.json"))
+    mecz = dokument["match"]
+    assert (dokument["format"], mecz["id"], mecz["date"], mecz["time"]) == (
+        "protokol_live",
+        204,
+        "22.09.2025",
+        "18:00",
+    )
+    assert mecz["venue"] == "Hala Pogoń, Olimpijska 7, Zabrze"
+    assert mecz["capacity"] == 2500
+    zawodnicy = mecz["B"]["players"]
+    assert [(z["nr"], z["name"], z["pos"]) for z in zawodnicy] == [
+        (1, "NOWAK Adam", "B"),
+        (7, "KOWALSKI Jan", "R"),
+        (9, "LIS Piotr", "S"),
+        (100, "BEZ Ewa", ""),
+    ]
+    assert all("sk" not in z for z in zawodnicy)
+    html = archiwum.read(f"{nazwa}/{nazwa}.html").decode()
+    assert f'const EMBEDDED_FILE = "{nazwa}.json";' in html
+    wbudowany = html[html.index("const EMBEDDED = ") + 17 : html.index(";\nconst EMBEDDED_FILE")]
+    assert json.loads(wbudowany) == dokument
+    assert klient.get("/administracja/terminarz/12345/protokol-live").status_code == 404
+    assert klient.get("/administracja/terminarz/204/protokol-live?lata=7").status_code == 400

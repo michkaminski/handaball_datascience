@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import zipfile
+from io import BytesIO
 from pathlib import Path
 
 from flask import Response, abort, current_app, render_template, request
@@ -151,6 +154,52 @@ class ProtokolMeczuPdfView(MethodView):
             protokol=self._fabryka.utworz_presenter_protokolu_meczu().przygotuj(protokol),
         )
         return self._pdf.odpowiedz(html, self.ARKUSZ, f"protokol-meczu-{id_mecz}.pdf")
+
+
+class ZipResponseBuilder:
+    def odpowiedz(self, pliki: dict[str, str], nazwa_pliku: str) -> Response:
+        archiwum = BytesIO()
+        with zipfile.ZipFile(archiwum, "w", zipfile.ZIP_DEFLATED) as zip_:
+            for nazwa, tresc in pliki.items():
+                zip_.writestr(nazwa, tresc)
+        return Response(
+            archiwum.getvalue(),
+            mimetype="application/zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="{nazwa_pliku}"',
+                "Cache-Control": "no-store",
+            },
+        )
+
+
+class ProtokolMeczuLiveView(MethodView):
+    def __init__(self, fabryka_zaleznosci: ZaleznosciZadaniaFactory) -> None:
+        self._fabryka = fabryka_zaleznosci
+        self._zip = ZipResponseBuilder()
+
+    def get(self, id_mecz: int) -> Response:
+        formularz = ZapowiedzOpcjeForm(request.args)
+        if not formularz.validate():
+            abort(400, description=str(formularz.errors))
+        try:
+            protokol = self._fabryka.utworz_serwis_protokolu_meczu().pobierz(
+                id_mecz, formularz.do_opcji(), formularz.do_kolejnosci_protokolu()
+            )
+        except (NieZnalezionoMeczu, BladOdczytuDanych) as wyjatek:
+            obsluz_blad_domeny(wyjatek)
+        plik = self._fabryka.utworz_presenter_protokolu_live().przygotuj(protokol)
+        html = render_template(
+            "admin/schedule/protocol_live.html", dokument=plik.dokument, plik_json=plik.nazwa_json
+        )
+        return self._zip.odpowiedz(
+            {
+                f"{plik.nazwa_bazowa}/{plik.nazwa_html}": html,
+                f"{plik.nazwa_bazowa}/{plik.nazwa_json}": json.dumps(
+                    plik.dokument, ensure_ascii=False, indent=1
+                ),
+            },
+            plik.nazwa_zip,
+        )
 
 
 class TypowaniaKolejkiView(MethodView):

@@ -69,6 +69,8 @@ Z bazy uzupełnione są: numer meczu (np. SM/23), drużyny, rozgrywki, data i go
 
 Puste do wypełnienia ręcznie: kary, osoby towarzyszące, wynik, przebieg zawodów (34 wiersze na połowę), rzuty karne, uwagi i podpisy. Wysokość wierszy dopasowuje się do liczby zawodników, więc całość zawsze mieści się na jednej stronie. Kontrakt: [schedule/protocol_pdf.md](../src/handball/interface/templates/admin/schedule/protocol_pdf.md).
 
+Obok jest **Protokół HTML offline** (2026-10-21, wzór: prototyp `Prototyp/protokol_live.html`, ten sam wydruk co „Print HTML protocol offline” w projekcie EHF): ZIP generowany w pamięci z plikiem HTML protokołu na żywo z wbudowanymi danymi meczu i kadr oraz tym samym JSON, oba nazwane `RRRR-MM-DD_Gospodarz_Gosc` i spakowane w katalogu o tej nazwie. Strona zapisuje do pliku JSON (gdzie przeglądarka pozwala) i zawsze na urządzeniu, a przycisk „Koniec meczu” tworzy raport meczu HTML (wykres przewagi, bramki w odcinkach, zawodnicy, pełny przebieg). Kolumna skuteczności bramkarzy pojawia się tylko przy danych o obronach, których protokoły ZPRP nie mają. Kontrakt: [schedule/protocol_live.md](../src/handball/interface/templates/admin/schedule/protocol_live.md).
+
 Weryfikacja: 4 nowe testy interfejsu i 3 testy presentera. Pełny zestaw: 536 testów Pythona (poza istniejącym błędem `SECRET_KEY`) i 66 testów JavaScript; mypy bez błędów, Ruff bez nowych uwag. Na bazie (tylko odczyt) mecz 206533: 34 zawodników i 51 z poprzednim sezonem — po jednej stronie; odpowiedź ok. 2,3 s. Bazy nie zmieniano.
 
 ## Zapowiedź meczu: PDF na kartki A4 — 2026-09-27

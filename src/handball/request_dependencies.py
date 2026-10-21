@@ -149,6 +149,11 @@ from handball.interface.presenters.match_presenter import (
     MeczPresenter,
     SkladMeczuPresenter,
 )
+from handball.interface.presenters.match_protocol_live_presenter import (
+    NazwaPlikuProtokoluPolicy,
+    NumeryProtokoluLivePolicy,
+    ProtokolLivePresenter,
+)
 from handball.interface.presenters.match_protocol_presenter import (
     ProtokolMeczuPresenter,
     UkladProtokoluPolicy,
@@ -617,6 +622,13 @@ class ZaleznosciZadaniaFactory:
 
     def utworz_presenter_protokolu_meczu(self) -> ProtokolMeczuPresenter:
         return ProtokolMeczuPresenter(UkladProtokoluPolicy(), KolejnoscZawodnikowProtokoluPolicy())
+
+    def utworz_presenter_protokolu_live(self) -> ProtokolLivePresenter:
+        return ProtokolLivePresenter(
+            KolejnoscZawodnikowProtokoluPolicy(),
+            NumeryProtokoluLivePolicy(),
+            NazwaPlikuProtokoluPolicy(),
+        )
 
     def utworz_renderer_pdf(self) -> DokumentPdfRenderer:
         return self._renderer_pdf
