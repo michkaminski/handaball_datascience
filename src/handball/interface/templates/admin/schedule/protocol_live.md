@@ -11,6 +11,9 @@ Samodzielna strona HTML (CSS i JavaScript w pliku, bez zasobów serwisu i bez po
 - przycisk **„Koniec meczu”** (`endMatch()`, polecenie użytkownika z 2026-10-21) zatrzymuje zegar, zapisuje `state.finished` i otwiera w nowej karcie raport meczu (`reportHtml()`): samodzielna strona HTML z wynikiem i połowami, „Najważniejsze” (najlepszy strzelec, największa przewaga, najdłuższa seria, remisy i zmiany prowadzenia), porównaniem drużyn (paski), wykresem przewagi w czasie (SVG), bramkami w odcinkach 10 minut, tabelami zawodników (gole, 7m, W, 2', D) i pełnym przebiegiem zawodów; podpis Sportomatyka „Bawimy się danymi”. Raport ma przyciski „Drukuj / PDF” (A4) i „Zapisz raport” (`<nazwa>_raport.html`). Po zakończeniu przycisk nazywa się „Raport meczu” i generuje raport ponownie; „Wyczyść zdarzenia” kasuje też zakończenie. Gdy przeglądarka zablokuje nową kartę, raport się pobiera;
 - przyciski „+G” i „Kara” przy składach są większe (dotyk na tablecie).
 - okno gola / kary (`#ov`, polecenie użytkownika z 2026-10-22) otwiera się u góry ekranu, nie przy dolnej krawędzi. Podwójny klik na zawodnika w siatce okna (`#pgrid`, `ondblclick`) wybiera go i od razu zapisuje (`saveItem()`); pojedynczy klik tylko zaznacza. Podwójny klik na „+G” przy składach (`openGoalQuick()`: drugi klik w ciągu 400 ms przechwytywany w fazie capture) od razu zapisuje gola tego zawodnika z podpowiedzianą minutą.
+- przebieg zawodów w panelu ma wąską kolumnę przewagi `±` (`th.df`, `diffTd()`, polecenie użytkownika z 2026-10-22): +n gospodarze, −n goście, 0 remis; przy karach i niewykorzystanych 7 m pusta.
+- okno edycji gola ma pole **„Nr gola w meczu”** (`#ordBox`, `#fOrd`, polecenie użytkownika z 2026-10-22): kolejność goli trzyma pole `ord` w `state.goals` (1..n, numerowane od nowa po każdym zapisie i usunięciu: `goalsInOrder()`, `renumberGoals()`, `placeGoal()`). Nowy gol zawsze dostaje ostatni numer (liczba wszystkich goli + 1) i pole przy dodawaniu jest ukryte; numer zmienia się tylko w edycji istniejącego gola, zmiana minuty nie przestawia kolejności. Liczba całkowita to docelowy numer, ułamek wstawia gola pomiędzy (2.5 = między 2. a 3.; przecinek też działa). Numerowane są wszystkie wpisy goli, także niewykorzystane 7 m. Przebieg (`timeline()`) układa gole wg `ord`, a kary wstawia między nie wg czasu; pliki bez `ord` są numerowane wg czasu przy otwarciu.
+- wykres przewagi (pełny ekran `leadChart()` i raport `reportLeadChart()`, wspólna oś `chartAxis()`): gdy którykolwiek gol nie ma minuty, oś pozioma to kolejne bramki (1, 2, 3…) z linią przerwy przed pierwszym golem II połowy i podpisem „kolejne bramki (brak minut)”; inaczej minuty jak dotąd.
 - przebieg zawodów w panelu (polecenie użytkownika z 2026-10-21: „nie wiadomo który od drużyny gospodarzy który od gości”) ma układ jak na protokole: minuta | zawodnik A | wynik | zawodnik B, z wierszem nagłówka z nazwami drużyn; komórka zawodnika jest w kolorze drużyny (A niebieska po lewej, B czerwona po prawej), kary i niewykorzystane 7 m trafiają na stronę swojej drużyny. Przebieg pełnoekranowy bez zmian (znacznik A/B);
 - układ na jednym ekranie (skład A | skład B | przebieg) działa od szerokości 700 px, więc także na tablecie w pionie; przy 700–999 px mniejsze czcionki, bez kolumn Ur., M i Śr (`.opt`, `.opt2`), imię pod nazwiskiem (`.pname .sn`, `.fn`), przycisk „K” zamiast „Kara” i przebieg szeroki na 240 px (na ekranach ≥ 1000 px: 350 px, 1000–1199 px: 290 px, ≥ 1500 px: 470 px; strzelcy w przebiegu drobną czcionką 8–9 px). Poniżej 700 px (telefon) wszystko jedno pod drugim.
 
@@ -39,9 +42,9 @@ Stan: układ istniejącego `protocol_live.html` (ekran ≥ 700 px, wszystko na j
 | A — Górnik Zabrze             | B — Wisła Płock               | Przebieg     |
 | Nr Zawodnik P Ur M Br Śr (%B) | Nr Zawodnik P Ur M Br Śr (%B) | I połowa     |
 |    Gol 7m W 2' D [+G][Kara]   |    Gol 7m W 2' D [+G][Kara]   |  min wynik … |
-| …                             | …                             | min A wyn. B |
-|                               |                               | 3' 20 MÖL 1:0|
-|                               |                               | 4'   1:1 3 KR|
+| …                             | …                             | min A wyn ± B|
+|                               |                               | 3' 20 1:0 +1 |
+|                               |                               | 4'  1:1 0 3KR|
 | …                             | …                             | II połowa    |
 | [+ Zawodnik] Osoby tow. A–E   | [+ Zawodnik] Osoby tow. A–E   | podsumowanie |
 +-------------------------------+-------------------------------+--------------+
@@ -56,6 +59,8 @@ Stan: układ istniejącego `protocol_live.html` (ekran ≥ 700 px, wszystko na j
 | Wbudowane dane | [protocol_live.html](protocol_live.html), [schedule_views.py](../../../admin/views/schedule_views.py) | `EMBEDDED`, `EMBEDDED_FILE`, `initStart()`; `ProtokolMeczuLiveView`. |
 | Przebieg w panelu (strony A/B) | [protocol_live.html](protocol_live.html) | `evHead` i wiersze `ev1`/`ev2` w `render()`; style `.ev .side`, `.ev .evh`. |
 | Tablet w pionie | [protocol_live.html](protocol_live.html) | `@media (min-width: 700px) and (max-width: 999px)`. |
+| Okno gola: nr gola, podwójny klik | [protocol_live.html](protocol_live.html) | `#ov`, `#ordBox`/`#fOrd`, `openSheet()`, `saveItem()`, `placeGoal()`, `goalsInOrder()`, `openGoalQuick()`. |
+| Wykres przewagi (minuty / kolejne bramki) | [protocol_live.html](protocol_live.html) | `chartAxis()`, `leadChart()`, `reportLeadChart()`. |
 | Kolumna %B | [protocol_live.html](protocol_live.html) | `hasSaves()`, `SORT_KEYS.sk`, komórka `sk` w `render()`. |
 | Treść JSON, numery, nazwy plików | [match_protocol_live_presenter.py](../../../presenters/match_protocol_live_presenter.py) | `ProtokolLivePresenter`, `NumeryProtokoluLivePolicy`, `NazwaPlikuProtokoluPolicy`. |
 | Raport po meczu | [protocol_live.html](protocol_live.html) | `endMatch()`, `matchStats()`, `reportLeadChart()`, `reportSegChart()`, `reportHtml()`, `#endBtn`. |
