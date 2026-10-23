@@ -13,7 +13,7 @@ uv sync
 uv run python app.py
 ```
 
-Port domyślny: `5057` (`HDS_PORT`). Na Linuxie ta sama komenda; `run.bat` zostaje tylko pod Windows (Pango/WeasyPrint).
+Port domyślny: `5057` (`HDS_PORT`). Na Linuxie (Ubuntu Server) uruchom `./run.sh`: tworzy `.venv`, gdy go brak, i doinstalowuje zależności tylko po ich zmianie (przez `uv`, a bez niego przez `pip` i Python 3.13). PDF wymaga `sudo apt install libpango-1.0-0 libpangoft2-1.0-0`; z `.env` usuń `WEASYPRINT_DLL_DIRECTORIES`.
 
 PDF zapowiedzi meczu (przycisk „Pobierz PDF”) generuje WeasyPrint, który na Windows potrzebuje bibliotek Pango. Instalacja jednorazowa:
 
