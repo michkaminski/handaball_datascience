@@ -45,11 +45,13 @@ def naglowki(haslo: str) -> dict[str, str]:
     return {"Authorization": f"Basic {token}"}
 
 
-def test_bez_hasla_pobieranie_jest_zablokowane(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_bez_hasla_pobieranie_jest_otwarte(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("HDS_IMPORT_PASSWORD", raising=False)
-    odpowiedz = aplikacja("").test_client().get("/administracja/import/mecze")
-    assert odpowiedz.status_code == 503
-    assert b"HDS_IMPORT_PASSWORD" in odpowiedz.data
+    odpowiedz = (
+        aplikacja("").test_client().get("/administracja/import/mecze?id_sezon=5&id_rozgrywki=501")
+    )
+    assert odpowiedz.status_code == 200
+    assert "data-import-z-terminarza" in odpowiedz.get_data(as_text=True)
 
 
 def test_pobieranie_wymaga_logowania(monkeypatch: pytest.MonkeyPatch) -> None:

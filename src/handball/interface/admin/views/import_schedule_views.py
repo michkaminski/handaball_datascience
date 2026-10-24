@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from flask import Response, abort, make_response, render_template, request
+from flask import Response, abort, render_template, request
 from flask.views import MethodView
 
 from handball.domain.errors import BladOdczytuDanych
@@ -26,19 +26,7 @@ class PobieranieMeczowView(MethodView):
         self._haslo = haslo
 
     def get(self) -> Response | str:
-        if not self._haslo:
-            return make_response(
-                render_template(
-                    "admin/import/panel.html",
-                    sekcja_aktywna="import",
-                    ligi={},
-                    przebieg=None,
-                    historia=[],
-                    konfiguracja=False,
-                ),
-                503,
-            )
-        if not logowanie_importu_poprawne(self._haslo):
+        if self._haslo and not logowanie_importu_poprawne(self._haslo):
             return odmowa_logowania_importu()
         formularz = PobieranieMeczowFilterForm(request.args)
         if not formularz.validate():

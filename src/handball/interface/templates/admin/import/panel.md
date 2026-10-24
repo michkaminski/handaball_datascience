@@ -11,8 +11,7 @@ Opis całego procesu, magazynów danych i tekstowy UML: [Importy — krok po kro
 | Pole | Znaczenie |
 | --- | --- |
 | `sekcja_aktywna` | `import` — aktywna pozycja menu |
-| `konfiguracja` | Czy skonfigurowano dostęp administratora |
-| `csrf` | Token formularzy POST, przekazywany przy skonfigurowanym dostępie |
+| `csrf` | Token formularzy POST |
 | `ligi` | Słownik identyfikatorów i nazw `LIGI_IMPORTU` z [imports.py](../../../../domain/imports.py) |
 | `przebieg` | `PrzebiegImportu` lub `None` |
 | `historia` | Lista przebiegów z magazynu serwisu |
@@ -51,7 +50,7 @@ Obsługa inicjalizuje się również bez formularza pobierania `#pobieranie`. Pr
 
 ## Pozostałe stany
 
-Przy `konfiguracja=False` widoczny jest tylko panel dostępu administratora. Przy braku przebiegu formularz wyboru i historia pozostają dostępne. Pusta historia pokazuje komunikat o braku przebiegów.
+Przy braku przebiegu formularz wyboru i historia pozostają dostępne. Pusta historia pokazuje komunikat o braku przebiegów.
 
 `POBIERANIE` i `BLAD` pokazują formularz kontynuacji oraz status pobierania; istniejący skrypt obsługuje automatyczne kroki i ponowienia. `PODGLAD` pokazuje liczniki zmian, osobne potwierdzenie zastosowania oraz odświeżenie podglądu. `ZAPISANO` pokazuje potwierdzenie i link do meczów sezonu, tabel sezonu albo karty pobranego meczu. Tabela zmian występuje dla `PODGLAD` i `ZAPISANO`. Historia zawiera rozpoczęcie, tryb, status, ligi i błąd.
 
@@ -64,8 +63,6 @@ Testy [test_imports.py](../../../../../../tests/interface/test_imports.py) spraw
 ```text
 [wspólna rama base.html: nagłówek, menu, sidebar]
 Aktualizacja danych ZPRP
-[brak konfiguracji: Dostęp administratora]
-[skonfigurowany dostęp:]
   Zakres pobierania
     Sezon [2026/2027]
     Rozgrywki
@@ -103,7 +100,7 @@ Pasek przycisków zawija się według dostępnej szerokości; rysunek pokazuje u
 
 | Element | Plik | Miejsce zmiany |
 | --- | --- | --- |
-| Nagłówek, formularze i warunki widoczności | [panel.html](panel.html) | Bloki `tytul`, `tresc`, warunki `konfiguracja` i `przebieg.status` |
+| Nagłówek, formularze i warunki widoczności | [panel.html](panel.html) | Bloki `tytul`, `tresc`, warunki `przebieg.status` |
 | Wybór trybu | [panel.html](panel.html) | Przyciski `name="tryb"`, `przebieg.tryb`, `przebieg.nazwa_trybu`; selekcja w `ImportSQLAlchemyRepository.pobierz_brakujace()` |
 | Przyciski i checkboxy | [panel.html](panel.html) | `[data-wybor-lig]`, `.import-selection`, `data-wybor`, `data-nazwa`, `name="ligi"` |
 | Zaznaczanie grup | [import.js](../../../static/js/import.js) | `WyborLigController.uruchom()` i `zaznacz()` |

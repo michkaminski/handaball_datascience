@@ -64,13 +64,13 @@ def test_uprawnienia_csrf_zatwierdzenie_i_ponowienie(tmp_path: Path) -> None:
     assert b"ZAPISANO" in klient.get(adres, headers=naglowki).data
 
 
-def test_import_bez_konfiguracji_jest_zablokowany(tmp_path: Path) -> None:
+def test_import_bez_hasla_jest_otwarty(tmp_path: Path) -> None:
     aplikacja = AplikacjaFactory(ustawienia_testowe()).utworz()
     serwis = ImportService(ImportFileStore(tmp_path), ImportTestClient(), ImportTestRepository())
     aplikacja.view_functions["administracja.import_danych"] = ImportPanelView.as_view(
         "test_import", serwis, ""
     )
-    assert aplikacja.test_client().get("/administracja/import").status_code == 503
+    assert aplikacja.test_client().get("/administracja/import").status_code == 200
 
 
 def test_przycisk_uzupelnienia_i_pusty_wynik(tmp_path: Path) -> None:

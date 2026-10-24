@@ -128,7 +128,7 @@ Samo zaznaczenie lig nie rozpoczyna pobierania. Przycisk „Odśwież podgląd�
 
 ### Krok 1 — wejście i wybór zakresu
 
-`ImportPanelView` sprawdza logowanie HTTP Basic: użytkownik `admin`, hasło ze zmiennej środowiskowej `HDS_IMPORT_PASSWORD`. Brak konfiguracji daje ekran informacyjny z kodem 503, a brak poprawnego logowania — 401. Formularze POST wymagają tokenu CSRF przechowywanego w sesji.
+`ImportPanelView` sprawdza logowanie HTTP Basic: użytkownik `admin`, hasło ze zmiennej środowiskowej `HDS_IMPORT_PASSWORD`. Bez ustawionego hasła panel jest dostępny bez logowania (serwer tylko w sieci lokalnej); przy ustawionym haśle brak poprawnego logowania daje 401. Formularze POST wymagają tokenu CSRF przechowywanego w sesji.
 
 Lista dozwolonych rozgrywek pochodzi z `LIGI_IMPORTU` w [imports.py](../src/handball/domain/imports.py). Przyciski szybkiego wyboru zmieniają checkboxy, a „Tylko…” zastępuje wcześniejszy wybór. Puchar Polski obejmuje eliminacje wojewódzkie, bez Superpucharów. Wszystkie ligi są domyślnie zaznaczone.
 

@@ -22,17 +22,7 @@ class ImportPanelView(MethodView):
 
     def _dostep(self) -> Response | None:
         if not self._haslo:
-            return make_response(
-                render_template(
-                    "admin/import/panel.html",
-                    sekcja_aktywna="import",
-                    ligi=LIGI_IMPORTU,
-                    przebieg=None,
-                    historia=[],
-                    konfiguracja=False,
-                ),
-                503,
-            )
+            return None
         dane = request.authorization
         podane = dane.password if dane and dane.type == "basic" else None
         if (
@@ -69,7 +59,6 @@ class ImportPanelView(MethodView):
                     ligi=LIGI_IMPORTU,
                     przebieg=przebieg,
                     historia=self._serwis.magazyn.historia(),
-                    konfiguracja=True,
                     csrf=token,
                     opcje_tabel=opcje_tabel,
                     blad_opcji=blad_opcji,

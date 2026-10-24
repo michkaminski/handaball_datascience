@@ -6,7 +6,7 @@ Docelowy szablon względem katalogu szablonów: `admin/import/schedule.html`. Tr
 
 ## Przeznaczenie
 
-Lista meczów do pobrania z ZPRP, osobna od [Terminarza](../schedule/list.md). Zaznaczenie wysyła POST na import (`akcja=rozpocznij_mecze`, `mecze`). Zapis do bazy następuje dopiero po zatwierdzeniu podglądu w [panelu importu](panel.md). Dostęp jak przy imporcie: hasło `HDS_IMPORT_PASSWORD`, HTTP Basic `admin`, brak hasła → 503 (ekran panelu), złe logowanie → 401.
+Lista meczów do pobrania z ZPRP, osobna od [Terminarza](../schedule/list.md). Zaznaczenie wysyła POST na import (`akcja=rozpocznij_mecze`, `mecze`). Zapis do bazy następuje dopiero po zatwierdzeniu podglądu w [panelu importu](panel.md). Dostęp jak przy imporcie: hasło `HDS_IMPORT_PASSWORD`, HTTP Basic `admin`, brak hasła → dostęp bez logowania, złe logowanie → 401.
 
 ## Filtry
 

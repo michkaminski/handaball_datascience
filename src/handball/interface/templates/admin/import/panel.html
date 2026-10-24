@@ -3,11 +3,6 @@
 {% block tresc %}
 <section class="pagehead"><div class="crumb">Start › Import danych</div>
 <h1>Aktualizacja danych ZPRP</h1><p>Pobierz sezon 2026/2027, sprawdź różnice i zatwierdź aktualizację bazy.</p></section>
-{% if not konfiguracja %}
-<section class="panel"><h2>Dostęp administratora</h2><div class="panel-body">
-<p>Ustaw hasło administratora w środowisku aplikacji: <code>HDS_IMPORT_PASSWORD</code>. Po ponownym uruchomieniu zaloguj się jako <strong>admin</strong>.</p>
-</div></section>
-{% else %}
 <section class="panel"><h2>Zakres pobierania</h2><div class="panel-body">
 <form method="post" action="{{ url_for('administracja.import_danych') }}" class="import-form">
 <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="akcja" value="rozpocznij">
@@ -123,4 +118,4 @@ Pozostało <strong id="liczba-oczekujacych">{{ przebieg.kolejka|length }}</stron
 {% else %}<tr><td colspan="6">Brak przebiegów. Wybierz ligi i sprawdź aktualizacje.</td></tr>{% endfor %}
 </tbody></table></div></section>
 <script src="{{ url_for('static', filename='js/import.js') }}" defer></script>
-{% endif %}{% endblock %}
+{% endblock %}
